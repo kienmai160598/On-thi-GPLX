@@ -1,0 +1,70 @@
+import SwiftUI
+
+struct BookmarksView: View {
+    @Environment(QuestionStore.self) private var questionStore
+    @Environment(ProgressStore.self) private var progressStore
+
+    var body: some View {
+        let allQuestions = questionStore.allQuestions
+        let bookmarkIds = progressStore.bookmarks
+        let bookmarked = allQuestions.filter { bookmarkIds.contains($0.no) }
+
+        ScrollView {
+            if bookmarked.isEmpty {
+                EmptyState(icon: "bookmark", message: "Chưa có câu hỏi nào")
+            } else {
+                VStack(alignment: .leading, spacing: 0) {
+                    ForEach(Array(bookmarked.enumerated()), id: \.element.no) { i, question in
+                        BookmarkQuestionCard(question: question, topicKey: "bookmarks")
+                            .padding(.bottom, 8)
+                            .staggered(i)
+                    }
+
+                    NavigationLink(destination: QuestionView(topicKey: "bookmarks", startIndex: 0)) {
+                        AppButton(label: "Luyện tập", height: 44, cornerRadius: 22)
+                    }
+                    .buttonStyle(.plain)
+                }
+                .padding(.horizontal, 20)
+                .padding(.bottom, 20)
+            }
+        }
+        .screenHeader("Đánh dấu")
+    }
+}
+
+// MARK: - Bookmark Question Card
+
+private struct BookmarkQuestionCard: View {
+    @Environment(ProgressStore.self) private var progressStore
+    let question: Question
+    let topicKey: String
+
+    var body: some View {
+        HStack(spacing: 12) {
+            NumberBadge(number: question.no, color: .appPrimary)
+
+            Text(question.text)
+                .font(.system(size: 14))
+                .foregroundStyle(Color.appTextDark)
+                .lineLimit(2)
+                .lineSpacing(2)
+                .multilineTextAlignment(.leading)
+
+            Spacer()
+
+            if topicKey == "bookmarks" {
+                Button {
+                    progressStore.toggleBookmark(questionNo: question.no)
+                } label: {
+                    Image(systemName: "bookmark.slash.fill")
+                        .font(.system(size: 14))
+                        .foregroundStyle(Color.appTextLight)
+                }
+            }
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
+        .glassCard()
+    }
+}

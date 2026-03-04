@@ -1,0 +1,164 @@
+{
+  "1_2": [
+    {
+      "title": "Tốc độ trong khu vực đông dân cư",
+      "content": "Nhớ quy tắc 50-60: Xe máy/ô tô con tối đa 50 km/h trong khu vực đông dân cư, 60 km/h ngoài khu vực đông dân cư (đường 2 chiều, đường 1 chiều có 1 làn xe)."
+    },
+    {
+      "title": "Tốc độ trên đường cao tốc",
+      "content": "Xe ô tô con: tối đa 120 km/h, tối thiểu 60 km/h. Làn trái: 100-120 km/h. Làn giữa: 80-100 km/h. Làn phải: 60-80 km/h."
+    },
+    {
+      "title": "Khoảng cách an toàn theo tốc độ",
+      "content": "V ≤ 60: khoảng cách 35m. V = 60-80: 55m. V = 80-100: 70m. V = 100-120: 100m. Mẹo: Khoảng cách ≈ tốc độ × 0.8."
+    },
+    {
+      "title": "Nồng độ cồn",
+      "content": "Ô tô, xe máy: Nồng độ cồn bằng 0 (không được uống rượu bia). Mẹo: \"Đã uống rượu bia thì KHÔNG lái xe\" — không có ngoại lệ."
+    },
+    {
+      "title": "Xe ưu tiên đi trước",
+      "content": "Thứ tự ưu tiên: 1. Cứu hoả 2. Quân sự 3. Công an 4. Cứu thương 5. Hộ đê. Mẹo: \"Cháy - Quân - Công - Cứu - Hộ\" (nhớ câu: Cháy Quá Công Cứu Hộ)."
+    },
+    {
+      "title": "Thứ tự ưu tiên qua ngã tư không có tín hiệu",
+      "content": "1. Đường ưu tiên đi trước. 2. Cùng cấp đường: xe bên PHẢI được đi trước. 3. Đi thẳng và rẽ phải trước rẽ trái. Mẹo: \"Phải trước Trái\"."
+    },
+    {
+      "title": "Cấm vượt trong các trường hợp",
+      "content": "Cấm vượt: trên cầu hẹp, đường cong, đỉnh dốc, nơi giao nhau, đường sắt. Mẹo: \"Cầu Cong Dốc Giao Sắt\" — 5 nơi không bao giờ vượt."
+    },
+    {
+      "title": "Xử phạt lỗi nặng",
+      "content": "Tước GPLX: Vượt đèn đỏ, chạy quá tốc độ 35km/h, lùi xe trên cao tốc, nồng độ cồn. Mẹo: Lỗi nguy hiểm = mất bằng."
+    },
+    {
+      "title": "Đỗ xe, dừng xe",
+      "content": "Dừng xe: tạm thời, người lái ngồi trên xe. Đỗ xe: lâu dài, người lái có thể rời xe. Cách ngã tư ≥ 5m, cách bến xe buýt ≥ 20m."
+    },
+    {
+      "title": "Tuổi và bằng lái",
+      "content": "16 tuổi: xe gắn máy < 50cc. 18 tuổi: xe mô tô, ô tô con (B1/B2). 21 tuổi: xe tải (C). 24 tuổi: xe khách (D). 27 tuổi: xe kéo rơ moóc (FC)."
+    }
+  ],
+  "3": [
+    {
+      "title": "Kỹ thuật lái xe qua đường ngập nước",
+      "content": "Đi chậm, số thấp, ga đều, KHÔNG đổi số giữa chừng. Qua vùng nước rồi nhấp phanh nhẹ để làm khô má phanh. Mẹo: \"Chậm - Thấp - Đều - Khô\"."
+    },
+    {
+      "title": "Xuống dốc dài",
+      "content": "Gài số thấp (1 hoặc 2), dùng phanh động cơ là chính, phanh chân là phụ. KHÔNG tắt máy khi xuống dốc (mất trợ lực). Mẹo: \"Số thấp + Phanh động cơ\"."
+    },
+    {
+      "title": "Lên dốc",
+      "content": "Về số thấp TRƯỚC khi lên dốc. Tăng ga vừa đủ, không đổi số giữa dốc. Nếu xe chết máy: kéo phanh tay, khởi động lại. Mẹo: \"Về số trước, lên dốc sau\"."
+    },
+    {
+      "title": "Lái xe ban đêm",
+      "content": "Dùng đèn chiếu gần (cốt) khi có xe đối diện trong khoảng cách 150m. Giảm tốc độ 10-20 km/h so với ban ngày. Mẹo: \"Gặp xe = Gần, Một mình = Xa\"."
+    },
+    {
+      "title": "Kỹ thuật phanh gấp",
+      "content": "Xe có ABS: đạp phanh mạnh và giữ. Xe không ABS: nhấn-nhả phanh liên tục (phanh từng đoạn). KHÔNG đánh lái khi đang phanh gấp. Mẹo: \"ABS giữ, thường nhả\"."
+    },
+    {
+      "title": "Qua đường sắt",
+      "content": "Quan sát 2 phía, không dừng trên đường ray. Khoảng cách an toàn tối thiểu khi dừng: 5m từ ray gần nhất. Mẹo: \"Nhìn 2 phía, cách 5m\"."
+    },
+    {
+      "title": "Vượt xe an toàn",
+      "content": "Bước: 1. Bật xi-nhan trái 2. Quan sát gương 3. Nháy đèn/còi xin vượt 4. Vượt bên TRÁI 5. Bật xi-nhan phải quay lại. Mẹo: \"Trái ra - Phải vào\"."
+    }
+  ],
+  "4": [
+    {
+      "title": "Hệ thống phanh",
+      "content": "Phanh đĩa: hiệu quả, thoát nhiệt tốt, hay dùng bánh trước. Phanh tang trống: rẻ, dùng bánh sau. Mẹo: \"Đĩa trước, Trống sau\"."
+    },
+    {
+      "title": "Hệ thống truyền lực",
+      "content": "Thứ tự: Động cơ → Ly hợp → Hộp số → Trục các-đăng → Cầu chủ động → Bánh xe. Mẹo: \"Động Ly Hộp Trục Cầu Bánh\"."
+    },
+    {
+      "title": "Dấu hiệu hư hỏng phanh",
+      "content": "Chân phanh nhẹ bất thường → thiếu dầu phanh. Chân phanh nặng → hỏng bộ trợ lực. Phanh lệch → má phanh mòn không đều. Mẹo: \"Nhẹ = thiếu, Nặng = hỏng trợ, Lệch = mòn\"."
+    },
+    {
+      "title": "Kiểm tra lốp xe",
+      "content": "Áp suất chuẩn theo khuyến cáo nhà sản xuất. Kiểm tra khi lốp nguội. Lốp mòn đều → áp suất đúng. Mòn giữa → quá căng. Mòn 2 bên → non hơi. Mẹo: \"Giữa = căng, Bên = non\"."
+    },
+    {
+      "title": "Hệ thống làm mát",
+      "content": "Làm mát bằng nước: két nước + quạt gió + bơm nước + van hằng nhiệt. Nhiệt độ hoạt động: 80-90°C. Mẹo: \"Két Quạt Bơm Van - 80-90\"."
+    },
+    {
+      "title": "Hệ thống bôi trơn",
+      "content": "Dầu bôi trơn giảm ma sát, làm mát, chống rỉ sét, làm kín. Thay dầu định kỳ mỗi 5000-10000 km. Đèn báo dầu sáng → dừng xe kiểm tra ngay."
+    }
+  ],
+  "5": [
+    {
+      "title": "Nhóm biển báo cấm - nền trắng viền đỏ",
+      "content": "Hình tròn, nền trắng, viền đỏ = CẤM. Ngoại lệ: P.130 (cấm dừng đỗ) nền xanh + chéo đỏ. Mẹo: \"Tròn + Trắng + Đỏ = Cấm\"."
+    },
+    {
+      "title": "Nhóm biển báo nguy hiểm - tam giác vàng",
+      "content": "Hình tam giác, nền vàng, viền đỏ = NGUY HIỂM/CẢNH BÁO. Đặt trước vị trí nguy hiểm để cảnh báo. Mẹo: \"Tam giác Vàng = Coi chừng\"."
+    },
+    {
+      "title": "Nhóm biển báo hiệu lệnh - nền xanh tròn",
+      "content": "Hình tròn, nền xanh dương = HIỆU LỆNH (bắt buộc). Phải đi theo hướng mũi tên chỉ. Mẹo: \"Tròn + Xanh = Phải theo\"."
+    },
+    {
+      "title": "Nhóm biển báo chỉ dẫn - hình chữ nhật xanh",
+      "content": "Hình chữ nhật hoặc vuông, nền xanh = CHỈ DẪN. Chỉ thông tin, không bắt buộc. Mẹo: \"Vuông + Xanh = Thông tin\"."
+    },
+    {
+      "title": "Phân biệt biển cấm rẽ và biển hiệu lệnh rẽ",
+      "content": "Cấm rẽ trái: nền trắng, viền đỏ, mũi tên rẽ trái + gạch chéo đỏ. Hiệu lệnh rẽ trái: nền xanh, mũi tên trắng rẽ trái. Mẹo: \"Trắng+Đỏ cấm, Xanh bắt buộc\"."
+    },
+    {
+      "title": "Biển báo tốc độ tối đa và tối thiểu",
+      "content": "Tốc độ tối đa: tròn, trắng, viền đỏ, số đỏ. Tốc độ tối thiểu: tròn, xanh, số trắng. Hết hạn chế: gạch chéo đen. Mẹo: \"Đỏ = Tối đa, Xanh = Tối thiểu\"."
+    },
+    {
+      "title": "Vạch kẻ đường",
+      "content": "Vạch liền: KHÔNG được lấn. Vạch đứt: được lấn khi an toàn. Vạch đôi liền: cấm tuyệt đối. Mẹo: \"Liền = Cấm, Đứt = Được\"."
+    },
+    {
+      "title": "Biển phụ (biển nhỏ bên dưới)",
+      "content": "Biển phụ bổ sung cho biển chính phía trên. Biển phụ cho biết: phạm vi, đối tượng, thời gian, khoảng cách. Luôn đọc biển chính + biển phụ cùng nhau."
+    }
+  ],
+  "6": [
+    {
+      "title": "Thứ tự ưu tiên tại sa hình ngã tư",
+      "content": "1. Xe trên đường ưu tiên 2. Xe từ bên PHẢI (đường ngang bằng) 3. Xe đi thẳng/rẽ phải trước rẽ trái. Mẹo: \"Ưu tiên → Bên phải → Thẳng trước Trái\"."
+    },
+    {
+      "title": "Nhường đường khi rẽ trái",
+      "content": "Xe rẽ trái LUÔN nhường xe đi thẳng và rẽ phải từ chiều đối diện. Dù đèn xanh vẫn phải nhường. Mẹo: \"Rẽ trái = Nhường hết\"."
+    },
+    {
+      "title": "Vòng xuyến (bùng binh)",
+      "content": "Xe trong vòng xuyến được ưu tiên trước xe ngoài. Phải nhường xe đã ở trong vòng xuyến. Đi theo chiều ngược kim đồng hồ. Mẹo: \"Trong trước, Ngoài sau\"."
+    },
+    {
+      "title": "Sa hình có người điều khiển giao thông",
+      "content": "CSGT giơ tay thẳng đứng: TẤT CẢ dừng. Dang ngang: 2 phía trước/sau dừng, 2 bên được đi. Tay phải giơ: trước mặt dừng, sau lưng dừng, bên trái được đi/rẽ."
+    },
+    {
+      "title": "Đèn tín hiệu",
+      "content": "Đỏ: dừng, được rẽ phải khi có biển phụ. Vàng: dừng, nếu đã vượt vạch thì đi tiếp. Xanh: đi, rẽ trái nhường đối diện. Mẹo: \"Đỏ dừng, Vàng chuẩn bị, Xanh đi\"."
+    },
+    {
+      "title": "Xử lý tình huống tai nạn",
+      "content": "1. Dừng xe an toàn 2. Cảnh báo (tam giác) 3. Sơ cứu nạn nhân 4. Gọi 115 (cấp cứu) + 113 (công an). KHÔNG di chuyển nạn nhân trừ khi nguy hiểm. Mẹo: \"Dừng - Báo - Cứu - Gọi\"."
+    },
+    {
+      "title": "Cách đếm xe qua ngã tư trong sa hình",
+      "content": "Bước: 1. Xác định đường ưu tiên (nếu có) 2. Xe bên phải đi trước 3. Thẳng/phải trước trái 4. Đếm từng xe theo thứ tự. Viết số thứ tự lên từng xe."
+    }
+  ]
+}
