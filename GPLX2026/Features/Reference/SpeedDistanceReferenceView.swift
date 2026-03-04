@@ -110,11 +110,11 @@ struct SpeedDistanceReferenceView: View {
                         .padding(.bottom, 8)
 
                     VStack(spacing: 0) {
-                        RuleRow(text: "Xe ô tô: 0 mg/lít khí thở", textColor: .appError)
+                        SimpleRuleRow(text: "Xe ô tô: 0 mg/lít khí thở", textColor: .appError)
                         Divider().padding(.horizontal, 16)
-                        RuleRow(text: "Xe máy: 0 mg/lít khí thở", textColor: .appError)
+                        SimpleRuleRow(text: "Xe máy: 0 mg/lít khí thở", textColor: .appError)
                         Divider().padding(.horizontal, 16)
-                        RuleRow(text: "Nghiêm cấm điều khiển xe khi có nồng độ cồn", textColor: .appWarning)
+                        SimpleRuleRow(text: "Nghiêm cấm điều khiển xe khi có nồng độ cồn", textColor: .appWarning)
                     }
                     .glassCard()
                     .padding(.bottom, 20)
@@ -126,19 +126,19 @@ struct SpeedDistanceReferenceView: View {
                         .padding(.bottom, 8)
 
                     VStack(spacing: 0) {
-                        RuleRow(text: "Thứ tự ưu tiên: Xe ưu tiên > Biển báo > Đèn tín hiệu > Vạch kẻ đường > Quy tắc chung")
+                        SimpleRuleRow(text: "Thứ tự ưu tiên: Xe ưu tiên > Biển báo > Đèn tín hiệu > Vạch kẻ đường > Quy tắc chung")
                         Divider().padding(.horizontal, 16)
-                        RuleRow(text: "Ngã tư không đèn: Nhường bên phải. Đường ưu tiên > Đường nhánh")
+                        SimpleRuleRow(text: "Ngã tư không đèn: Nhường bên phải. Đường ưu tiên > Đường nhánh")
                         Divider().padding(.horizontal, 16)
-                        RuleRow(text: "Vượt xe: Chỉ vượt bên trái, trừ khi xe phía trước rẽ trái")
+                        SimpleRuleRow(text: "Vượt xe: Chỉ vượt bên trái, trừ khi xe phía trước rẽ trái")
                         Divider().padding(.horizontal, 16)
-                        RuleRow(text: "Xe ưu tiên: Cứu hoả, cứu thương, công an, quân sự (có còi + đèn)")
+                        SimpleRuleRow(text: "Xe ưu tiên: Cứu hoả, cứu thương, công an, quân sự (có còi + đèn)")
                         Divider().padding(.horizontal, 16)
-                        RuleRow(text: "Ban đêm: Dùng đèn chiếu gần trong đô thị, chuyển đèn chiếu gần khi có xe ngược chiều")
+                        SimpleRuleRow(text: "Ban đêm: Dùng đèn chiếu gần trong đô thị, chuyển đèn chiếu gần khi có xe ngược chiều")
                         Divider().padding(.horizontal, 16)
-                        RuleRow(text: "Đỗ xe: Cách ngã ba/tư 5m, cách trạm xe buýt 20m, cách cầu 50m")
+                        SimpleRuleRow(text: "Đỗ xe: Cách ngã ba/tư 5m, cách trạm xe buýt 20m, cách cầu 50m")
                         Divider().padding(.horizontal, 16)
-                        RuleRow(text: "Cấm sử dụng điện thoại khi lái xe (kể cả tai nghe)", textColor: .appError)
+                        SimpleRuleRow(text: "Cấm sử dụng điện thoại khi lái xe (kể cả tai nghe)", textColor: .appError)
                     }
                     .glassCard()
                     .padding(.bottom, 20)
@@ -255,7 +255,7 @@ private struct DistanceRow: View {
 
 // MARK: - Rule Row
 
-private struct RuleRow: View {
+private struct SimpleRuleRow: View {
     let text: String
     var textColor: Color = .appTextDark
 

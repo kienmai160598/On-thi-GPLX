@@ -14,13 +14,11 @@ final class QuestionStore {
     /// Optional reference to ProgressStore for filtering bookmarks/wrong answers.
     var progressStore: ProgressStore?
 
-    /// Topics with computed question counts.
-    var topics: [Topic] {
-        Topic.all.map { topic in
-            let count = allQuestions.filter { topic.topicIds.contains($0.topic) }.count
-            return topic.withQuestionCount(count)
-        }
-    }
+    // MARK: - Cached derived data
+
+    private(set) var topics: [Topic] = []
+    private var _diemLietCache: [Question]?
+    private var _simulationCache: [Question]?
 
     // MARK: - Memory tips cache
 
@@ -40,6 +38,7 @@ final class QuestionStore {
 
         do {
             allQuestions = try JSONDecoder().decode([Question].self, from: data)
+            rebuildCaches()
         } catch {
             print("[QuestionStore] Failed to decode questions.json: \(error)")
         }
@@ -62,7 +61,10 @@ final class QuestionStore {
 
     /// All "diem liet" (critical / disqualifying) questions.
     var diemLietQuestions: [Question] {
-        allQuestions.filter(\.isDiemLiet)
+        if let cached = _diemLietCache { return cached }
+        let result = allQuestions.filter(\.isDiemLiet)
+        _diemLietCache = result
+        return result
     }
 
     // MARK: - Memory tips
@@ -165,7 +167,10 @@ final class QuestionStore {
 
     /// All questions from Topic 6 (Sa hinh & Tinh huong) that have images.
     var simulationQuestions: [Question] {
-        allQuestions.filter { $0.topic == 6 && $0.hasImage }
+        if let cached = _simulationCache { return cached }
+        let result = allQuestions.filter { $0.topic == 6 && $0.hasImage }
+        _simulationCache = result
+        return result
     }
 
     /// Generate a random set of simulation scenario questions.
@@ -184,6 +189,17 @@ final class QuestionStore {
     func questions(byNos nos: [Int]) -> [Question] {
         let lookup = Dictionary(uniqueKeysWithValues: allQuestions.map { ($0.no, $0) })
         return nos.compactMap { lookup[$0] }
+    }
+
+    // MARK: - Cache management
+
+    private func rebuildCaches() {
+        topics = Topic.all.map { topic in
+            let count = allQuestions.filter { topic.topicIds.contains($0.topic) }.count
+            return topic.withQuestionCount(count)
+        }
+        _diemLietCache = allQuestions.filter(\.isDiemLiet)
+        _simulationCache = allQuestions.filter { $0.topic == 6 && $0.hasImage }
     }
 
     // MARK: - Private helpers

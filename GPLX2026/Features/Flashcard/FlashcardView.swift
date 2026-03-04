@@ -44,55 +44,49 @@ struct FlashcardView: View {
         let correctAnswer = question.answers.first(where: \.correct)
         let progress = Double(currentIndex + 1) / Double(totalQuestions)
 
-        ZStack {
-            // Flashcard with 3D flip
-            VStack {
-                Spacer()
+        VStack {
+            Spacer()
 
-                ZStack {
-                    // Determine which side to show based on flip angle
-                    if flipDegrees < 90 {
-                        frontCard(question: question)
-                    } else {
-                        backCard(question: question, correctAnswer: correctAnswer)
-                            .rotation3DEffect(.degrees(180), axis: (x: 0, y: 1, z: 0))
-                    }
+            ZStack {
+                if flipDegrees < 90 {
+                    frontCard(question: question)
+                } else {
+                    backCard(question: question, correctAnswer: correctAnswer)
+                        .rotation3DEffect(.degrees(180), axis: (x: 0, y: 1, z: 0))
                 }
-                .rotation3DEffect(.degrees(flipDegrees), axis: (x: 0, y: 1, z: 0))
-                .onTapGesture { flipCard() }
-                .padding(.horizontal, 20)
-
-                Spacer()
             }
+            .rotation3DEffect(.degrees(flipDegrees), axis: (x: 0, y: 1, z: 0))
+            .onTapGesture { flipCard() }
+            .padding(.horizontal, 20)
 
-            // MARK: - Bottom bar
-            VStack {
-                Spacer()
-                HStack(spacing: 8) {
-                    Button {
-                        markUnknown()
-                    } label: {
-                        AppButton(icon: "xmark", label: "Chưa biết", style: .secondary, height: 48, cornerRadius: 24)
-                    }
-                    .disabled(!isFlipped)
-
-                    Text("\(currentIndex + 1)/\(totalQuestions)")
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(Color.appTextMedium)
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 10)
-                        .glassCard()
-
-                    Button {
-                        markKnown()
-                    } label: {
-                        AppButton(icon: "checkmark", label: "Đã biết", height: 48, cornerRadius: 24)
-                    }
-                    .disabled(!isFlipped)
+            Spacer()
+        }
+        .safeAreaInset(edge: .bottom) {
+            HStack(spacing: 8) {
+                Button {
+                    markUnknown()
+                } label: {
+                    AppButton(icon: "xmark", label: "Chưa biết", style: .secondary, height: 48, cornerRadius: 24)
                 }
-                .padding(.horizontal, 16)
-                .padding(.bottom, 10)
+                .disabled(!isFlipped)
+
+                Text("\(currentIndex + 1)/\(totalQuestions)")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(Color.appTextMedium)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 10)
+                    .glassCard()
+
+                Button {
+                    markKnown()
+                } label: {
+                    AppButton(icon: "checkmark", label: "Đã biết", height: 48, cornerRadius: 24)
+                }
+                .disabled(!isFlipped)
             }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
+            .background(.ultraThinMaterial)
         }
     }
 

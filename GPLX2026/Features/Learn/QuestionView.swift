@@ -66,121 +66,69 @@ struct QuestionView: View {
         let isLast = currentIndex + 1 >= allQuestions.count
         let isSpecial = topicKey.contains("diem_liet") || topicKey.contains("bookmarks") || topicKey.contains("wrong_answers")
 
-        ZStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 0) {
-                    // MARK: - Question card
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("Câu \(question.no):")
-                            .font(.system(size: 14, weight: .bold))
-                            .foregroundStyle(Color.appPrimary)
-
-                        Text(question.text)
-                            .font(.system(size: 17, weight: .bold))
-                            .foregroundStyle(Color.appTextDark)
-                            .lineSpacing(4)
-
-                        if question.hasImage {
-                            AsyncImage(url: URL(string: question.imageUrl)) { phase in
-                                switch phase {
-                                case .success(let image):
-                                    image
-                                        .resizable()
-                                        .aspectRatio(contentMode: .fit)
-                                        .clipShape(RoundedRectangle(cornerRadius: 10))
-                                case .failure:
-                                    RoundedRectangle(cornerRadius: 10)
-                                        .fill(Color.appDivider)
-                                        .frame(height: 180)
-                                        .overlay {
-                                            Image(systemName: "photo")
-                                                .foregroundStyle(Color.appTextLight)
-                                        }
-                                default:
-                                    RoundedRectangle(cornerRadius: 10)
-                                        .fill(Color.appDivider.opacity(0.5))
-                                        .frame(height: 180)
-                                        .overlay {
-                                            ProgressView()
-                                                .tint(Color.appPrimary)
-                                        }
-                                }
-                            }
-                        }
-                    }
-                    .padding(16)
-                    .glassCard()
+        ScrollView {
+            VStack(alignment: .leading, spacing: 0) {
+                QuestionCard(label: "Câu \(question.no):", question: question)
                     .padding(.bottom, 20)
 
-                    // MARK: - Answer tiles
-                    ForEach(Array(shuffledAnswers.enumerated()), id: \.element.id) { index, answer in
-                        let letter = ["A", "B", "C", "D"][min(index, 3)]
-                        let isSelected = selectedAnswerId == answer.id
+                AnswerTileList(
+                    answers: shuffledAnswers,
+                    selectedAnswerId: selectedAnswerId,
+                    isConfirmed: isConfirmed,
+                    showCorrectness: true,
+                    onSelect: { selectAnswer($0) }
+                )
 
-                        Button {
-                            selectAnswer(answer)
-                        } label: {
-                            AnswerOptionCard(
-                                letter: letter,
-                                text: answer.text,
-                                isSelected: isSelected,
-                                isConfirmed: isConfirmed,
-                                isCorrect: answer.correct
-                            )
-                        }
-                        .disabled(isConfirmed)
-                        .padding(.bottom, 8)
-                    }
-
-                    // MARK: - Tip after confirm
-                    if isConfirmed && !question.tip.isEmpty {
-                        ExplanationBox(content: question.tip)
-                            .padding(.top, 4)
-                    }
-
-                    Spacer().frame(height: 100)
+                // MARK: - Tip after confirm
+                if isConfirmed && !question.tip.isEmpty {
+                    ExplanationBox(content: question.tip)
+                        .padding(.top, 4)
+                        .transition(.opacity.combined(with: .move(edge: .top)))
                 }
-                .padding(.horizontal, 20)
-                .padding(.top, 12)
             }
-
-            // MARK: - Bottom bar
-            VStack {
-                Spacer()
-                HStack(spacing: 10) {
-                    if !isSpecial {
-                        NavigationLink(destination: MemoryTipsView(topicKey: topicKey)) {
-                            AppIconButton(icon: "lightbulb", size: 52)
-                        }
+            .padding(.horizontal, 20)
+            .padding(.top, 12)
+        }
+        .id(currentIndex)
+        .safeAreaInset(edge: .bottom) {
+            HStack(spacing: 10) {
+                if !isSpecial {
+                    NavigationLink(destination: MemoryTipsView(topicKey: topicKey)) {
+                        AppIconButton(icon: "lightbulb", size: 52)
                     }
+                }
 
-                    Button {
-                        if isConfirmed {
-                            if isLast {
-                                showResultDialog = true
-                            } else {
-                                nextQuestion()
-                            }
-                        } else if hasSelected {
-                            confirmAnswer(question: question)
+                Button {
+                    Haptics.selection()
+                    if isConfirmed {
+                        if isLast {
+                            showResultDialog = true
+                        } else {
+                            nextQuestion()
                         }
-                    } label: {
-                        AppButton(label: isConfirmed ? (isLast ? "Xem kết quả" : "Câu tiếp theo") : "Xác nhận")
+                    } else if hasSelected {
+                        confirmAnswer(question: question)
                     }
-                    .disabled(!hasSelected)
+                } label: {
+                    AppButton(label: isConfirmed ? (isLast ? "Xem kết quả" : "Câu tiếp theo") : "Xác nhận")
+                }
+                .disabled(!hasSelected)
 
-                    QuestionGridButton(
-                        current: currentIndex + 1,
-                        total: allQuestions.count,
-                        answeredIndices: answeredIndices(for: allQuestions)
-                    ) { index in
+                QuestionGridButton(
+                    current: currentIndex + 1,
+                    total: allQuestions.count,
+                    answeredIndices: answeredIndices(for: allQuestions)
+                ) { index in
+                    withAnimation(.easeOut(duration: 0.25)) {
                         currentIndex = index
                         selectedAnswerId = nil
                         isConfirmed = false
                     }
                 }
-                .padding(.horizontal, 16)
             }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
+            .background(.ultraThinMaterial)
         }
         .background(Color.scaffoldBg.ignoresSafeArea())
         .navigationBarBackButtonHidden(true)
@@ -221,10 +169,12 @@ struct QuestionView: View {
     private func selectAnswer(_ answer: Answer) {
         guard !isConfirmed else { return }
         Haptics.selection()
-        if selectedAnswerId == answer.id {
-            selectedAnswerId = nil
-        } else {
-            selectedAnswerId = answer.id
+        withAnimation(.easeOut(duration: 0.25)) {
+            if selectedAnswerId == answer.id {
+                selectedAnswerId = nil
+            } else {
+                selectedAnswerId = answer.id
+            }
         }
     }
 
@@ -232,7 +182,9 @@ struct QuestionView: View {
         guard !isConfirmed, let answerId = selectedAnswerId else { return }
         let answer = question.answers.first(where: { $0.id == answerId })
         let isCorrect = answer?.correct ?? false
-        isConfirmed = true
+        withAnimation(.easeOut(duration: 0.25)) {
+            isConfirmed = true
+        }
         if isCorrect { correctCount += 1 }
         Haptics.notification(isCorrect ? .success : .error)
 
@@ -241,9 +193,11 @@ struct QuestionView: View {
     }
 
     private func nextQuestion() {
-        currentIndex += 1
-        selectedAnswerId = nil
-        isConfirmed = false
+        withAnimation(.easeOut(duration: 0.25)) {
+            currentIndex += 1
+            selectedAnswerId = nil
+            isConfirmed = false
+        }
         progressStore.saveLastPosition(topicKey: topicKey, index: currentIndex)
     }
 

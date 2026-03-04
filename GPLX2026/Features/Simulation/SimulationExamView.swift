@@ -23,7 +23,6 @@ struct SimulationExamView: View {
     @State private var navigateToResult = false
     @State private var simulationResult: SimulationResult?
     @State private var scenarioTimer: Timer?
-    @State private var isAutoAdvancing = false
     @State private var selectedAnswerId: Int?
     @State private var isRevealed = false
 
@@ -133,139 +132,79 @@ struct SimulationExamView: View {
         let question = questions[currentIndex]
         let shuffledAnswers = question.shuffledAnswers
 
-        ZStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 0) {
-                    // MARK: - Question card
-                    VStack(alignment: .leading, spacing: 12) {
-                        HStack(spacing: 8) {
-                            Text("Câu \(currentIndex + 1)")
-                                .font(.system(size: 14, weight: .bold))
-                                .foregroundStyle(Color.appPrimary)
-
-                            if question.isDiemLiet {
-                                StatusBadge(text: "Điểm liệt", color: .appError, fontSize: 10)
-                            }
-                        }
-
-                        Text(question.text)
-                            .font(.system(size: 17, weight: .bold))
-                            .foregroundStyle(Color.appTextDark)
-                            .lineSpacing(4)
-
-                        if question.hasImage {
-                            AsyncImage(url: URL(string: question.imageUrl)) { phase in
-                                switch phase {
-                                case .success(let image):
-                                    image
-                                        .resizable()
-                                        .aspectRatio(contentMode: .fit)
-                                        .clipShape(RoundedRectangle(cornerRadius: 10))
-                                case .failure:
-                                    RoundedRectangle(cornerRadius: 10)
-                                        .fill(Color.appDivider)
-                                        .frame(height: 180)
-                                        .overlay {
-                                            Image(systemName: "photo")
-                                                .foregroundStyle(Color.appTextLight)
-                                        }
-                                default:
-                                    RoundedRectangle(cornerRadius: 10)
-                                        .fill(Color.appDivider.opacity(0.5))
-                                        .frame(height: 180)
-                                        .overlay { ProgressView().tint(Color.appPrimary) }
-                                }
-                            }
-                        }
-                    }
-                    .padding(16)
-                    .glassCard()
+        ScrollView {
+            VStack(alignment: .leading, spacing: 0) {
+                QuestionCard(label: "Câu \(currentIndex + 1)", question: question, showDiemLietBadge: true)
                     .padding(.bottom, 20)
 
-                    // MARK: - Answer tiles
-                    ForEach(Array(shuffledAnswers.enumerated()), id: \.element.id) { index, answer in
-                        let letter = ["A", "B", "C", "D"][min(index, 3)]
-                        let isSelected = selectedAnswerId == answer.id
+                AnswerTileList(
+                    answers: shuffledAnswers,
+                    selectedAnswerId: selectedAnswerId,
+                    isConfirmed: isRevealed,
+                    showCorrectness: true,
+                    onSelect: { handleAnswerSelection(answer: $0, question: question) }
+                )
 
-                        Button {
-                            handleAnswerSelection(answer: answer, question: question)
-                        } label: {
-                            AnswerOptionCard(
-                                letter: letter,
-                                text: answer.text,
-                                isSelected: isSelected,
-                                isConfirmed: isRevealed,
-                                isCorrect: answer.correct
-                            )
-                        }
-                        .disabled(isRevealed)
-                        .padding(.bottom, 8)
-                    }
-
-                    // MARK: - Tip after reveal
-                    if isRevealed && !question.tip.isEmpty {
-                        ExplanationBox(content: question.tip)
-                            .padding(.top, 4)
-                    }
-
-                    Spacer().frame(height: 100)
+                // MARK: - Tip after reveal
+                if isRevealed && !question.tip.isEmpty {
+                    ExplanationBox(content: question.tip)
+                        .padding(.top, 4)
+                        .transition(.opacity.combined(with: .move(edge: .top)))
                 }
-                .padding(.horizontal, 20)
             }
-            .id(currentIndex)
-
-            // MARK: - Bottom bar
-            VStack {
-                Spacer()
-                HStack(spacing: 10) {
-                    Button {
-                        Haptics.selection()
-                        if currentIndex > 0 {
-                            withAnimation(.easeOut(duration: 0.25)) {
-                                currentIndex -= 1
-                                selectedAnswerId = nil
-                                isRevealed = false
-                                isAutoAdvancing = false
-                            }
-                            startScenarioTimer()
-                        }
-                    } label: {
-                        AppButton(label: "Trước", style: .secondary, height: 48, cornerRadius: 24)
-                    }
-                    .disabled(currentIndex == 0)
-
-                    Button {
-                        Haptics.selection()
-                        if isRevealed {
-                            advanceOrFinish()
-                        } else if selectedAnswerId != nil {
-                            confirmAnswer(answer: selectedAnswerId!, question: question)
-                        }
-                    } label: {
-                        AppButton(
-                            label: isRevealed ? (isLast ? "Xem kết quả" : "Câu tiếp") : "Xác nhận",
-                            height: 48,
-                            cornerRadius: 24
-                        )
-                    }
-                    .disabled(selectedAnswerId == nil && !isRevealed)
-
-                    QuestionGridButton(
-                        current: currentIndex + 1,
-                        total: questions.count,
-                        answeredIndices: Set(answers.keys)
-                    ) { index in
+            .padding(.horizontal, 20)
+            .padding(.top, 12)
+        }
+        .id(currentIndex)
+        .safeAreaInset(edge: .bottom) {
+            HStack(spacing: 10) {
+                Button {
+                    Haptics.selection()
+                    if currentIndex > 0 {
                         withAnimation(.easeOut(duration: 0.25)) {
-                            currentIndex = index
+                            currentIndex -= 1
                             selectedAnswerId = nil
                             isRevealed = false
-                            isAutoAdvancing = false
                         }
                         startScenarioTimer()
                     }
+                } label: {
+                    AppButton(label: "Trước", style: .secondary, height: 48, cornerRadius: 24)
                 }
-                .padding(.horizontal, 16)
+                .disabled(currentIndex == 0)
+
+                Button {
+                    Haptics.selection()
+                    if isRevealed {
+                        advanceOrFinish()
+                    } else if selectedAnswerId != nil {
+                        confirmAnswer(answer: selectedAnswerId!, question: question)
+                    }
+                } label: {
+                    AppButton(
+                        label: isRevealed ? (isLast ? "Xem kết quả" : "Câu tiếp") : "Xác nhận",
+                        height: 48,
+                        cornerRadius: 24
+                    )
+                }
+                .disabled(selectedAnswerId == nil && !isRevealed)
+
+                QuestionGridButton(
+                    current: currentIndex + 1,
+                    total: questions.count,
+                    answeredIndices: Set(answers.keys)
+                ) { index in
+                    withAnimation(.easeOut(duration: 0.25)) {
+                        currentIndex = index
+                        selectedAnswerId = nil
+                        isRevealed = false
+                    }
+                    startScenarioTimer()
+                }
             }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
+            .background(.ultraThinMaterial)
         }
     }
 
@@ -335,7 +274,6 @@ struct SimulationExamView: View {
                 currentIndex += 1
                 selectedAnswerId = nil
                 isRevealed = false
-                isAutoAdvancing = false
             }
             startScenarioTimer()
         }

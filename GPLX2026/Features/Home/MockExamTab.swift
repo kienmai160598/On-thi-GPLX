@@ -42,9 +42,13 @@ struct MockExamTab: View {
 
                 // MARK: - Stats card
                 if !progressStore.examHistory.isEmpty {
-                    ExamStatsCard()
-                        .padding(.bottom, 20)
-                        .staggered(2)
+                    ExamStatsRow(items: [
+                        (value: "\(progressStore.examCount)", label: "Đã thi"),
+                        (value: "\(Int(progressStore.averageExamScore * 100))%", label: "TB đúng"),
+                        (value: "\(Int(progressStore.bestExamScore * 100))%", label: "Cao nhất"),
+                    ])
+                    .padding(.bottom, 20)
+                    .staggered(2)
                 }
 
                 // MARK: - Start button
@@ -108,7 +112,11 @@ struct MockExamTab: View {
 
                     ForEach(Array(progressStore.examHistory.prefix(10).enumerated()), id: \.element.id) { i, result in
                         NavigationLink(destination: ExamHistoryDetailView(result: result)) {
-                            ExamHistoryRow(result: result)
+                            HistoryRow(
+                                passed: result.passed,
+                                scoreText: "\(result.score)/\(result.totalQuestions) đúng",
+                                date: result.date
+                            )
                         }
                         .buttonStyle(.plain)
                         .padding(.bottom, 8)
@@ -135,83 +143,3 @@ struct MockExamTab: View {
     }
 }
 
-// MARK: - Exam Stats Card
-
-private struct ExamStatsCard: View {
-    @Environment(ProgressStore.self) private var progressStore
-
-    var body: some View {
-        HStack(spacing: 0) {
-            StatItem(
-                value: "\(progressStore.examCount)",
-                label: "Đã thi"
-            )
-
-            Rectangle()
-                .fill(Color.appDivider)
-                .frame(width: 1, height: 32)
-
-            StatItem(
-                value: "\(Int(progressStore.averageExamScore * 100))%",
-                label: "TB đúng"
-            )
-
-            Rectangle()
-                .fill(Color.appDivider)
-                .frame(width: 1, height: 32)
-
-            StatItem(
-                value: "\(Int(progressStore.bestExamScore * 100))%",
-                label: "Cao nhất"
-            )
-        }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 14)
-        .glassCard()
-    }
-}
-
-// MARK: - Exam History Row
-
-private struct ExamHistoryRow: View {
-    let result: ExamResult
-
-    private var dateText: String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "dd/MM HH:mm"
-        return formatter.string(from: result.date)
-    }
-
-    var body: some View {
-        ListItemCard(
-            icon: result.passed ? "checkmark.circle.fill" : "xmark.circle.fill",
-            title: "\(result.score)/\(result.totalQuestions) đúng",
-            subtitle: dateText
-        ) {
-            StatusBadge(
-                text: result.passed ? "Đạt" : "Trượt",
-                color: result.passed ? .appSuccess : .appError,
-                fontSize: 10
-            )
-        }
-    }
-}
-
-// MARK: - Rule Row
-
-private struct RuleRow: View {
-    let icon: String
-    let iconColor: Color
-    let text: String
-
-    var body: some View {
-        HStack(spacing: 12) {
-            IconBox(icon: icon, color: iconColor, size: 32, cornerRadius: 8, iconFontSize: 14)
-
-            Text(text)
-                .font(.system(size: 15, weight: .medium))
-                .foregroundStyle(Color.appTextDark)
-                .lineSpacing(2)
-        }
-    }
-}

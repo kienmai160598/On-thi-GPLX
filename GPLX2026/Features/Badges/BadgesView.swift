@@ -2,7 +2,7 @@ import SwiftUI
 
 struct BadgesView: View {
     @Environment(ProgressStore.self) private var progressStore
-@Environment(\.dismiss) private var dismiss
+    @Environment(\.dismiss) private var dismiss
 
     private let columns = Array(repeating: GridItem(.flexible(), spacing: 10), count: 2)
 
@@ -42,13 +42,11 @@ struct BadgesView: View {
                 .padding(.vertical, 20)
                 .glassCard()
                 .padding(.bottom, 20)
-                .staggered(0)
 
                 // MARK: - Badge grid (2 columns)
                 LazyVGrid(columns: columns, spacing: 10) {
-                    ForEach(Array(badges.enumerated()), id: \.element.id) { i, status in
+                    ForEach(Array(badges.enumerated()), id: \.element.id) { _, status in
                         BadgeTile(status: status)
-                            .staggered(1 + i)
                     }
                 }
             }
@@ -56,18 +54,14 @@ struct BadgesView: View {
             .padding(.top, 4)
             .padding(.bottom, 20)
         }
-        .overlay(alignment: .topTrailing) {
-            Button { dismiss() } label: {
-                Image(systemName: "xmark.circle.fill")
-                    .font(.system(size: 28))
-                    .symbolRenderingMode(.palette)
-                    .foregroundStyle(.secondary, Color(.systemFill))
+        .screenHeader("Thành tích")
+        .navigationBarBackButtonHidden(true)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                CloseButton { dismiss() }
             }
-            .padding(16)
         }
-        .background(Color.scaffoldBg.ignoresSafeArea())
-        .navigationBarBackButtonHidden()
-        .toolbar(.hidden, for: .tabBar)
+        .hidesTabBar()
     }
 }
 

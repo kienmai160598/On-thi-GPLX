@@ -15,14 +15,14 @@ struct SimulationTab: View {
                         .font(.system(size: 16, weight: .heavy))
                         .foregroundStyle(Color.appTextDark)
 
-                    SimRuleRow(icon: "photo.on.rectangle", iconColor: Color.appPrimary,
-                               text: "20 tình huống ngẫu nhiên")
-                    SimRuleRow(icon: "timer", iconColor: Color.appPrimary,
-                               text: "60 giây mỗi tình huống")
-                    SimRuleRow(icon: "arrow.right.circle.fill", iconColor: Color.appPrimary,
-                               text: "Tự động chuyển sau khi trả lời")
-                    SimRuleRow(icon: "checkmark.circle.fill", iconColor: Color.appPrimary,
-                               text: "Đạt: \u{2265} 14/20 đúng (70%)")
+                    RuleRow(icon: "photo.on.rectangle", iconColor: Color.appPrimary,
+                            text: "20 tình huống ngẫu nhiên")
+                    RuleRow(icon: "timer", iconColor: Color.appPrimary,
+                            text: "60 giây mỗi tình huống")
+                    RuleRow(icon: "arrow.right.circle.fill", iconColor: Color.appPrimary,
+                            text: "Tự động chuyển sau khi trả lời")
+                    RuleRow(icon: "checkmark.circle.fill", iconColor: Color.appPrimary,
+                            text: "Đạt: \u{2265} 14/20 đúng (70%)")
                 }
                 .padding(16)
                 .glassCard()
@@ -47,9 +47,13 @@ struct SimulationTab: View {
 
                 // MARK: - Stats card
                 if !progressStore.simulationHistory.isEmpty {
-                    SimulationStatsCard()
-                        .padding(.bottom, 20)
-                        .staggered(2)
+                    ExamStatsRow(items: [
+                        (value: "\(progressStore.simulationExamCount)", label: "Đã thi"),
+                        (value: "\(Int(progressStore.averageSimulationScore * 100))%", label: "TB đúng"),
+                        (value: "\(Int(progressStore.bestSimulationScore * 100))%", label: "Cao nhất"),
+                    ])
+                    .padding(.bottom, 20)
+                    .staggered(2)
                 }
 
                 // MARK: - Start random exam
@@ -90,7 +94,11 @@ struct SimulationTab: View {
 
                     ForEach(Array(progressStore.simulationHistory.prefix(10).enumerated()), id: \.element.id) { i, result in
                         NavigationLink(destination: SimulationHistoryDetailView(result: result)) {
-                            SimulationHistoryRow(result: result)
+                            HistoryRow(
+                                passed: result.passed,
+                                scoreText: "\(result.score)/\(result.totalScenarios) đúng",
+                                date: result.date
+                            )
                         }
                         .buttonStyle(.plain)
                         .padding(.bottom, 8)
@@ -113,87 +121,6 @@ struct SimulationTab: View {
                     }
                 }
             }
-        }
-    }
-}
-
-// MARK: - Rule Row
-
-private struct SimRuleRow: View {
-    let icon: String
-    let iconColor: Color
-    let text: String
-
-    var body: some View {
-        HStack(spacing: 12) {
-            IconBox(icon: icon, color: iconColor, size: 32, cornerRadius: 8, iconFontSize: 14)
-
-            Text(text)
-                .font(.system(size: 15, weight: .medium))
-                .foregroundStyle(Color.appTextDark)
-                .lineSpacing(2)
-        }
-    }
-}
-
-// MARK: - Stats Card
-
-private struct SimulationStatsCard: View {
-    @Environment(ProgressStore.self) private var progressStore
-
-    var body: some View {
-        HStack(spacing: 0) {
-            StatItem(
-                value: "\(progressStore.simulationExamCount)",
-                label: "Đã thi"
-            )
-
-            Rectangle()
-                .fill(Color.appDivider)
-                .frame(width: 1, height: 32)
-
-            StatItem(
-                value: "\(Int(progressStore.averageSimulationScore * 100))%",
-                label: "TB đúng"
-            )
-
-            Rectangle()
-                .fill(Color.appDivider)
-                .frame(width: 1, height: 32)
-
-            StatItem(
-                value: "\(Int(progressStore.bestSimulationScore * 100))%",
-                label: "Cao nhất"
-            )
-        }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 14)
-        .glassCard()
-    }
-}
-
-// MARK: - History Row
-
-private struct SimulationHistoryRow: View {
-    let result: SimulationResult
-
-    private var dateText: String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "dd/MM HH:mm"
-        return formatter.string(from: result.date)
-    }
-
-    var body: some View {
-        ListItemCard(
-            icon: result.passed ? "checkmark.circle.fill" : "xmark.circle.fill",
-            title: "\(result.score)/\(result.totalScenarios) đúng",
-            subtitle: dateText
-        ) {
-            StatusBadge(
-                text: result.passed ? "Đạt" : "Trượt",
-                color: result.passed ? .appSuccess : .appError,
-                fontSize: 10
-            )
         }
     }
 }

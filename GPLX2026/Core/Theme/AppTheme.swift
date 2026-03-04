@@ -133,7 +133,7 @@ struct GlassCard: ViewModifier {
             content
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .contentShape(Rectangle())
-                .background(.regularMaterial)
+                .background(Color.cardBg)
                 .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
         }
     }
@@ -181,21 +181,15 @@ extension View {
 
 struct StaggeredItem: ViewModifier {
     let index: Int
-    @State private var isVisible = false
 
     func body(content: Content) -> some View {
         content
-            .opacity(isVisible ? 1 : 0)
-            .offset(y: isVisible ? 0 : 16)
-            .scaleEffect(isVisible ? 1 : 0.96, anchor: .top)
-            .animation(.spring(duration: 0.4, bounce: 0.15).delay(Double(index) * 0.04), value: isVisible)
-            .onAppear { isVisible = true }
     }
 }
 
 extension View {
     func staggered(_ index: Int) -> some View {
-        self
+        modifier(StaggeredItem(index: index))
     }
 }
 

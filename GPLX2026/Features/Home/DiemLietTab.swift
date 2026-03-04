@@ -11,6 +11,7 @@ struct DiemLietTab: View {
     var body: some View {
         let allDiemLiet = questionStore.diemLietQuestions
         let byTopic = questionStore.diemLietByTopic
+        let diemLietIndexLookup = Dictionary(uniqueKeysWithValues: allDiemLiet.enumerated().map { ($1.no, $0) })
 
         // Load topic progress once per topic to avoid N+1 JSON decodes
         let topicProgressCache: [String: [Int: Bool]] = {
@@ -60,7 +61,7 @@ struct DiemLietTab: View {
                             Divider().padding(.leading, 60)
                         }
 
-                        let globalIdx = allDiemLiet.firstIndex(where: { $0.no == question.no }) ?? 0
+                        let globalIdx = diemLietIndexLookup[question.no] ?? 0
                         let topicKey = TopicInfo.keyForTopicId(question.topic)
                         let answerStatus: AnswerStatus = {
                             guard let result = topicProgressCache[topicKey]?[question.no] else { return .unanswered }

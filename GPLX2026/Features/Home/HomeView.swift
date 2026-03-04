@@ -5,6 +5,7 @@ struct HomeView: View {
     @AppStorage("appPrimaryColor") private var primaryColorKey = "default"
     @State private var examStackId = 0
     @State private var simStackId = 0
+
     private var accentColor: Color {
         Color.primaryColor(for: primaryColorKey)
     }

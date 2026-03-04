@@ -139,120 +139,64 @@ struct MockExamView: View {
         let question = questions[currentIndex]
         let shuffledAnswers = question.shuffledAnswers
 
-        ZStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 0) {
-                    // MARK: - Question card
-                    VStack(alignment: .leading, spacing: 12) {
-                        HStack(spacing: 8) {
-                            Text("Câu \(currentIndex + 1)")
-                                .font(.system(size: 14, weight: .bold))
-                                .foregroundStyle(Color.appPrimary)
-
-                            if question.isDiemLiet {
-                                StatusBadge(text: "Điểm liệt", color: .appError, fontSize: 10)
-                            }
-                        }
-
-                        Text(question.text)
-                            .font(.system(size: 17, weight: .bold))
-                            .foregroundStyle(Color.appTextDark)
-                            .lineSpacing(4)
-
-                        if question.hasImage {
-                            AsyncImage(url: URL(string: question.imageUrl)) { phase in
-                                switch phase {
-                                case .success(let image):
-                                    image
-                                        .resizable()
-                                        .aspectRatio(contentMode: .fit)
-                                        .clipShape(RoundedRectangle(cornerRadius: 10))
-                                case .failure:
-                                    RoundedRectangle(cornerRadius: 10)
-                                        .fill(Color.appDivider)
-                                        .frame(height: 180)
-                                        .overlay {
-                                            Image(systemName: "photo")
-                                                .foregroundStyle(Color.appTextLight)
-                                        }
-                                default:
-                                    RoundedRectangle(cornerRadius: 10)
-                                        .fill(Color.appDivider.opacity(0.5))
-                                        .frame(height: 180)
-                                        .overlay { ProgressView().tint(Color.appPrimary) }
-                                }
-                            }
-                        }
-                    }
-                    .padding(16)
-                    .glassCard()
+        ScrollView {
+            VStack(alignment: .leading, spacing: 0) {
+                QuestionCard(label: "Câu \(currentIndex + 1)", question: question, showDiemLietBadge: true)
                     .padding(.bottom, 20)
 
-                    // MARK: - Answer tiles
-                    ForEach(Array(shuffledAnswers.enumerated()), id: \.element.id) { index, answer in
-                        let letter = ["A", "B", "C", "D"][min(index, 3)]
-                        let isSelected = answers[currentIndex] == answer.id
-
-                        Button {
-                            Haptics.selection()
-                            answers[currentIndex] = answer.id
-                        } label: {
-                            AnswerOptionCard(
-                                letter: letter,
-                                text: answer.text,
-                                isSelected: isSelected
-                            )
-                        }
-                        .padding(.bottom, 8)
+                AnswerTileList(
+                    answers: shuffledAnswers,
+                    selectedAnswerId: answers[currentIndex],
+                    onSelect: { answer in
+                        Haptics.selection()
+                        answers[currentIndex] = answer.id
                     }
-
-                    Spacer().frame(height: 100)
-                }
-                .padding(.horizontal, 20)
+                )
             }
-            .id(currentIndex)
-
-            // MARK: - Bottom bar
-            VStack {
-                Spacer()
-                HStack(spacing: 10) {
-                    Button {
-                        Haptics.selection()
-                        if currentIndex > 0 {
-                            withAnimation(.easeOut(duration: 0.25)) {
-                                currentIndex -= 1
-                            }
-                        }
-                    } label: {
-                        AppButton(label: "Trước", style: .secondary, height: 48, cornerRadius: 24)
-                    }
-                    .disabled(currentIndex == 0)
-
-                    Button {
-                        Haptics.selection()
-                        if isLast {
-                            showSubmitDialog = true
-                        } else {
-                            withAnimation(.easeOut(duration: 0.25)) {
-                                currentIndex += 1
-                            }
-                        }
-                    } label: {
-                        AppButton(label: isLast ? "Nộp bài" : "Câu tiếp", height: 48, cornerRadius: 24)
-                    }
-
-                    QuestionGridButton(
-                        current: currentIndex + 1,
-                        total: questions.count,
-                        answeredIndices: Set(answers.keys)
-                    ) { index in
+            .padding(.horizontal, 20)
+            .padding(.top, 12)
+        }
+        .id(currentIndex)
+        .safeAreaInset(edge: .bottom) {
+            HStack(spacing: 10) {
+                Button {
+                    Haptics.selection()
+                    if currentIndex > 0 {
                         withAnimation(.easeOut(duration: 0.25)) {
-                            currentIndex = index
+                            currentIndex -= 1
                         }
                     }
+                } label: {
+                    AppButton(label: "Trước", style: .secondary, height: 48, cornerRadius: 24)
                 }
-                .padding(.horizontal, 16)
+                .disabled(currentIndex == 0)
+
+                Button {
+                    Haptics.selection()
+                    if isLast {
+                        showSubmitDialog = true
+                    } else {
+                        withAnimation(.easeOut(duration: 0.25)) {
+                            currentIndex += 1
+                        }
+                    }
+                } label: {
+                    AppButton(label: isLast ? "Nộp bài" : "Câu tiếp", height: 48, cornerRadius: 24)
+                }
+
+                QuestionGridButton(
+                    current: currentIndex + 1,
+                    total: questions.count,
+                    answeredIndices: Set(answers.keys)
+                ) { index in
+                    withAnimation(.easeOut(duration: 0.25)) {
+                        currentIndex = index
+                    }
+                }
             }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
+            .background(.ultraThinMaterial)
         }
     }
 
@@ -308,88 +252,3 @@ struct MockExamView: View {
     }
 }
 
-// MARK: - Question Grid Sheet
-
-struct ExamQuestionGridSheet: View {
-    @Environment(\.dismiss) private var dismiss
-
-    let totalQuestions: Int
-    let answeredIndices: Set<Int>
-    let currentIndex: Int
-    let onSelect: (Int) -> Void
-
-    private let columns = Array(repeating: GridItem(.flexible(), spacing: 8), count: 7)
-
-    private var answeredCount: Int { answeredIndices.count }
-
-    var body: some View {
-        VStack(spacing: 0) {
-            // Header
-            HStack {
-                Text("Câu \(currentIndex + 1)/\(totalQuestions)")
-                    .font(.system(size: 16, weight: .bold))
-                    .foregroundStyle(Color.appTextDark)
-                Spacer()
-                Button("Xong") { dismiss() }
-                    .font(.system(size: 16, weight: .medium))
-            }
-            .padding(.horizontal, 20)
-            .padding(.top, 16)
-            .padding(.bottom, 10)
-
-            // Progress summary
-            HStack(spacing: 16) {
-                legendItem(color: .appPrimary, label: "Đang làm")
-                legendItem(color: .appSuccess, label: "Đã trả lời (\(answeredCount))")
-                legendItem(color: Color.appDivider.opacity(0.3), textColor: .appTextMedium, label: "Chưa")
-            }
-            .padding(.horizontal, 20)
-            .padding(.vertical, 10)
-
-            Divider().padding(.horizontal, 20)
-
-            // Grid
-            ScrollView {
-                LazyVGrid(columns: columns, spacing: 8) {
-                    ForEach(0..<totalQuestions, id: \.self) { index in
-                        Button {
-                            Haptics.selection()
-                            onSelect(index)
-                        } label: {
-                            Text("\(index + 1)")
-                                .font(.system(size: 14, weight: .semibold))
-                                .foregroundStyle(foregroundColor(for: index))
-                                .frame(width: 40, height: 40)
-                                .background(backgroundColor(for: index))
-                                .clipShape(RoundedRectangle(cornerRadius: 10))
-                        }
-                    }
-                }
-                .padding(20)
-            }
-        }
-    }
-
-    private func foregroundColor(for index: Int) -> Color {
-        if index == currentIndex { return Color.appOnPrimary }
-        if answeredIndices.contains(index) { return Color.appSuccess }
-        return Color.appTextMedium
-    }
-
-    private func backgroundColor(for index: Int) -> Color {
-        if index == currentIndex { return Color.appPrimary }
-        if answeredIndices.contains(index) { return Color.appSuccess.opacity(0.12) }
-        return Color.appDivider.opacity(0.3)
-    }
-
-    private func legendItem(color: Color, textColor: Color? = nil, label: String) -> some View {
-        HStack(spacing: 6) {
-            RoundedRectangle(cornerRadius: 4)
-                .fill(color)
-                .frame(width: 14, height: 14)
-            Text(label)
-                .font(.system(size: 11, weight: .medium))
-                .foregroundStyle(textColor ?? color)
-        }
-    }
-}
