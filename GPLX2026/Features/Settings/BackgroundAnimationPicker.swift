@@ -20,98 +20,79 @@ struct BackgroundAnimationPicker: View {
     ]
 
     private var accentColor: Color { Color.primaryColor(for: primaryColorKey) }
+    private let columns = Array(repeating: GridItem(.flexible(), spacing: 10), count: 5)
 
     var body: some View {
-        VStack(spacing: 14) {
-            // Style picker
-            let rows = [Self.styles.prefix(3), Self.styles.suffix(2)]
+        VStack(spacing: 12) {
+            // Style picker — uniform 5-column grid
+            LazyVGrid(columns: columns, spacing: 10) {
+                ForEach(Self.styles, id: \.key) { option in
+                    let isSelected = selected == option.key
 
-            // Row 1: none, bubbles, waves
-            HStack(spacing: 10) {
-                ForEach(Array(rows[0]), id: \.key) { option in
-                    styleButton(option)
+                    Button {
+                        Haptics.selection()
+                        withAnimation(.easeOut(duration: 0.2)) {
+                            selected = option.key
+                        }
+                    } label: {
+                        VStack(spacing: 6) {
+                            Image(systemName: option.icon)
+                                .font(.system(size: 20))
+                                .foregroundStyle(isSelected ? accentColor : Color.appTextMedium)
+                            Text(option.label)
+                                .font(.system(size: 10, weight: isSelected ? .bold : .medium))
+                                .foregroundStyle(isSelected ? accentColor : Color.appTextMedium)
+                                .lineLimit(1)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                    }
+                    .glassCard()
+                    .overlay {
+                        if isSelected {
+                            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                .stroke(accentColor, lineWidth: 2)
+                        }
+                    }
+                    .accessibilityLabel(option.label)
+                    .accessibilityAddTraits(isSelected ? .isSelected : [])
                 }
-            }
-
-            // Row 2: mesh, aurora
-            HStack(spacing: 10) {
-                ForEach(Array(rows[1]), id: \.key) { option in
-                    styleButton(option)
-                }
-                // Spacer to keep same width as row 1
-                Color.clear.frame(maxWidth: .infinity, maxHeight: 0)
             }
 
             // Speed picker (only when animation is active)
             if selected != "none" {
-                VStack(spacing: 8) {
-                    HStack(spacing: 6) {
-                        Image(systemName: "gauge.with.dots.needle.33percent")
-                            .font(.system(size: 13))
-                            .foregroundStyle(Color.appTextLight)
-                        Text("Tốc độ")
-                            .font(.system(size: 13, weight: .semibold))
-                            .foregroundStyle(Color.appTextMedium)
-                        Spacer()
-                    }
+                HStack(spacing: 8) {
+                    Image(systemName: "gauge.with.dots.needle.33percent")
+                        .font(.system(size: 13))
+                        .foregroundStyle(Color.appTextLight)
 
-                    HStack(spacing: 8) {
-                        ForEach(Self.speeds, id: \.key) { speed in
-                            let isActive = speedKey == speed.key
+                    ForEach(Self.speeds, id: \.key) { speed in
+                        let isActive = speedKey == speed.key
 
-                            Button {
-                                Haptics.selection()
-                                withAnimation(.easeOut(duration: 0.2)) {
-                                    speedKey = speed.key
-                                }
-                            } label: {
-                                Text(speed.label)
-                                    .font(.system(size: 13, weight: isActive ? .bold : .medium))
-                                    .foregroundStyle(isActive ? accentColor : Color.appTextMedium)
-                                    .frame(maxWidth: .infinity)
-                                    .frame(height: 36)
+                        Button {
+                            Haptics.selection()
+                            withAnimation(.easeOut(duration: 0.2)) {
+                                speedKey = speed.key
                             }
-                            .glassCard()
-                            .overlay {
-                                if isActive {
-                                    RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                        .stroke(accentColor, lineWidth: 2)
-                                }
+                        } label: {
+                            Text(speed.label)
+                                .font(.system(size: 12, weight: isActive ? .bold : .medium))
+                                .foregroundStyle(isActive ? accentColor : Color.appTextMedium)
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 32)
+                        }
+                        .glassCard()
+                        .overlay {
+                            if isActive {
+                                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                    .stroke(accentColor, lineWidth: 2)
                             }
                         }
+                        .accessibilityLabel("Tốc độ: \(speed.label)")
+                        .accessibilityAddTraits(isActive ? .isSelected : [])
                     }
                 }
                 .transition(.opacity.combined(with: .move(edge: .top)))
-            }
-        }
-    }
-
-    @ViewBuilder
-    private func styleButton(_ option: (key: String, label: String, icon: String)) -> some View {
-        let isSelected = selected == option.key
-
-        Button {
-            Haptics.selection()
-            withAnimation(.easeOut(duration: 0.2)) {
-                selected = option.key
-            }
-        } label: {
-            VStack(spacing: 8) {
-                Image(systemName: option.icon)
-                    .font(.system(size: 22))
-                    .foregroundStyle(isSelected ? accentColor : Color.appTextMedium)
-                Text(option.label)
-                    .font(.system(size: 12, weight: isSelected ? .bold : .medium))
-                    .foregroundStyle(isSelected ? accentColor : Color.appTextMedium)
-            }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 14)
-        }
-        .glassCard()
-        .overlay {
-            if isSelected {
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .stroke(accentColor, lineWidth: 2)
             }
         }
     }

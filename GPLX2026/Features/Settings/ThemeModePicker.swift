@@ -21,11 +21,13 @@ struct ThemeModePicker: View {
 
                 Button {
                     Haptics.selection()
-                    selected = mode.key
+                    withAnimation(.easeOut(duration: 0.3)) {
+                        selected = mode.key
+                    }
                 } label: {
                     VStack(spacing: 8) {
                         Image(systemName: mode.icon)
-                            .font(.system(size: 24))
+                            .font(.system(size: 22))
                             .foregroundStyle(isSelected ? accentColor : Color.appTextMedium)
                         Text(mode.label)
                             .font(.system(size: 13, weight: isSelected ? .bold : .medium))
@@ -41,6 +43,8 @@ struct ThemeModePicker: View {
                             .stroke(accentColor, lineWidth: 2)
                     }
                 }
+                .accessibilityLabel(mode.label)
+                .accessibilityAddTraits(isSelected ? .isSelected : [])
             }
         }
     }

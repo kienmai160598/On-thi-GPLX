@@ -35,6 +35,7 @@ struct GPLX2026App: App {
             }
             .animation(.easeInOut(duration: 0.5), value: hasCompletedOnboarding)
             .preferredColorScheme(colorScheme)
+            .animation(.easeInOut(duration: 0.3), value: themeMode)
         }
     }
 }

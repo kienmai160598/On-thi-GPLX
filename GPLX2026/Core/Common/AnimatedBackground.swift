@@ -4,6 +4,7 @@ struct AnimatedBackground: View {
     @AppStorage("appPrimaryColor") private var primaryColorKey = "default"
     @AppStorage("backgroundAnimation") private var animationStyle = "none"
     @AppStorage("backgroundSpeed") private var speedKey = "normal"
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var speed: Double {
         switch speedKey {
@@ -14,7 +15,7 @@ struct AnimatedBackground: View {
     }
 
     var body: some View {
-        if animationStyle != "none" {
+        if animationStyle != "none" && !reduceMotion {
             TimelineView(.animation(minimumInterval: 1.0 / 30)) { timeline in
                 Canvas { context, size in
                     let t = timeline.date.timeIntervalSinceReferenceDate * speed

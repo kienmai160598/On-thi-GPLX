@@ -5,6 +5,8 @@ struct QuestionCard: View {
     let question: Question
     var showDiemLietBadge: Bool = false
 
+    private var fontScale: CGFloat { AppFontScale.current }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack(spacing: 8) {
@@ -18,7 +20,7 @@ struct QuestionCard: View {
             }
 
             Text(question.text)
-                .font(.system(size: 17, weight: .semibold))
+                .font(.system(size: 17 * fontScale, weight: .semibold))
                 .foregroundStyle(Color.appTextDark)
                 .lineSpacing(5)
 

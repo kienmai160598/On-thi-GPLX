@@ -388,21 +388,62 @@ final class ProgressStore {
     // MARK: - Reset
 
     func clearAllProgress() {
+        clearTopicProgress()
+        clearExamHistory()
+        clearSimulationHistory()
+        clearHazardHistory()
+        clearBookmarks()
+        clearWrongAnswers()
+        clearStreak()
+        invalidateCaches()
+        dataVersion += 1
+    }
+
+    func clearTopicProgress() {
         let topicKeys = Topic.all.map(\.key) + [AppConstants.TopicKey.diemLiet]
         for key in topicKeys {
             defaults.removeObject(forKey: Keys.progressPrefix + key)
         }
-        defaults.removeObject(forKey: Keys.examHistory)
-        defaults.removeObject(forKey: Keys.bookmarks)
-        defaults.removeObject(forKey: Keys.wrongAnswers)
         defaults.removeObject(forKey: Keys.lastTopicKey)
         defaults.removeObject(forKey: Keys.lastQuestionIndex)
-        defaults.removeObject(forKey: Keys.streakCount)
-        defaults.removeObject(forKey: Keys.lastStudyDate)
+        invalidateCaches()
+        dataVersion += 1
+    }
+
+    func clearExamHistory() {
+        defaults.removeObject(forKey: Keys.examHistory)
         defaults.removeObject(forKey: Keys.completedExamSets)
+        invalidateCaches()
+        dataVersion += 1
+    }
+
+    func clearSimulationHistory() {
         defaults.removeObject(forKey: Keys.simulationHistory)
+        invalidateCaches()
+        dataVersion += 1
+    }
+
+    func clearHazardHistory() {
         defaults.removeObject(forKey: Keys.hazardHistory)
         invalidateCaches()
+        dataVersion += 1
+    }
+
+    func clearBookmarks() {
+        defaults.removeObject(forKey: Keys.bookmarks)
+        invalidateCaches()
+        dataVersion += 1
+    }
+
+    func clearWrongAnswers() {
+        defaults.removeObject(forKey: Keys.wrongAnswers)
+        invalidateCaches()
+        dataVersion += 1
+    }
+
+    func clearStreak() {
+        defaults.removeObject(forKey: Keys.streakCount)
+        defaults.removeObject(forKey: Keys.lastStudyDate)
         dataVersion += 1
     }
 

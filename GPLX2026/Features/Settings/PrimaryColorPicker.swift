@@ -7,15 +7,15 @@ struct PrimaryColorPicker: View {
 
     static let colors: [(key: String, color: Color, label: String)] = [
         ("default", .adaptive(light: 0x171717, dark: 0xFAFAFA), "Mặc định"),
-        ("blue", Color(hex: 0x007AFF), "Blue"),
-        ("cyan", Color(hex: 0x00BCD4), "Cyan"),
-        ("mint", Color(hex: 0x64FFDA), "Mint"),
-        ("teal", Color(hex: 0x2DD4BF), "Teal"),
-        ("violet", Color(hex: 0x7C4DFF), "Violet"),
-        ("purple", Color(hex: 0xAA00FF), "Purple"),
-        ("indigo", Color(hex: 0x5856D6), "Indigo"),
-        ("rose", Color(hex: 0xF43F5E), "Rose"),
-        ("chartreuse", Color(hex: 0xA3E635), "Lime"),
+        ("blue", Color(hex: 0x007AFF), "Xanh dương"),
+        ("cyan", Color(hex: 0x00BCD4), "Xanh lam"),
+        ("mint", Color(hex: 0x64FFDA), "Bạc hà"),
+        ("teal", Color(hex: 0x2DD4BF), "Ngọc"),
+        ("violet", Color(hex: 0x7C4DFF), "Tím"),
+        ("purple", Color(hex: 0xAA00FF), "Tím đậm"),
+        ("indigo", Color(hex: 0x5856D6), "Chàm"),
+        ("rose", Color(hex: 0xF43F5E), "Hồng"),
+        ("chartreuse", Color(hex: 0xA3E635), "Chanh"),
     ]
 
     private let columns = Array(repeating: GridItem(.flexible(), spacing: 12), count: 5)
@@ -23,65 +23,46 @@ struct PrimaryColorPicker: View {
     var body: some View {
         LazyVGrid(columns: columns, spacing: 12) {
             ForEach(Self.colors, id: \.key) { item in
+                let isSelected = selected == item.key
+
                 Button {
                     Haptics.selection()
                     withAnimation(.easeOut(duration: 0.2)) {
                         selected = item.key
                     }
                 } label: {
-                    colorSwatch(item: item)
+                    VStack(spacing: 6) {
+                        RoundedRectangle(cornerRadius: 10)
+                            .fill(item.color)
+                            .frame(height: 40)
+                            .overlay {
+                                if item.key == "default" {
+                                    // Split circle to show it's adaptive
+                                    HStack(spacing: 0) {
+                                        Color(hex: 0x171717).frame(maxWidth: .infinity)
+                                        Color(hex: 0xFAFAFA).frame(maxWidth: .infinity)
+                                    }
+                                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                                    .padding(4)
+                                }
+                            }
+                            .overlay {
+                                if isSelected {
+                                    RoundedRectangle(cornerRadius: 10)
+                                        .strokeBorder(.white, lineWidth: 2.5)
+                                        .shadow(color: item.color.opacity(0.5), radius: 6)
+                                }
+                            }
+
+                        Text(item.label)
+                            .font(.system(size: 10, weight: isSelected ? .bold : .medium))
+                            .foregroundStyle(isSelected ? Color.appTextDark : Color.appTextLight)
+                            .lineLimit(1)
+                    }
                 }
+                .accessibilityLabel(item.label)
+                .accessibilityAddTraits(isSelected ? .isSelected : [])
             }
         }
-    }
-
-    @ViewBuilder
-    private func colorSwatch(item: (key: String, color: Color, label: String)) -> some View {
-        let isSelected = selected == item.key
-
-        if #available(iOS 26.0, *) {
-            RoundedRectangle(cornerRadius: 12)
-                .fill(item.color)
-                .frame(height: 48)
-                .glassEffect(.regular.interactive(), in: .rect(cornerRadius: 12))
-                .overlay {
-                    if isSelected {
-                        sunshineOverlay(color: item.color)
-                    }
-                }
-        } else {
-            RoundedRectangle(cornerRadius: 12)
-                .fill(item.color)
-                .frame(height: 48)
-                .overlay {
-                    if isSelected {
-                        sunshineOverlay(color: item.color)
-                    }
-                }
-        }
-    }
-
-    @ViewBuilder
-    private func sunshineOverlay(color: Color) -> some View {
-        RoundedRectangle(cornerRadius: 12)
-            .strokeBorder(color, lineWidth: 3)
-            .background(
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(color.opacity(0.15))
-            )
-            .shadow(color: color.opacity(0.6), radius: 8, x: 0, y: 0)
-            .shadow(color: color.opacity(0.3), radius: 16, x: 0, y: 0)
-    }
-}
-
-// MARK: - Hex Color Helper
-
-private extension Color {
-    init(hex: UInt32) {
-        self.init(
-            red: Double((hex >> 16) & 0xFF) / 255.0,
-            green: Double((hex >> 8) & 0xFF) / 255.0,
-            blue: Double(hex & 0xFF) / 255.0
-        )
     }
 }

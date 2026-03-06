@@ -98,7 +98,7 @@ struct FlashcardView: View {
             }
 
             Text(question.text)
-                .font(.system(size: 18, weight: .semibold))
+                .font(.system(size: 18 * AppFontScale.current, weight: .semibold))
                 .foregroundStyle(Color.appTextDark)
                 .multilineTextAlignment(.center)
                 .lineSpacing(5)
@@ -137,7 +137,7 @@ struct FlashcardView: View {
 
             if let answer = correctAnswer {
                 Text(answer.text)
-                    .font(.system(size: 18, weight: .bold))
+                    .font(.system(size: 18 * AppFontScale.current, weight: .bold))
                     .foregroundStyle(Color.appSuccess)
                     .multilineTextAlignment(.center)
                     .lineSpacing(5)

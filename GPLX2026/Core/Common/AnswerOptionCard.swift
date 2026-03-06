@@ -18,7 +18,7 @@ struct AnswerOptionCard: View {
                 .clipShape(RoundedRectangle(cornerRadius: 10))
 
             Text(text)
-                .font(.system(size: 15, weight: .medium))
+                .font(.system(size: 15 * AppFontScale.current, weight: .medium))
                 .foregroundStyle(Color.appTextDark)
                 .multilineTextAlignment(.leading)
                 .lineSpacing(3)
