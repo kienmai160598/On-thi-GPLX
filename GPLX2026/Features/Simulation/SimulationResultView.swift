@@ -160,7 +160,7 @@ private struct ReviewRow: View {
     @State private var isExpanded = false
 
     private var correctAnswer: Answer {
-        question.answers.first(where: \.correct) ?? question.answers[0]
+        question.answers.first(where: \.correct) ?? question.answers.first ?? Answer(id: -1, text: "—", correct: false)
     }
 
     private var isCorrect: Bool {

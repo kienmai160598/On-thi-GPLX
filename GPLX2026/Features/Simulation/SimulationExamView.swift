@@ -109,10 +109,8 @@ struct SimulationExamView: View {
                     if currentIndex > 0 {
                         withAnimation(.easeOut(duration: 0.25)) {
                             currentIndex -= 1
-                            selectedAnswerId = nil
-                            isRevealed = false
+                            restoreStateForCurrentIndex()
                         }
-                        startScenarioTimer()
                     }
                 },
                 onNext: {
@@ -125,10 +123,8 @@ struct SimulationExamView: View {
                 onSelectIndex: { index in
                     withAnimation(.easeOut(duration: 0.25)) {
                         currentIndex = index
-                        selectedAnswerId = nil
-                        isRevealed = false
+                        restoreStateForCurrentIndex()
                     }
-                    startScenarioTimer()
                 }
             )
         }
@@ -192,6 +188,20 @@ struct SimulationExamView: View {
         let question = questions[currentIndex]
         let topicKey = Topic.keyForTopicId(question.topic)
         progressStore.recordQuestionAnswer(topicKey: topicKey, questionNo: question.no, correct: false)
+    }
+
+    private func restoreStateForCurrentIndex() {
+        if let savedAnswer = answers[currentIndex] {
+            // Already answered — restore confirmed state, don't restart timer
+            selectedAnswerId = savedAnswer
+            isRevealed = true
+            scenarioTimer?.invalidate()
+        } else {
+            // Not yet answered — allow answering with fresh timer
+            selectedAnswerId = nil
+            isRevealed = false
+            startScenarioTimer()
+        }
     }
 
     private func advanceOrFinish() {

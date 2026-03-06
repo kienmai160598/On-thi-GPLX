@@ -105,7 +105,7 @@ final class HazardVideoCache {
 
         do {
             let tempURL: URL = try await withCheckedThrowingContinuation { continuation in
-                delegate.continuation = continuation
+                delegate.setContinuation(continuation)
                 let config = URLSessionConfiguration.default
                 config.timeoutIntervalForResource = 300
                 let dlSession = URLSession(configuration: config, delegate: delegate, delegateQueue: nil)
@@ -206,21 +206,38 @@ final class HazardVideoCache {
 
 private final class DownloadProgressTracker: NSObject, URLSessionDownloadDelegate, @unchecked Sendable {
     let onProgress: @Sendable (Int64, Int64, Int64) -> Void
-    var continuation: CheckedContinuation<URL, Error>?
+    private var continuation: CheckedContinuation<URL, Error>?
+    private let lock = NSLock()
 
     init(onProgress: @escaping @Sendable (Int64, Int64, Int64) -> Void) {
         self.onProgress = onProgress
+    }
+
+    func setContinuation(_ cont: CheckedContinuation<URL, Error>) {
+        lock.lock()
+        continuation = cont
+        lock.unlock()
+    }
+
+    private func resumeOnce(with result: Result<URL, Error>) {
+        lock.lock()
+        let cont = continuation
+        continuation = nil
+        lock.unlock()
+        switch result {
+        case .success(let url): cont?.resume(returning: url)
+        case .failure(let err): cont?.resume(throwing: err)
+        }
     }
 
     func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask, didFinishDownloadingTo location: URL) {
         let tempFile = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".mp4")
         do {
             try FileManager.default.copyItem(at: location, to: tempFile)
-            continuation?.resume(returning: tempFile)
+            resumeOnce(with: .success(tempFile))
         } catch {
-            continuation?.resume(throwing: error)
+            resumeOnce(with: .failure(error))
         }
-        continuation = nil
     }
 
     func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask, didWriteData bytesWritten: Int64, totalBytesWritten: Int64, totalBytesExpectedToWrite: Int64) {
@@ -229,8 +246,7 @@ private final class DownloadProgressTracker: NSObject, URLSessionDownloadDelegat
 
     func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
         if let error {
-            continuation?.resume(throwing: error)
-            continuation = nil
+            resumeOnce(with: .failure(error))
         }
     }
 }

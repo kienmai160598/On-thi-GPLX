@@ -12,6 +12,7 @@ struct QuestionView: View {
     @State private var selectedAnswerId: Int?
     @State private var isConfirmed = false
     @State private var correctCount = 0
+    @State private var answeredInSession: Set<Int> = []
     @State private var showResultDialog = false
 
     init(topicKey: String, startIndex: Int) {
@@ -186,7 +187,11 @@ struct QuestionView: View {
         withAnimation(.easeOut(duration: 0.25)) {
             isConfirmed = true
         }
-        if isCorrect { correctCount += 1 }
+        // Only count toward session score if not already answered in this session
+        if !answeredInSession.contains(question.no) {
+            answeredInSession.insert(question.no)
+            if isCorrect { correctCount += 1 }
+        }
         Haptics.notification(isCorrect ? .success : .error)
 
         let tKey = Topic.keyForTopicId(question.topic)
@@ -207,6 +212,7 @@ struct QuestionView: View {
         selectedAnswerId = nil
         isConfirmed = false
         correctCount = 0
+        answeredInSession.removeAll()
     }
 
     private func answeredIndices(for questions: [Question]) -> Set<Int> {

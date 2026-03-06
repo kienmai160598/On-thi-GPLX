@@ -39,6 +39,17 @@ struct StudyMenuView: View {
 
                     Divider().padding(.horizontal, 16)
 
+                    Button { openExam(.flashcard(topicKey: AppConstants.TopicKey.allQuestions)) } label: {
+                        StudyRow(
+                            icon: "rectangle.on.rectangle.angled",
+                            title: "Flashcard",
+                            subtitle: "Lật thẻ ôn nhanh",
+                            iconColor: .topicSaHinh
+                        )
+                    }
+
+                    Divider().padding(.horizontal, 16)
+
                     NavigationLink(destination: DiemLietTab()) {
                         StudyRow(
                             icon: "exclamationmark.triangle.fill",

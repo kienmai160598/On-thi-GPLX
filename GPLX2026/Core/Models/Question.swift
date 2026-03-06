@@ -102,7 +102,8 @@ struct SeededRandomNumberGenerator: RandomNumberGenerator {
     private var state: UInt64
 
     init(seed: UInt64) {
-        state = seed
+        // xorshift64 produces all zeros when state is 0; use a constant fallback
+        state = seed == 0 ? 0x9E3779B97F4A7C15 : seed
     }
 
     mutating func next() -> UInt64 {

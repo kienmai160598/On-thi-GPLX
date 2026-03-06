@@ -161,13 +161,15 @@ enum ExamScreen: Identifiable {
     case simulationExam(mode: SimulationExamView.Mode)
     case hazardTest(mode: HazardTestView.Mode)
     case questionView(topicKey: String, startIndex: Int)
+    case flashcard(topicKey: String)
 
     var id: String {
         switch self {
         case .mockExam(let id): "mock-\(id ?? -1)"
-        case .simulationExam: "sim"
-        case .hazardTest: "hazard"
+        case .simulationExam(let mode): "sim-\(mode)"
+        case .hazardTest(let mode): "hazard-\(mode)"
         case .questionView(let key, let idx): "q-\(key)-\(idx)"
+        case .flashcard(let key): "flash-\(key)"
         }
     }
 
@@ -178,6 +180,7 @@ enum ExamScreen: Identifiable {
         case .simulationExam(let mode): SimulationExamView(mode: mode)
         case .hazardTest(let mode): HazardTestView(mode: mode)
         case .questionView(let key, let idx): QuestionView(topicKey: key, startIndex: idx)
+        case .flashcard(let key): FlashcardView(topicKey: key)
         }
     }
 }
@@ -209,7 +212,12 @@ extension View {
         self
             .navigationTitle(title)
             .navigationBarTitleDisplayMode(.inline)
-            .background(Color.scaffoldBg.ignoresSafeArea())
+            .background {
+                ZStack {
+                    Color.scaffoldBg.ignoresSafeArea()
+                    AnimatedBackground()
+                }
+            }
     }
 }
 

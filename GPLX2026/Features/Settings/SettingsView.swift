@@ -5,6 +5,8 @@ struct SettingsView: View {
     @AppStorage("appThemeMode") private var themeMode: String = "system"
     @AppStorage("appFontSize") private var fontSize: String = "medium"
     @AppStorage("appPrimaryColor") private var primaryColorKey: String = "default"
+    @AppStorage("hapticsEnabled") private var hapticsEnabled: Bool = true
+    @AppStorage("backgroundAnimation") private var backgroundAnimation: String = "none"
 
     @State private var showResetConfirmation = false
 
@@ -23,6 +25,35 @@ struct SettingsView: View {
                 SectionTitle(title: "Cỡ chữ")
                 FontSizeSlider(selected: $fontSize, primaryColorKey: primaryColorKey)
                 FontSizePreview(fontSize: fontSize)
+
+                // MARK: - Background Animation
+                SectionTitle(title: "Hiệu ứng nền")
+                BackgroundAnimationPicker(
+                    selected: $backgroundAnimation,
+                    primaryColorKey: primaryColorKey
+                )
+
+                // MARK: - Haptics
+                SectionTitle(title: "Rung phản hồi")
+                HStack(spacing: 14) {
+                    Image(systemName: hapticsEnabled ? "iphone.radiowaves.left.and.right" : "iphone.slash")
+                        .font(.system(size: 18))
+                        .foregroundStyle(hapticsEnabled ? Color.appPrimary : Color.appTextLight)
+                        .frame(width: 22)
+
+                    Text("Rung phản hồi")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(Color.appTextDark)
+
+                    Spacer()
+
+                    Toggle("", isOn: $hapticsEnabled)
+                        .labelsHidden()
+                        .tint(Color.primaryColor(for: primaryColorKey))
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 14)
+                .glassCard()
 
                 // MARK: - Data
                 SectionTitle(title: "Dữ liệu")

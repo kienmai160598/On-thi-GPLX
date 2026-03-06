@@ -140,7 +140,10 @@ final class QuestionStore {
         let startIndex = (setId - 1) * setSize
         guard startIndex < allQuestions.count else { return randomExamQuestions() }
         let endIndex = min(startIndex + setSize, allQuestions.count)
-        return Array(allQuestions[startIndex..<endIndex])
+        let slice = Array(allQuestions[startIndex..<endIndex])
+        // If the set is shorter than required, fall back to random to ensure fair exam
+        guard slice.count >= setSize else { return randomExamQuestions() }
+        return slice
     }
 
     // MARK: - Diem Liet by topic

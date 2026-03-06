@@ -119,11 +119,11 @@ extension ProgressStore {
 
     // MARK: - Badge support
 
-    var unlockedBadgesCount: Int {
-        badgeStatuses.filter(\.isUnlocked).count
+    func unlockedBadgesCount(diemLietQuestions: [Question]) -> Int {
+        badgeStatuses(diemLietQuestions: diemLietQuestions).filter(\.isUnlocked).count
     }
 
-    var badgeStatuses: [BadgeStatus] {
+    func badgeStatuses(diemLietQuestions: [Question]) -> [BadgeStatus] {
         let history = examHistory
         let passedCount = history.filter(\.passed).count
         let avgAccuracy = history.isEmpty ? 0.0 : history.reduce(0.0) { $0 + $1.accuracy } / Double(history.count)
@@ -147,8 +147,8 @@ extension ProgressStore {
                     let pct = Int(avgAccuracy * 100)
                     return (pct, badge.threshold, pct >= badge.threshold)
                 case .diemLietMaster:
-                    let dlCorrect = correctCount(forTopic: AppConstants.TopicKey.diemLiet)
-                    return (dlCorrect > 0 ? 1 : 0, 1, dlCorrect > 0)
+                    let dl = diemLietMastery(questions: diemLietQuestions)
+                    return (dl.correct, dl.total, dl.correct == dl.total && dl.total > 0)
                 }
             }()
             return BadgeStatus(badge: badge, isUnlocked: unlocked, progress: progress, target: target)

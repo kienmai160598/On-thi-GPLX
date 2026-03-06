@@ -228,7 +228,9 @@ private struct QuickActionsGrid: View {
                 subtitle: wrongCount > 0 ? "\(wrongCount) câu" : "Chưa có",
                 color: wrongCount > 0 ? .appWarning : .appTextLight
             ) {
-                openExam(.questionView(topicKey: AppConstants.TopicKey.wrongAnswers, startIndex: 0))
+                if wrongCount > 0 {
+                    openExam(.questionView(topicKey: AppConstants.TopicKey.wrongAnswers, startIndex: 0))
+                }
             }
         }
     }

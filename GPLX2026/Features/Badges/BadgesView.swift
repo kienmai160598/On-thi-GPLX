@@ -1,13 +1,14 @@
 import SwiftUI
 
 struct BadgesView: View {
+    @Environment(QuestionStore.self) private var questionStore
     @Environment(ProgressStore.self) private var progressStore
     @Environment(\.dismiss) private var dismiss
 
     private let columns = Array(repeating: GridItem(.flexible(), spacing: 12), count: 2)
 
     var body: some View {
-        let badges = progressStore.badgeStatuses
+        let badges = progressStore.badgeStatuses(diemLietQuestions: questionStore.diemLietQuestions)
         let unlocked = badges.filter(\.isUnlocked).count
 
         ScrollView {

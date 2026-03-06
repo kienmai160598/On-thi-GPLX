@@ -89,10 +89,17 @@ struct TopicDetailView: View {
                 .glassCard()
 
                 // CTA
-                Button { openExam(.questionView(topicKey: item.topic.key, startIndex: 0)) } label: {
-                    AppButton(icon: "play.fill", label: "Ôn tập chủ đề này")
+                VStack(spacing: 12) {
+                    Button { openExam(.questionView(topicKey: item.topic.key, startIndex: 0)) } label: {
+                        AppButton(icon: "play.fill", label: "Ôn tập chủ đề này")
+                    }
+                    .buttonStyle(.plain)
+
+                    Button { openExam(.flashcard(topicKey: item.topic.key)) } label: {
+                        AppButton(icon: "rectangle.on.rectangle.angled", label: "Flashcard", style: .secondary)
+                    }
+                    .buttonStyle(.plain)
                 }
-                .buttonStyle(.plain)
             }
             .padding(.horizontal, 20)
             .padding(.bottom, 32)
