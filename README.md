@@ -1,83 +1,112 @@
-# On thi GPLX 2026
+# GPLX 2026 — Vietnamese Driving License Exam Prep
 
-App on thi ly thuyet giay phep lai xe hang B1/B2 theo bo de moi nhat 2026.
+A native iOS app for preparing the Vietnamese B1/B2 driving license theory exam, built entirely with SwiftUI and aligned with the latest 2026 exam format from the Ministry of Transport (Bo GTVT).
 
-## Tinh nang
+## Features
 
-- **600 cau hoi** theo bo de thi that cua Bo GTVT
-- **Thi thu** — 35 cau, 25 phut, cham diem tu dong
-- **Mo phong tinh huong** — 20 tinh huong co hinh anh, 60 giay moi cau
-- **Hoc theo chu de** — 5 chu de chinh (Quy dinh, Ky thuat, Cau tao, Bien bao, Sa hinh)
-- **Cau diem liet** — tap trung on cac cau sai la truot
-- **Tra cuu** — bien bao giao thong, toc do, khoang cach, muc phat
-- **Theo doi tien do** — do chinh xac theo chu de, chuoi ngay hoc, thanh tich
-- **20 de thi co dinh** giong de thi that
-- **Danh dau & cau sai** — luu lai de on tap
-- **Flashcard** — hoc nhanh bang the ghi nho
-- **Dark mode** — ho tro sang/toi/theo he thong
+### Study
+- **600 official questions** across 5 topics — regulations, techniques, vehicle structure, traffic signs, and road scenarios
+- **Study by topic** with per-topic accuracy tracking and weak-topic detection
+- **Critical questions (Diem Liet)** — dedicated focus on instant-fail questions
+- **Flashcards** — quick review with swipe-based card interface
+- **Memory tips** — curated mnemonics for each topic
 
-## Yeu cau
+### Exams
+- **Mock exams** — 35 questions, 22-minute timer, auto-graded with detailed results
+- **20 fixed exam sets** matching the real test format
+- **Exam history** with pass rate, score trends, and per-question review
 
-- iOS 18.0+
-- Xcode 16.0+
-- Swift 6.0
+### Hazard Perception
+- **Simulation practice** — 20 scenario-based questions with 60s per scenario
+- **120 video situations** across 6 chapters (urban, rural, highway, mountain, national road, real accidents)
+- **Tap-to-react scoring** — linear interpolation from perfect to late response
+- **Offline video caching** with per-chapter downloads and speed tracking
 
-## Cai dat
+### Tools & Reference
+- **Traffic sign reference** — searchable catalog with categories
+- **Question search** — full-text search across all 600 questions
+- **Bookmarks & wrong answers** — saved for targeted review
+- **Readiness score** — weighted metric combining accuracy, coverage, critical mastery, and pass rate
+
+### Customization
+- **Theme modes** — light, dark, or follow system
+- **10 accent colors** with live preview
+- **Adjustable font size** — small, medium, large with preview
+- **iOS 26 Liquid Glass** support with graceful fallback to iOS 18
+
+## Requirements
+
+| Requirement | Version |
+|-------------|---------|
+| iOS         | 18.0+   |
+| Xcode       | 16.0+   |
+| Swift       | 6.0 (strict concurrency) |
+
+## Getting Started
 
 ```bash
-# Clone repo
 git clone https://github.com/kienmai160598/On-thi-GPLX.git
 cd On-thi-GPLX
-
-# Mo bang Xcode
 open GPLX2026.xcodeproj
+```
 
-# Hoac build + cai len iPhone bang Makefile
+Or build and install directly to a connected iPhone:
+
+```bash
 make install
 ```
 
-### Lenh Makefile
+### Available Make Commands
 
-| Lenh | Mo ta |
-|------|-------|
-| `make install` | Build va cai len iPhone dang ket noi |
-| `make build` | Archive va export .ipa |
-| `make clean` | Xoa build artifacts |
-| `make device` | Hien thi thiet bi dang ket noi |
+| Command         | Description                          |
+|-----------------|--------------------------------------|
+| `make install`  | Build, sign, and install on iPhone   |
+| `make build`    | Archive and export signed .ipa       |
+| `make clean`    | Remove build artifacts               |
+| `make device`   | List connected devices               |
 
-## Cau truc du an
+## Architecture
 
 ```
 GPLX2026/
 ├── Core/
-│   ├── Common/         # UI components dung chung (AppButton, StatusBadge, ...)
-│   ├── Models/         # Data models (Question, Topic, ExamResult, ...)
-│   ├── Storage/        # QuestionStore, ProgressStore (UserDefaults)
-│   └── Theme/          # Mau sac, modifier, glass card
+│   ├── Common/         # Shared UI components (AppButton, ExamBottomBar, QuestionCard, ...)
+│   ├── Models/         # Data models (Question, Topic, ExamResult, HazardSituation, ...)
+│   ├── Storage/        # QuestionStore, ProgressStore, HazardVideoCache (@Observable)
+│   └── Theme/          # Colors, glass card modifier, screen header, typography
 ├── Features/
-│   ├── Home/           # Trang chu, tab thi thu, tab mo phong, diem liet
-│   ├── Learn/          # Man hinh lam cau hoi, meo ghi nho
-│   ├── Exam/           # Thi thu (MockExamView, ket qua, lich su)
-│   ├── Simulation/     # Mo phong tinh huong
-│   ├── Topics/         # Hoc theo chu de, chu de yeu
-│   ├── Badges/         # Thanh tich
-│   ├── Bookmarks/      # Danh dau, cau sai
-│   ├── Flashcard/      # Flashcard
-│   ├── Reference/      # Tra cuu bien bao, toc do
-│   ├── Settings/       # Cai dat (theme, mau, xoa du lieu)
-│   └── Onboarding/     # Man hinh gioi thieu
+│   ├── Home/           # Dashboard, tab views (home, study, exam, practice)
+│   ├── Learn/          # Question practice, memory tips
+│   ├── Exam/           # Mock exam flow, results, history
+│   ├── Simulation/     # Scenario-based simulation exam
+│   ├── Hazard/         # Video hazard perception test
+│   ├── Topics/         # Topic browser, weak topics
+│   ├── Search/         # Full-text question search
+│   ├── Badges/         # Achievement badges
+│   ├── Bookmarks/      # Bookmarked & wrong questions
+│   ├── Flashcard/      # Flashcard review
+│   ├── Reference/      # Traffic signs & rules reference
+│   ├── Settings/       # Theme, color, font, data management
+│   └── Onboarding/     # First-launch walkthrough
 └── Resources/
-    └── Data/           # questions.json, memory_tips.json
+    ├── Data/           # questions.json, memory_tips.json
+    └── Images/         # 270+ question illustrations
 ```
 
-## Tech stack
+## Tech Stack
 
-- **SwiftUI** — 100% declarative UI
-- **@Observable** macro (Observation framework)
-- **UserDefaults** — luu tien do hoc tap offline
-- **Liquid Glass** — ho tro iOS 26 glass effect (fallback material cho iOS 18)
-- **XcodeGen** — tao project tu `project.yml` (tuy chon)
+- **SwiftUI** — 100% declarative UI, no UIKit
+- **Observation framework** — `@Observable` macro for reactive state
+- **Swift 6 strict concurrency** — `Sendable`, `@MainActor`, structured concurrency
+- **UserDefaults** — offline progress persistence (no server required)
+- **URLSession** — delegate-based video downloads with progress tracking
+- **iOS 26 Liquid Glass** — native glass effects with iOS 18 material fallback
 
-## Giay phep
+## Data Sources
 
-MIT License — xem file [LICENSE](LICENSE).
+- **Exam question bank** — Ministry of Transport (Bo GTVT), 2026 edition
+- **Hazard perception videos** — [gmec.vn](https://gmec.vn)
+
+## License
+
+MIT License — see [LICENSE](LICENSE).

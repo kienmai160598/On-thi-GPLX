@@ -37,16 +37,40 @@ struct PrimaryColorPicker: View {
 
     @ViewBuilder
     private func colorSwatch(item: (key: String, color: Color, label: String)) -> some View {
+        let isSelected = selected == item.key
+
         if #available(iOS 26.0, *) {
             RoundedRectangle(cornerRadius: 12)
                 .fill(item.color)
                 .frame(height: 48)
                 .glassEffect(.regular.interactive(), in: .rect(cornerRadius: 12))
+                .overlay {
+                    if isSelected {
+                        sunshineOverlay(color: item.color)
+                    }
+                }
         } else {
             RoundedRectangle(cornerRadius: 12)
                 .fill(item.color)
                 .frame(height: 48)
+                .overlay {
+                    if isSelected {
+                        sunshineOverlay(color: item.color)
+                    }
+                }
         }
+    }
+
+    @ViewBuilder
+    private func sunshineOverlay(color: Color) -> some View {
+        RoundedRectangle(cornerRadius: 12)
+            .strokeBorder(color, lineWidth: 3)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(color.opacity(0.15))
+            )
+            .shadow(color: color.opacity(0.6), radius: 8, x: 0, y: 0)
+            .shadow(color: color.opacity(0.3), radius: 16, x: 0, y: 0)
     }
 }
 
