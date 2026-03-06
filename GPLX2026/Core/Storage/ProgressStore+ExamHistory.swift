@@ -33,4 +33,20 @@ extension ProgressStore {
     var simulationExamCount: Int {
         simulationHistory.count
     }
+
+    // MARK: - Hazard stats
+
+    var averageHazardScore: Double {
+        let history = hazardHistory
+        guard !history.isEmpty else { return 0 }
+        return history.reduce(0.0) { $0 + $1.scorePercentage } / Double(history.count)
+    }
+
+    var bestHazardScore: Int {
+        hazardHistory.map(\.totalScore).max() ?? 0
+    }
+
+    var hazardExamCount: Int {
+        hazardHistory.count
+    }
 }

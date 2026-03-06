@@ -30,10 +30,13 @@ struct ProgressRing: View {
                 .trim(from: 0, to: fraction)
                 .stroke(Color.appPrimary, style: StrokeStyle(lineWidth: 3, lineCap: .round))
                 .rotationEffect(.degrees(-90))
+                .animation(.snappy, value: fraction)
 
             Text("\(current)")
                 .font(.system(size: 14, weight: .bold))
                 .foregroundStyle(Color.appTextDark)
+                .contentTransition(.numericText())
+                .animation(.snappy, value: current)
         }
         .padding(6)
         .frame(width: size, height: size)

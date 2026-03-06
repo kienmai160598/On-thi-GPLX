@@ -3,6 +3,7 @@ import SwiftUI
 struct BookmarksView: View {
     @Environment(QuestionStore.self) private var questionStore
     @Environment(ProgressStore.self) private var progressStore
+    @Environment(\.openExam) private var openExam
 
     var body: some View {
         let allQuestions = questionStore.allQuestions
@@ -14,13 +15,12 @@ struct BookmarksView: View {
                 EmptyState(icon: "bookmark", message: "Chưa có câu hỏi nào")
             } else {
                 VStack(alignment: .leading, spacing: 0) {
-                    ForEach(Array(bookmarked.enumerated()), id: \.element.no) { i, question in
-                        BookmarkQuestionCard(question: question, topicKey: "bookmarks")
+                    ForEach(bookmarked, id: \.no) { question in
+                        BookmarkQuestionCard(question: question, topicKey: AppConstants.TopicKey.bookmarks)
                             .padding(.bottom, 8)
-                            .staggered(i)
                     }
 
-                    NavigationLink(destination: QuestionView(topicKey: "bookmarks", startIndex: 0)) {
+                    Button { openExam(.questionView(topicKey: AppConstants.TopicKey.bookmarks, startIndex: 0)) } label: {
                         AppButton(label: "Luyện tập", height: 44, cornerRadius: 22)
                     }
                     .buttonStyle(.plain)
@@ -53,7 +53,7 @@ private struct BookmarkQuestionCard: View {
 
             Spacer()
 
-            if topicKey == "bookmarks" {
+            if topicKey == AppConstants.TopicKey.bookmarks {
                 Button {
                     progressStore.toggleBookmark(questionNo: question.no)
                 } label: {

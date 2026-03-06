@@ -2,6 +2,7 @@ import SwiftUI
 
 struct MockExamTab: View {
     @Environment(ProgressStore.self) private var progressStore
+    @Environment(\.openExam) private var openExam
     @AppStorage("appPrimaryColor") private var primaryColorKey = "default"
     @State private var showNavPlay = false
 
@@ -22,7 +23,6 @@ struct MockExamTab: View {
                 .padding(16)
                 .glassCard()
                 .padding(.bottom, 20)
-                .staggered(0)
 
                 // MARK: - Tips card
                 VStack(alignment: .leading, spacing: 8) {
@@ -38,7 +38,6 @@ struct MockExamTab: View {
                 .padding(16)
                 .glassCard()
                 .padding(.bottom, 20)
-                .staggered(1)
 
                 // MARK: - Stats card
                 if !progressStore.examHistory.isEmpty {
@@ -48,18 +47,16 @@ struct MockExamTab: View {
                         (value: "\(Int(progressStore.bestExamScore * 100))%", label: "Cao nhất"),
                     ])
                     .padding(.bottom, 20)
-                    .staggered(2)
                 }
 
                 // MARK: - Start button
-                NavigationLink(destination: MockExamView()) {
-                    AppButton(label: "Bắt đầu thi thử")
+                Button { openExam(.mockExam()) } label: {
+                    AppButton(icon: "play.fill", label: "Bắt đầu thi thử")
                 }
                 .buttonStyle(.plain)
                 .padding(.bottom, 24)
-                .staggered(3)
                 .onGeometryChange(for: Bool.self) { proxy in
-                    proxy.frame(in: .scrollView(axis: .vertical)).maxY < 60
+                    proxy.frame(in: .scrollView(axis: .vertical)).minY < 0
                 } action: { hidden in
                     withAnimation(.easeInOut(duration: 0.2)) {
                         showNavPlay = hidden
@@ -71,7 +68,6 @@ struct MockExamTab: View {
                     .font(.system(size: 18, weight: .heavy))
                     .foregroundStyle(Color.appTextDark)
                     .padding(.bottom, 4)
-                    .staggered(4)
 
                 Text("20 đề thi giống thực tế")
                     .font(.system(size: 13))
@@ -82,7 +78,7 @@ struct MockExamTab: View {
                 ForEach(1...20, id: \.self) { setId in
                     let isCompleted = completedSets.contains(setId)
 
-                    NavigationLink(destination: MockExamView(examSetId: setId)) {
+                    Button { openExam(.mockExam(examSetId: setId)) } label: {
                         ListItemCard(icon: "doc.text", title: "Đề số \(setId)") {
                             if isCompleted {
                                 Image(systemName: "checkmark.circle.fill")
@@ -93,7 +89,6 @@ struct MockExamTab: View {
                     }
                     .buttonStyle(.plain)
                     .padding(.bottom, 8)
-                    .staggered(5 + setId)
                 }
 
                 // MARK: - Recent history
@@ -103,14 +98,13 @@ struct MockExamTab: View {
                         .foregroundStyle(Color.appTextDark)
                         .padding(.top, 16)
                         .padding(.bottom, 4)
-                        .staggered(26)
 
                     Text("Kết quả gần đây")
                         .font(.system(size: 13))
                         .foregroundStyle(Color.appTextMedium)
                         .padding(.bottom, 12)
 
-                    ForEach(Array(progressStore.examHistory.prefix(10).enumerated()), id: \.element.id) { i, result in
+                    ForEach(progressStore.examHistory.prefix(10), id: \.id) { result in
                         NavigationLink(destination: ExamHistoryDetailView(result: result)) {
                             HistoryRow(
                                 passed: result.passed,
@@ -120,7 +114,6 @@ struct MockExamTab: View {
                         }
                         .buttonStyle(.plain)
                         .padding(.bottom, 8)
-                        .staggered(27 + i)
                     }
                 }
             }
@@ -130,9 +123,9 @@ struct MockExamTab: View {
         }
         .screenHeader("Thi thử")
         .toolbar {
-            if showNavPlay {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    NavigationLink(destination: MockExamView()) {
+            ToolbarItem(placement: .navigationBarLeading) {
+                if showNavPlay {
+                    Button { openExam(.mockExam()) } label: {
                         Image(systemName: "play.fill")
                             .font(.system(size: 13, weight: .semibold))
                             .foregroundStyle(Color.primaryColor(for: primaryColorKey))
@@ -142,4 +135,3 @@ struct MockExamTab: View {
         }
     }
 }
-

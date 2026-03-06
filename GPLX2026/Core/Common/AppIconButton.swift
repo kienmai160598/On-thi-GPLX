@@ -3,6 +3,7 @@ import SwiftUI
 struct AppIconButton: View {
     let icon: String
     var size: CGFloat = 44
+    @AppStorage("appPrimaryColor") private var primaryColorKey = "default"
 
     var body: some View {
         if #available(iOS 26.0, *) {
@@ -19,7 +20,7 @@ struct AppIconButton: View {
     private var iconContent: some View {
         Image(systemName: icon)
             .font(.system(size: 16, weight: .semibold))
-            .foregroundStyle(Color.appPrimary)
+            .foregroundStyle(Color.primaryColor(for: primaryColorKey))
             .frame(width: size, height: size)
     }
 }

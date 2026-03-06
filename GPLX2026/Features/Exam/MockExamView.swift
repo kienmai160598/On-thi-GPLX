@@ -8,8 +8,8 @@ struct MockExamView: View {
 
     @State private var questions: [Question] = []
     @State private var currentIndex = 0
-    @State private var answers: [Int: Int] = [:]  // questionIndex -> answerId
-    @State private var remainingSeconds = 25 * 60
+    @State private var answers: [Int: Int] = [:]
+    @State private var remainingSeconds = AppConstants.Exam.totalTimeSeconds
     @State private var showSubmitDialog = false
     @State private var showExitDialog = false
     @State private var navigateToResult = false
@@ -26,69 +26,36 @@ struct MockExamView: View {
         return String(format: "%02d:%02d", m, s)
     }
 
-    private var isUrgent: Bool { remainingSeconds <= 300 }
+    private var isUrgent: Bool { remainingSeconds <= AppConstants.Exam.urgencyThresholdSeconds }
     private var isLast: Bool { currentIndex + 1 >= questions.count }
-    private var answeredCount: Int { answers.count }
 
     var body: some View {
         Group {
             if questions.isEmpty {
-                VStack {
-                    ProgressView()
-                        .tint(Color.appPrimary)
-                    Text("Đang tạo đề thi...")
-                        .font(.subheadline)
-                        .foregroundStyle(Color.appTextMedium)
-                        .padding(.top, 8)
-                }
+                ExamLoadingView()
             } else {
                 examContent
             }
         }
-        .background(Color.scaffoldBg.ignoresSafeArea())
-        .navigationBarBackButtonHidden(true)
-        .navigationBarTitleDisplayMode(.inline)
-        .hidesTabBar()
-        .toolbar {
-            ToolbarItem(placement: .navigationBarLeading) {
-                Button {
-                    showExitDialog = true
-                } label: {
-                    Image(systemName: "xmark")
-                }
-            }
-
-            ToolbarItem(placement: .principal) {
-                timerView
-            }
-
-            ToolbarItem(placement: .navigationBarTrailing) {
-                Button {
-                    Haptics.impact(.light)
-                    progressStore.toggleBookmark(questionNo: questions[currentIndex].no)
-                } label: {
-                    let isBookmarked = !questions.isEmpty && progressStore.isBookmarked(questionNo: questions[currentIndex].no)
-                    Image(systemName: isBookmarked ? "bookmark.fill" : "bookmark")
-                }
-            }
-        }
+        .examToolbar(
+            timerText: timerText,
+            isUrgent: isUrgent,
+            isBookmarked: !questions.isEmpty && progressStore.isBookmarked(questionNo: questions[currentIndex].no),
+            showExitDialog: $showExitDialog,
+            onToggleBookmark: { progressStore.toggleBookmark(questionNo: questions[currentIndex].no) },
+            onDismiss: { dismiss() }
+        )
         .task {
             startExam()
         }
         .onDisappear {
             timer?.invalidate()
         }
-        .alert("Thoát bài thi?", isPresented: $showExitDialog) {
-            Button("Tiếp tục", role: .cancel) {}
-            Button("Thoát", role: .destructive) { dismiss() }
-        } message: {
-            Text("Bài thi sẽ không được lưu.")
-        }
         .alert("Nộp bài?", isPresented: $showSubmitDialog) {
             Button("Quay lại", role: .cancel) {}
             Button("Nộp bài") { submitExam() }
         } message: {
-            let unanswered = questions.count - answeredCount
+            let unanswered = questions.count - answers.count
             if unanswered > 0 {
                 Text("Bạn còn \(unanswered) câu chưa trả lời.\nBạn có chắc muốn nộp bài?")
             } else {
@@ -107,31 +74,6 @@ struct MockExamView: View {
         }
     }
 
-    // MARK: - Timer View (liquid glass)
-
-    @ViewBuilder
-    private var timerView: some View {
-        let content = HStack(spacing: 6) {
-            Image(systemName: "timer")
-                .font(.system(size: 14))
-                .foregroundStyle(isUrgent ? Color.appError : Color.appTextMedium)
-            Text(timerText)
-                .font(.system(size: 16, weight: .bold).monospacedDigit())
-                .foregroundStyle(isUrgent ? Color.appError : Color.appTextDark)
-        }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 6)
-
-        if #available(iOS 26.0, *) {
-            content
-                .glassEffect(.regular.interactive(), in: .capsule)
-        } else {
-            content
-                .background(isUrgent ? Color.appError.opacity(0.1) : Color.appDivider.opacity(0.3))
-                .clipShape(Capsule())
-        }
-    }
-
     // MARK: - Exam Content
 
     @ViewBuilder
@@ -139,40 +81,37 @@ struct MockExamView: View {
         let question = questions[currentIndex]
         let shuffledAnswers = question.shuffledAnswers
 
-        ScrollView {
-            VStack(alignment: .leading, spacing: 0) {
-                QuestionCard(label: "Câu \(currentIndex + 1)", question: question, showDiemLietBadge: true)
-                    .padding(.bottom, 20)
+        VStack(spacing: 0) {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 0) {
+                    QuestionCard(label: "Câu \(currentIndex + 1)", question: question, showDiemLietBadge: true)
+                        .padding(.bottom, 20)
 
-                AnswerTileList(
-                    answers: shuffledAnswers,
-                    selectedAnswerId: answers[currentIndex],
-                    onSelect: { answer in
-                        Haptics.selection()
-                        answers[currentIndex] = answer.id
-                    }
-                )
-            }
-            .padding(.horizontal, 20)
-            .padding(.top, 12)
-        }
-        .id(currentIndex)
-        .safeAreaInset(edge: .bottom) {
-            HStack(spacing: 10) {
-                Button {
-                    Haptics.selection()
-                    if currentIndex > 0 {
-                        withAnimation(.easeOut(duration: 0.25)) {
-                            currentIndex -= 1
+                    AnswerTileList(
+                        answers: shuffledAnswers,
+                        selectedAnswerId: answers[currentIndex],
+                        onSelect: { answer in
+                            Haptics.selection()
+                            answers[currentIndex] = answer.id
                         }
-                    }
-                } label: {
-                    AppButton(label: "Trước", style: .secondary, height: 48, cornerRadius: 24)
+                    )
                 }
-                .disabled(currentIndex == 0)
+                .padding(.horizontal, 20)
+                .padding(.top, 12)
+            }
+            .id(currentIndex)
 
-                Button {
-                    Haptics.selection()
+            ExamBottomBar(
+                currentIndex: currentIndex,
+                totalCount: questions.count,
+                answeredIndices: Set(answers.keys),
+                nextLabel: isLast ? "Nộp bài" : "Câu tiếp",
+                onPrev: {
+                    withAnimation(.easeOut(duration: 0.25)) {
+                        currentIndex -= 1
+                    }
+                },
+                onNext: {
                     if isLast {
                         showSubmitDialog = true
                     } else {
@@ -180,23 +119,13 @@ struct MockExamView: View {
                             currentIndex += 1
                         }
                     }
-                } label: {
-                    AppButton(label: isLast ? "Nộp bài" : "Câu tiếp", height: 48, cornerRadius: 24)
-                }
-
-                QuestionGridButton(
-                    current: currentIndex + 1,
-                    total: questions.count,
-                    answeredIndices: Set(answers.keys)
-                ) { index in
+                },
+                onSelectIndex: { index in
                     withAnimation(.easeOut(duration: 0.25)) {
                         currentIndex = index
                     }
                 }
-            }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 10)
-            .background(.ultraThinMaterial)
+            )
         }
     }
 
@@ -227,11 +156,10 @@ struct MockExamView: View {
         timer?.invalidate()
         Haptics.notification(.success)
 
-        // Calculate results and save
         let result = ExamResult.calculate(
             questions: questions,
             answers: answers,
-            timeUsedSeconds: (25 * 60) - remainingSeconds
+            timeUsedSeconds: AppConstants.Exam.totalTimeSeconds - remainingSeconds
         )
         examResult = result
         progressStore.recordExamResult(result)
@@ -240,15 +168,13 @@ struct MockExamView: View {
             progressStore.addCompletedExamSet(setId)
         }
 
-        // Record each answer for topic progress using the same correctness logic
         for (i, q) in questions.enumerated() {
             let selectedId = answers[i]
             let correct = selectedId != nil && q.answers.contains(where: { $0.id == selectedId && $0.correct })
-            let topicKey = TopicInfo.keyForTopicId(q.topic)
+            let topicKey = Topic.keyForTopicId(q.topic)
             progressStore.recordQuestionAnswer(topicKey: topicKey, questionNo: q.no, correct: correct)
         }
 
         navigateToResult = true
     }
 }
-

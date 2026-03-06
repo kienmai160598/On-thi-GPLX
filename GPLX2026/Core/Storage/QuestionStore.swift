@@ -1,5 +1,8 @@
 import Foundation
 import Observation
+import os
+
+private let logger = Logger(subsystem: "com.gplx2026", category: "QuestionStore")
 
 // MARK: - QuestionStore
 
@@ -10,9 +13,6 @@ final class QuestionStore {
 
     private(set) var allQuestions: [Question] = []
     private(set) var isLoading = false
-
-    /// Optional reference to ProgressStore for filtering bookmarks/wrong answers.
-    var progressStore: ProgressStore?
 
     // MARK: - Cached derived data
 
@@ -30,17 +30,18 @@ final class QuestionStore {
         guard allQuestions.isEmpty else { return }
         isLoading = true
 
-        guard let url = Bundle.main.url(forResource: "questions", withExtension: "json"),
-              let data = try? Data(contentsOf: url) else {
+        guard let url = Bundle.main.url(forResource: "questions", withExtension: "json") else {
+            logger.error("questions.json not found in bundle")
             isLoading = false
             return
         }
 
         do {
+            let data = try Data(contentsOf: url)
             allQuestions = try JSONDecoder().decode([Question].self, from: data)
             rebuildCaches()
         } catch {
-            print("[QuestionStore] Failed to decode questions.json: \(error)")
+            logger.error("Failed to load questions.json: \(error.localizedDescription)")
         }
 
         isLoading = false
@@ -73,16 +74,16 @@ final class QuestionStore {
     private func loadMemoryTipsIfNeeded() {
         guard memoryTipsCache == nil else { return }
 
-        guard let url = Bundle.main.url(forResource: "memory_tips", withExtension: "json"),
-              let data = try? Data(contentsOf: url) else {
+        guard let url = Bundle.main.url(forResource: "memory_tips", withExtension: "json") else {
             memoryTipsCache = [:]
             return
         }
 
         do {
+            let data = try Data(contentsOf: url)
             memoryTipsCache = try JSONDecoder().decode([String: [MemoryTip]].self, from: data)
         } catch {
-            print("[QuestionStore] Failed to decode memory_tips.json: \(error)")
+            logger.error("Failed to load memory_tips.json: \(error.localizedDescription)")
             memoryTipsCache = [:]
         }
     }
@@ -108,25 +109,17 @@ final class QuestionStore {
     // MARK: - Questions for topic key (handles special keys)
 
     /// Returns questions for a given topic key.
-    /// Supports special keys: "diem_liet", "bookmarks", "wrong_answers".
-    func questions(forTopicKey key: String) -> [Question] {
+    /// Supports special keys via `AppConstants.TopicKey`.
+    /// Pass `filterIds` for bookmarks/wrong answers filtering.
+    func questions(forTopicKey key: String, filterIds: Set<Int>? = nil) -> [Question] {
         switch key {
-        case "all_questions":
+        case AppConstants.TopicKey.allQuestions:
             return allQuestions
-        case "diem_liet":
+        case AppConstants.TopicKey.diemLiet:
             return diemLietQuestions
-        case "bookmarks":
-            if let ps = progressStore {
-                let ids = ps.bookmarks
-                return allQuestions.filter { ids.contains($0.no) }
-            }
-            return []
-        case "wrong_answers":
-            if let ps = progressStore {
-                let ids = ps.wrongAnswers
-                return allQuestions.filter { ids.contains($0.no) }
-            }
-            return []
+        case AppConstants.TopicKey.bookmarks, AppConstants.TopicKey.wrongAnswers:
+            guard let ids = filterIds else { return [] }
+            return allQuestions.filter { ids.contains($0.no) }
         default:
             return questionsForTopic(key: key)
         }
@@ -134,15 +127,16 @@ final class QuestionStore {
 
     // MARK: - Exam questions
 
-    /// Generate 35 random questions for a mock exam.
+    /// Generate random questions for a mock exam.
     func randomExamQuestions() -> [Question] {
-        guard allQuestions.count >= 35 else { return Array(allQuestions.shuffled()) }
-        return Array(allQuestions.shuffled().prefix(35))
+        let count = AppConstants.Exam.questionsPerExam
+        guard allQuestions.count >= count else { return Array(allQuestions.shuffled()) }
+        return Array(allQuestions.shuffled().prefix(count))
     }
 
-    /// Fixed exam set questions. Each set takes a slice of 35 questions.
+    /// Fixed exam set questions. Each set takes a slice of questions.
     func examSetQuestions(setId: Int) -> [Question] {
-        let setSize = 35
+        let setSize = AppConstants.Exam.questionsPerExam
         let startIndex = (setId - 1) * setSize
         guard startIndex < allQuestions.count else { return randomExamQuestions() }
         let endIndex = min(startIndex + setSize, allQuestions.count)

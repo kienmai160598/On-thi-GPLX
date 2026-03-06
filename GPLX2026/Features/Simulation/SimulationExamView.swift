@@ -18,7 +18,7 @@ struct SimulationExamView: View {
     @State private var currentIndex = 0
     @State private var answers: [Int: Int] = [:]
     @State private var timePerScenario: [Int: Int] = [:]
-    @State private var scenarioSecondsRemaining = 60
+    @State private var scenarioSecondsRemaining = AppConstants.Simulation.scenarioTimeSeconds
     @State private var showExitDialog = false
     @State private var navigateToResult = false
     @State private var simulationResult: SimulationResult?
@@ -26,67 +26,34 @@ struct SimulationExamView: View {
     @State private var selectedAnswerId: Int?
     @State private var isRevealed = false
 
-    private let scenarioTimeLimit = 60
+    private let scenarioTimeLimit: Int = AppConstants.Simulation.scenarioTimeSeconds
 
     // MARK: - Computed
 
-    private var isUrgent: Bool { scenarioSecondsRemaining <= 10 }
+    private var isUrgent: Bool { scenarioSecondsRemaining <= AppConstants.Simulation.urgencyThresholdSeconds }
     private var isLast: Bool { currentIndex + 1 >= questions.count }
-    private var answeredCount: Int { answers.count }
 
     var body: some View {
         Group {
             if questions.isEmpty {
-                VStack {
-                    ProgressView()
-                        .tint(Color.appPrimary)
-                    Text("Đang tạo đề thi...")
-                        .font(.subheadline)
-                        .foregroundStyle(Color.appTextMedium)
-                        .padding(.top, 8)
-                }
+                ExamLoadingView()
             } else {
                 examContent
             }
         }
-        .background(Color.scaffoldBg.ignoresSafeArea())
-        .navigationBarBackButtonHidden(true)
-        .navigationBarTitleDisplayMode(.inline)
-        .hidesTabBar()
-        .toolbar {
-            ToolbarItem(placement: .navigationBarLeading) {
-                Button {
-                    showExitDialog = true
-                } label: {
-                    Image(systemName: "xmark")
-                }
-            }
-
-            ToolbarItem(placement: .principal) {
-                timerView
-            }
-
-            ToolbarItem(placement: .navigationBarTrailing) {
-                Button {
-                    Haptics.impact(.light)
-                    progressStore.toggleBookmark(questionNo: questions[currentIndex].no)
-                } label: {
-                    let isBookmarked = !questions.isEmpty && progressStore.isBookmarked(questionNo: questions[currentIndex].no)
-                    Image(systemName: isBookmarked ? "bookmark.fill" : "bookmark")
-                }
-            }
-        }
+        .examToolbar(
+            timerText: "\(scenarioSecondsRemaining)s",
+            isUrgent: isUrgent,
+            isBookmarked: !questions.isEmpty && progressStore.isBookmarked(questionNo: questions[currentIndex].no),
+            showExitDialog: $showExitDialog,
+            onToggleBookmark: { progressStore.toggleBookmark(questionNo: questions[currentIndex].no) },
+            onDismiss: { dismiss() }
+        )
         .task {
             startSimulation()
         }
         .onDisappear {
             scenarioTimer?.invalidate()
-        }
-        .alert("Thoát bài thi?", isPresented: $showExitDialog) {
-            Button("Tiếp tục", role: .cancel) {}
-            Button("Thoát", role: .destructive) { dismiss() }
-        } message: {
-            Text("Bài thi sẽ không được lưu.")
         }
         .navigationDestination(isPresented: $navigateToResult) {
             if let result = simulationResult {
@@ -100,31 +67,6 @@ struct SimulationExamView: View {
         }
     }
 
-    // MARK: - Timer View (liquid glass)
-
-    @ViewBuilder
-    private var timerView: some View {
-        let content = HStack(spacing: 6) {
-            Image(systemName: "timer")
-                .font(.system(size: 14))
-                .foregroundStyle(isUrgent ? Color.appError : Color.appTextMedium)
-            Text("\(scenarioSecondsRemaining)s")
-                .font(.system(size: 16, weight: .bold).monospacedDigit())
-                .foregroundStyle(isUrgent ? Color.appError : Color.appTextDark)
-        }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 6)
-
-        if #available(iOS 26.0, *) {
-            content
-                .glassEffect(.regular.interactive(), in: .capsule)
-        } else {
-            content
-                .background(isUrgent ? Color.appError.opacity(0.1) : Color.appDivider.opacity(0.3))
-                .clipShape(Capsule())
-        }
-    }
-
     // MARK: - Exam Content
 
     @ViewBuilder
@@ -132,34 +74,39 @@ struct SimulationExamView: View {
         let question = questions[currentIndex]
         let shuffledAnswers = question.shuffledAnswers
 
-        ScrollView {
-            VStack(alignment: .leading, spacing: 0) {
-                QuestionCard(label: "Câu \(currentIndex + 1)", question: question, showDiemLietBadge: true)
-                    .padding(.bottom, 20)
+        VStack(spacing: 0) {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 0) {
+                    QuestionCard(label: "Câu \(currentIndex + 1)", question: question, showDiemLietBadge: true)
+                        .padding(.bottom, 20)
 
-                AnswerTileList(
-                    answers: shuffledAnswers,
-                    selectedAnswerId: selectedAnswerId,
-                    isConfirmed: isRevealed,
-                    showCorrectness: true,
-                    onSelect: { handleAnswerSelection(answer: $0, question: question) }
-                )
+                    AnswerTileList(
+                        answers: shuffledAnswers,
+                        selectedAnswerId: selectedAnswerId,
+                        isConfirmed: isRevealed,
+                        showCorrectness: true,
+                        onSelect: { handleAnswerSelection(answer: $0, question: question) }
+                    )
 
-                // MARK: - Tip after reveal
-                if isRevealed && !question.tip.isEmpty {
-                    ExplanationBox(content: question.tip)
-                        .padding(.top, 4)
-                        .transition(.opacity.combined(with: .move(edge: .top)))
+                    // MARK: - Tip after reveal
+                    if isRevealed && !question.tip.isEmpty {
+                        ExplanationBox(content: question.tip)
+                            .padding(.top, 4)
+                            .transition(.opacity.combined(with: .move(edge: .top)))
+                    }
                 }
+                .padding(.horizontal, 20)
+                .padding(.top, 12)
             }
-            .padding(.horizontal, 20)
-            .padding(.top, 12)
-        }
-        .id(currentIndex)
-        .safeAreaInset(edge: .bottom) {
-            HStack(spacing: 10) {
-                Button {
-                    Haptics.selection()
+            .id(currentIndex)
+
+            ExamBottomBar(
+                currentIndex: currentIndex,
+                totalCount: questions.count,
+                answeredIndices: Set(answers.keys),
+                nextLabel: isRevealed ? (isLast ? "Xem kết quả" : "Câu tiếp") : "Xác nhận",
+                isNextDisabled: selectedAnswerId == nil && !isRevealed,
+                onPrev: {
                     if currentIndex > 0 {
                         withAnimation(.easeOut(duration: 0.25)) {
                             currentIndex -= 1
@@ -168,32 +115,15 @@ struct SimulationExamView: View {
                         }
                         startScenarioTimer()
                     }
-                } label: {
-                    AppButton(label: "Trước", style: .secondary, height: 48, cornerRadius: 24)
-                }
-                .disabled(currentIndex == 0)
-
-                Button {
-                    Haptics.selection()
+                },
+                onNext: {
                     if isRevealed {
                         advanceOrFinish()
                     } else if selectedAnswerId != nil {
                         confirmAnswer(answer: selectedAnswerId!, question: question)
                     }
-                } label: {
-                    AppButton(
-                        label: isRevealed ? (isLast ? "Xem kết quả" : "Câu tiếp") : "Xác nhận",
-                        height: 48,
-                        cornerRadius: 24
-                    )
-                }
-                .disabled(selectedAnswerId == nil && !isRevealed)
-
-                QuestionGridButton(
-                    current: currentIndex + 1,
-                    total: questions.count,
-                    answeredIndices: Set(answers.keys)
-                ) { index in
+                },
+                onSelectIndex: { index in
                     withAnimation(.easeOut(duration: 0.25)) {
                         currentIndex = index
                         selectedAnswerId = nil
@@ -201,10 +131,7 @@ struct SimulationExamView: View {
                     }
                     startScenarioTimer()
                 }
-            }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 10)
-            .background(.ultraThinMaterial)
+            )
         }
     }
 
@@ -250,7 +177,7 @@ struct SimulationExamView: View {
         let isCorrect = question.answers.contains(where: { $0.id == answerId && $0.correct })
         Haptics.notification(isCorrect ? .success : .error)
 
-        let topicKey = TopicInfo.keyForTopicId(question.topic)
+        let topicKey = Topic.keyForTopicId(question.topic)
         progressStore.recordQuestionAnswer(topicKey: topicKey, questionNo: question.no, correct: isCorrect)
     }
 
@@ -262,7 +189,7 @@ struct SimulationExamView: View {
         isRevealed = true
 
         let question = questions[currentIndex]
-        let topicKey = TopicInfo.keyForTopicId(question.topic)
+        let topicKey = Topic.keyForTopicId(question.topic)
         progressStore.recordQuestionAnswer(topicKey: topicKey, questionNo: question.no, correct: false)
     }
 

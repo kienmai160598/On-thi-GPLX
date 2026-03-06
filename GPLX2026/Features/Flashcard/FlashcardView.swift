@@ -62,31 +62,20 @@ struct FlashcardView: View {
             Spacer()
         }
         .safeAreaInset(edge: .bottom) {
-            HStack(spacing: 8) {
-                Button {
-                    markUnknown()
-                } label: {
-                    AppButton(icon: "xmark", label: "Chưa biết", style: .secondary, height: 48, cornerRadius: 24)
-                }
-                .disabled(!isFlipped)
-
-                Text("\(currentIndex + 1)/\(totalQuestions)")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(Color.appTextMedium)
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 10)
-                    .glassCard()
-
-                Button {
-                    markKnown()
-                } label: {
-                    AppButton(icon: "checkmark", label: "Đã biết", height: 48, cornerRadius: 24)
-                }
-                .disabled(!isFlipped)
-            }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 10)
-            .background(.ultraThinMaterial)
+            ExamBottomBar(
+                currentIndex: currentIndex,
+                totalCount: totalQuestions,
+                answeredIndices: Set(0..<currentIndex),
+                nextLabel: "Đã biết",
+                prevLabel: "Chưa biết",
+                prevIcon: "xmark",
+                isNextDisabled: !isFlipped,
+                isPrevDisabled: !isFlipped,
+                showPrev: true,
+                onPrev: { markUnknown() },
+                onNext: { markKnown() },
+                onSelectIndex: { _ in }
+            )
         }
     }
 
@@ -98,18 +87,8 @@ struct FlashcardView: View {
             Spacer()
 
             if question.hasImage {
-                AsyncImage(url: URL(string: question.imageUrl)) { phase in
-                    switch phase {
-                    case .success(let image):
-                        image
-                            .resizable()
-                            .aspectRatio(contentMode: .fit)
-                            .frame(maxHeight: 200)
-                            .clipShape(RoundedRectangle(cornerRadius: 10))
-                    default:
-                        EmptyView()
-                    }
-                }
+                QuestionImage(imageName: question.image)
+                    .frame(maxHeight: 200)
             }
 
             Text(question.text)

@@ -5,49 +5,38 @@ import SwiftUI
 struct HomeTab: View {
     @Environment(QuestionStore.self) private var questionStore
     @Environment(ProgressStore.self) private var progressStore
-    @AppStorage("appPrimaryColor") private var primaryColorKey = "default"
-    @Namespace private var heroNS
 
     var body: some View {
+        let topicStats = progressStore.weakTopics(topics: questionStore.topics)
+            .sorted { $0.topic.topicIds.first ?? 0 < $1.topic.topicIds.first ?? 0 }
+
         ScrollView {
             VStack(spacing: 0) {
-                // MARK: - Readiness card
-                ReadinessCard()
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, 12)
-
-                // MARK: - Stats row
-                StatsRow()
+                OverviewCard()
                     .padding(.horizontal, 20)
                     .padding(.bottom, 20)
 
-                // MARK: - Badges preview
-                badgesCard
+                ContinueLearningCard()
                     .padding(.horizontal, 20)
                     .padding(.bottom, 20)
 
-                // MARK: - Topic analysis
-                SectionTitle(title: "Phân tích chủ đề")
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, 8)
-
-                topicList
+                RecentResultsCard()
                     .padding(.horizontal, 20)
                     .padding(.bottom, 20)
-            }
-        }
-        .navigationDestination(for: HeroDestination.self) { dest in
-            switch dest {
-            case .badges:
-                BadgesView()
-                    .navigationTransition(.zoom(sourceID: dest, in: heroNS))
-            case .topic(let key):
-                let topicStats = progressStore.weakTopics(topics: questionStore.topics)
-                    .sorted { $0.topic.topicIds.first ?? 0 < $1.topic.topicIds.first ?? 0 }
-                if let item = topicStats.first(where: { $0.topic.key == key }) {
-                    TopicDetailView(item: item)
-                        .navigationTransition(.zoom(sourceID: dest, in: heroNS))
+
+                VStack(spacing: 10) {
+                    HStack {
+                        Text("Chủ đề")
+                            .font(.system(size: 16, weight: .heavy))
+                            .foregroundStyle(Color.appTextDark)
+                        Spacer()
+                    }
+
+                    topicCards(topicStats)
                 }
+                .padding(.horizontal, 20)
+                .padding(.bottom, 20)
+
             }
         }
         .screenHeader("Trang chủ")
@@ -62,223 +51,402 @@ struct HomeTab: View {
         }
     }
 
-    // MARK: - Badges card
+    // MARK: - Topic cards
 
-    @ViewBuilder
-    private var badgesCard: some View {
-        let badges = progressStore.badgeStatuses
-        let unlocked = badges.filter(\.isUnlocked).count
-        let nextBadge = badges.first(where: { !$0.isUnlocked })
+    private func topicCards(_ stats: [(topic: Topic, accuracy: Double, correct: Int, attempted: Int, total: Int)]) -> some View {
+        VStack(spacing: 10) {
+            ForEach(stats, id: \.topic.id) { item in
+                let statusInfo = topicStatus(item)
 
-        NavigationLink(value: HeroDestination.badges) {
-            VStack(spacing: 16) {
-                ZStack {
-                    Circle()
-                        .fill(Color.appPrimary.opacity(0.12))
-                        .frame(width: 64, height: 64)
-                    Image(systemName: "trophy.fill")
-                        .font(.system(size: 28))
-                        .foregroundStyle(Color.appPrimary)
+                NavigationLink(destination: TopicDetailView(item: item)) {
+                    HStack(spacing: 14) {
+                        IconBox(
+                            icon: item.topic.sfSymbol,
+                            color: .appPrimary,
+                            size: 44,
+                            cornerRadius: 11,
+                            iconFontSize: 19
+                        )
+
+                        VStack(alignment: .leading, spacing: 6) {
+                            HStack {
+                                Text(item.topic.name)
+                                    .font(.system(size: 15, weight: .bold))
+                                    .foregroundStyle(Color.appTextDark)
+                                    .lineLimit(1)
+
+                                Spacer(minLength: 8)
+
+                                StatusBadge(
+                                    text: statusInfo.label,
+                                    color: statusInfo.color,
+                                    fontSize: 11
+                                )
+                            }
+
+                            let fraction = item.total > 0 ? Double(item.correct) / Double(item.total) : 0
+                            VStack(alignment: .leading, spacing: 4) {
+                                ProgressBarView(fraction: fraction, color: statusInfo.color, height: 5)
+
+                                Text("\(item.correct)/\(item.total) câu đúng")
+                                    .font(.system(size: 12, weight: .medium).monospacedDigit())
+                                    .foregroundStyle(Color.appTextLight)
+                            }
+                        }
+
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundStyle(Color.appTextLight)
+                    }
+                    .padding(14)
+                    .glassCard()
                 }
+                .buttonStyle(.plain)
+            }
+        }
+    }
 
-                VStack(spacing: 4) {
-                    Text("Thành tích")
-                        .font(.system(size: 18, weight: .heavy))
+    private func topicStatus(_ item: (topic: Topic, accuracy: Double, correct: Int, attempted: Int, total: Int)) -> (label: String, color: Color) {
+        if item.attempted == 0 {
+            return ("Chưa học", .appTextLight)
+        } else if item.accuracy >= 0.8 {
+            return ("Tốt", .appSuccess)
+        } else if item.accuracy >= 0.5 {
+            return ("Cần ôn", .appWarning)
+        } else {
+            return ("Yếu", .appError)
+        }
+    }
+}
+
+// MARK: - Continue Learning Card
+
+private struct ContinueLearningCard: View {
+    @Environment(QuestionStore.self) private var questionStore
+    @Environment(ProgressStore.self) private var progressStore
+    @Environment(\.openExam) private var openExam
+
+    var body: some View {
+        let config = resolveAction()
+
+        Button { openExam(.questionView(topicKey: config.topicKey, startIndex: config.startIndex)) } label: {
+            HStack(spacing: 14) {
+                IconBox(
+                    icon: config.icon,
+                    color: .appPrimary,
+                    size: 44,
+                    cornerRadius: 11,
+                    iconFontSize: 19
+                )
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(config.title)
+                        .font(.system(size: 15, weight: .bold))
                         .foregroundStyle(Color.appTextDark)
-
-                    Text("\(unlocked)/\(badges.count) đã mở khoá")
-                        .font(.system(size: 13))
+                    Text(config.subtitle)
+                        .font(.system(size: 12))
                         .foregroundStyle(Color.appTextMedium)
                 }
 
-                if let next = nextBadge {
-                    VStack(spacing: 6) {
-                        HStack(spacing: 6) {
-                            Image(systemName: next.badge.sfSymbol)
-                                .font(.system(size: 13))
-                                .foregroundStyle(next.badge.color)
-                            Text("Tiếp: \(next.badge.title)")
-                                .font(.system(size: 13, weight: .medium))
-                                .foregroundStyle(Color.appTextMedium)
-                        }
+                Spacer(minLength: 4)
 
-                        ZStack(alignment: .leading) {
-                            RoundedRectangle(cornerRadius: 3)
-                                .fill(Color.appDivider)
-                                .frame(height: 6)
-                            GeometryReader { geo in
-                                RoundedRectangle(cornerRadius: 3)
-                                    .fill(next.badge.color)
-                                    .frame(width: geo.size.width * next.fraction, height: 6)
-                            }
-                            .frame(height: 6)
-                        }
-
-                        Text("\(next.progress)/\(next.target)")
-                            .font(.system(size: 11, weight: .medium))
-                            .foregroundStyle(Color.appTextLight)
-                    }
-                    .padding(.horizontal, 8)
-                } else {
-                    Text("Đã mở khoá tất cả!")
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(Color.appSuccess)
-                }
+                Image(systemName: "play.fill")
+                    .font(.system(size: 14))
+                    .foregroundStyle(Color.appPrimary)
             }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 20)
-            .padding(.horizontal, 16)
+            .padding(14)
             .glassCard()
         }
         .buttonStyle(.plain)
-        .matchedTransitionSource(id: HeroDestination.badges, in: heroNS)
     }
 
-    // MARK: - Topic list
+    private struct ActionConfig {
+        let icon: String
+        let title: String
+        let subtitle: String
+        let topicKey: String
+        let startIndex: Int
+    }
 
-    private let topicColumns = Array(repeating: GridItem(.flexible(), spacing: 10), count: 2)
-
-    @ViewBuilder
-    private var topicList: some View {
-        let topicStats = progressStore.weakTopics(topics: questionStore.topics)
-            .sorted { $0.topic.topicIds.first ?? 0 < $1.topic.topicIds.first ?? 0 }
-
-        LazyVGrid(columns: topicColumns, spacing: 10) {
-            ForEach(topicStats, id: \.topic.id) { item in
-                NavigationLink(value: HeroDestination.topic(item.topic.key)) {
-                    TopicCard(item: item)
-                }
-                .buttonStyle(.plain)
-                .matchedTransitionSource(id: HeroDestination.topic(item.topic.key), in: heroNS)
-            }
+    private func resolveAction() -> ActionConfig {
+        // Resume last session
+        if let topicKey = progressStore.lastTopicKey {
+            let topicName = questionStore.topic(forKey: topicKey)?.name ?? "Ôn tập"
+            let index = progressStore.lastQuestionIndex
+            return ActionConfig(
+                icon: "play.circle.fill",
+                title: "Tiếp tục học",
+                subtitle: "Câu \(index + 1) · \(topicName)",
+                topicKey: topicKey,
+                startIndex: index
+            )
         }
+
+        // Review wrong answers
+        if !progressStore.wrongAnswers.isEmpty {
+            return ActionConfig(
+                icon: "xmark.circle.fill",
+                title: "Ôn tập câu sai",
+                subtitle: "\(progressStore.wrongAnswers.count) câu cần ôn lại",
+                topicKey: AppConstants.TopicKey.wrongAnswers,
+                startIndex: 0
+            )
+        }
+
+        // Start from beginning
+        return ActionConfig(
+            icon: "text.book.closed.fill",
+            title: "Bắt đầu học",
+            subtitle: "\(questionStore.allQuestions.count) câu hỏi",
+            topicKey: AppConstants.TopicKey.allQuestions,
+            startIndex: 0
+        )
     }
 }
 
-// MARK: - Topic Card
+// MARK: - Recent Results Card
 
-private struct TopicCard: View {
-    let item: (topic: Topic, accuracy: Double, correct: Int, attempted: Int, total: Int)
+private struct RecentResultsCard: View {
+    @Environment(ProgressStore.self) private var progressStore
 
     var body: some View {
-        let accentColor = if item.attempted == 0 {
-            Color.appTextLight
-        } else if item.accuracy < 0.5 {
-            Color.appError
-        } else if item.accuracy < 0.8 {
-            Color.appWarning
-        } else {
-            Color.appSuccess
-        }
+        let lastExam = progressStore.examHistory.first
+        let lastSim = progressStore.simulationHistory.first
+        let lastHazard = progressStore.hazardHistory.first
 
-        VStack(spacing: 12) {
-            IconBox(
-                icon: item.topic.sfSymbol,
-                color: accentColor,
-                size: 44,
-                cornerRadius: 11,
-                iconFontSize: 19
-            )
+        if lastExam != nil || lastSim != nil || lastHazard != nil {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Text("Kết quả gần đây")
+                        .font(.system(size: 16, weight: .heavy))
+                        .foregroundStyle(Color.appTextDark)
+                    Spacer()
+                }
 
-            Text(item.topic.shortName)
-                .font(.system(size: 13, weight: .bold))
-                .foregroundStyle(Color.appTextDark)
-                .lineLimit(2)
-                .minimumScaleFactor(0.8)
-                .multilineTextAlignment(.center)
+                VStack(spacing: 0) {
+                    if let exam = lastExam {
+                        NavigationLink(destination: ExamHistoryDetailView(result: exam)) {
+                            RecentResultRow(
+                                icon: "doc.text",
+                                title: "Thi thử",
+                                score: "\(exam.score)/\(exam.totalQuestions)",
+                                passed: exam.passed,
+                                date: exam.date
+                            )
+                        }
+                        .buttonStyle(.plain)
 
-            Text(item.attempted > 0 ? "\(Int(item.accuracy * 100))%" : "—")
-                .font(.system(size: 22, weight: .heavy).monospacedDigit())
-                .foregroundStyle(accentColor)
+                        if lastSim != nil || lastHazard != nil {
+                            Divider().padding(.horizontal, 16)
+                        }
+                    }
 
-            VStack(spacing: 4) {
-                ZStack(alignment: .leading) {
-                    RoundedRectangle(cornerRadius: 3)
-                        .fill(Color.appDivider)
-                        .frame(height: 5)
-                        .frame(maxWidth: .infinity)
+                    if let sim = lastSim {
+                        NavigationLink(destination: SimulationHistoryDetailView(result: sim)) {
+                            RecentResultRow(
+                                icon: "play.rectangle",
+                                title: "Mô phỏng",
+                                score: "\(sim.score)/\(sim.totalScenarios)",
+                                passed: sim.passed,
+                                date: sim.date
+                            )
+                        }
+                        .buttonStyle(.plain)
 
-                    if item.total > 0 {
-                        RoundedRectangle(cornerRadius: 3)
-                            .fill(accentColor)
-                            .frame(height: 5)
-                            .frame(maxWidth: .infinity)
-                            .scaleEffect(x: Double(item.correct) / Double(item.total), y: 1, anchor: .leading)
+                        if lastHazard != nil {
+                            Divider().padding(.horizontal, 16)
+                        }
+                    }
+
+                    if let hazard = lastHazard {
+                        NavigationLink(destination: HazardHistoryDetailView(result: hazard)) {
+                            RecentResultRow(
+                                icon: "play.rectangle.fill",
+                                title: "Tình huống",
+                                score: "\(hazard.totalScore)/\(hazard.maxScore)",
+                                passed: hazard.passed,
+                                date: hazard.date
+                            )
+                        }
+                        .buttonStyle(.plain)
                     }
                 }
-                .clipped()
-
-                Text("\(item.correct)/\(item.total)")
-                    .font(.system(size: 10, weight: .medium))
-                    .foregroundStyle(Color.appTextLight)
+                .glassCard()
             }
         }
-        .padding(.vertical, 16)
-        .padding(.horizontal, 12)
-        .frame(maxWidth: .infinity)
-        .glassCard()
     }
 }
 
-// MARK: - Stats Row
+private struct RecentResultRow: View {
+    let icon: String
+    let title: String
+    let score: String
+    let passed: Bool
+    let date: Date
 
-private struct StatsRow: View {
+    private static let dateFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "dd/MM HH:mm"
+        return f
+    }()
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: icon)
+                .font(.system(size: 15))
+                .foregroundStyle(Color.appPrimary)
+                .frame(width: 24)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(Color.appTextDark)
+                Text(Self.dateFormatter.string(from: date))
+                    .font(.system(size: 11))
+                    .foregroundStyle(Color.appTextLight)
+            }
+
+            Spacer(minLength: 4)
+
+            Text(score)
+                .font(.system(size: 14, weight: .bold).monospacedDigit())
+                .foregroundStyle(Color.appTextDark)
+
+            StatusBadge(
+                text: passed ? "Đạt" : "Trượt",
+                color: passed ? .appSuccess : .appError,
+                fontSize: 11
+            )
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .contentShape(Rectangle())
+    }
+}
+
+// MARK: - Overview Card
+
+private struct OverviewCard: View {
     @Environment(QuestionStore.self) private var questionStore
     @Environment(ProgressStore.self) private var progressStore
 
     var body: some View {
-        let progress = progressStore.overallProgress(topics: questionStore.topics)
-        let correctCount = progressStore.totalCorrectCount(topics: questionStore.topics)
-        let totalQuestions = questionStore.topics.reduce(0) { $0 + $1.questionCount }
+        let status = progressStore.readinessStatus(
+            topics: questionStore.topics,
+            allQuestions: questionStore.allQuestions
+        )
+        let totalCorrect = status.totalCorrect
+        let totalQuestions = status.totalQuestions
+        let mastery = totalQuestions > 0 ? Double(totalCorrect) / Double(totalQuestions) : 0
         let streak = progressStore.streakCount
 
-        HStack(spacing: 10) {
-            MiniStatCard(
-                icon: "chart.pie.fill",
-                iconColor: .appPrimary,
-                value: "\(Int(progress * 100))%",
-                label: "Tiến độ"
-            )
-
-            MiniStatCard(
-                icon: "checkmark.circle.fill",
-                iconColor: .appSuccess,
-                value: "\(correctCount)/\(totalQuestions)",
-                label: "Đã đúng"
-            )
-
-            MiniStatCard(
-                icon: "flame.fill",
-                iconColor: Color(hex: 0xFF6B35),
-                value: "\(streak)",
-                label: "Chuỗi ngày"
-            )
+        let statusColor: Color = switch status.level {
+        case .ready: .appSuccess
+        case .needsWork: .appWarning
+        case .notReady: .appError
         }
+        let statusIcon = status.isReady ? "checkmark.shield.fill" : "exclamationmark.triangle.fill"
+        let statusText: String = switch status.level {
+        case .ready: "Sẵn sàng thi"
+        case .needsWork: "Cần ôn thêm"
+        case .notReady: "Chưa sẵn sàng"
+        }
+
+        VStack(spacing: 16) {
+            // Status + Ring
+            HStack(spacing: 16) {
+                // Big ring
+                ZStack {
+                    Circle()
+                        .stroke(Color.appDivider, lineWidth: 6)
+
+                    Circle()
+                        .trim(from: 0, to: mastery)
+                        .stroke(Color.appPrimary, style: StrokeStyle(lineWidth: 6, lineCap: .round))
+                        .rotationEffect(.degrees(-90))
+
+                    Text("\(Int(mastery * 100))%")
+                        .font(.system(size: 20, weight: .heavy).monospacedDigit())
+                        .foregroundStyle(Color.appTextDark)
+                }
+                .frame(width: 72, height: 72)
+
+                // Status info
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack(spacing: 8) {
+                        Image(systemName: statusIcon)
+                            .font(.system(size: 18))
+                            .foregroundStyle(statusColor)
+
+                        Text(statusText)
+                            .font(.system(size: 16, weight: .heavy))
+                            .foregroundStyle(statusColor)
+                    }
+
+                    Text("Độ sẵn sàng: \(status.percentage)%")
+                        .font(.system(size: 13))
+                        .foregroundStyle(Color.appTextMedium)
+
+                    // Progress bar
+                    ProgressBarView(fraction: status.score, color: statusColor)
+                        .padding(.top, 2)
+                }
+
+                Spacer(minLength: 0)
+            }
+
+            // Stats row
+            HStack(spacing: 0) {
+                OverviewDetail(
+                    value: "\(totalCorrect)/\(totalQuestions)",
+                    label: "Đã đúng",
+                    color: totalCorrect > 0 ? .appSuccess : .appTextMedium
+                )
+
+                Rectangle().fill(Color.appDivider).frame(width: 1, height: 24)
+
+                OverviewDetail(
+                    value: "\(status.diemLiet.correct)/\(status.diemLiet.total)",
+                    label: "Điểm liệt",
+                    color: status.diemLiet.correct == status.diemLiet.total && status.diemLiet.total > 0 ? .appSuccess : .appError
+                )
+
+                Rectangle().fill(Color.appDivider).frame(width: 1, height: 24)
+
+                OverviewDetail(
+                    value: progressStore.examHistory.isEmpty ? "--" : "\(Int(status.passRate * 100))%",
+                    label: "Tỉ lệ đậu",
+                    color: status.passRate >= 0.8 ? .appSuccess : .appTextMedium
+                )
+
+                Rectangle().fill(Color.appDivider).frame(width: 1, height: 24)
+
+                OverviewDetail(
+                    value: "\(streak)",
+                    label: "Chuỗi ngày",
+                    color: streak > 0 ? Color(hex: 0xFF6B35) : .appTextMedium
+                )
+            }
+        }
+        .padding(16)
+        .glassCard()
     }
 }
 
-private struct MiniStatCard: View {
-    let icon: String
-    let iconColor: Color
+private struct OverviewDetail: View {
     let value: String
     let label: String
+    let color: Color
 
     var body: some View {
-        VStack(spacing: 6) {
-            Image(systemName: icon)
-                .font(.system(size: 20))
-                .foregroundStyle(iconColor)
-
+        VStack(spacing: 2) {
             Text(value)
-                .font(.system(size: 16, weight: .heavy))
-                .foregroundStyle(Color.appTextDark)
-
+                .font(.system(size: 14, weight: .bold).monospacedDigit())
+                .foregroundStyle(color)
             Text(label)
                 .font(.system(size: 11))
                 .foregroundStyle(Color.appTextMedium)
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 14)
-        .glassCard()
     }
 }

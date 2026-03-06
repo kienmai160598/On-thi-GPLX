@@ -123,6 +123,3 @@ struct BadgeStatus: Identifiable {
         return min(Double(progress) / Double(target), 1.0)
     }
 }
-
-/// Views reference `BadgeDefinition` — alias to `AppBadge`.
-typealias BadgeDefinition = AppBadge

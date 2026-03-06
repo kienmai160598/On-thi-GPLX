@@ -8,6 +8,9 @@ struct AppButton: View {
     var cornerRadius: CGFloat = 26
 
     @Environment(\.isEnabled) private var isEnabled
+    @AppStorage("appPrimaryColor") private var primaryColorKey = "default"
+
+    private var primary: Color { Color.primaryColor(for: primaryColorKey) }
 
     enum Style {
         case primary
@@ -17,20 +20,20 @@ struct AppButton: View {
     var body: some View {
         if #available(iOS 26.0, *) {
             buttonContent
-                .foregroundStyle(isEnabled ? Color.appPrimary : Color.appTextLight)
+                .foregroundStyle(isEnabled ? primary : Color.appTextLight)
                 .glassEffect(.regular.interactive(), in: .rect(cornerRadius: cornerRadius))
         } else if style == .primary {
             buttonContent
                 .foregroundStyle(isEnabled ? Color.appOnPrimary : Color.appTextLight)
-                .background(isEnabled ? Color.appPrimary : Color.appDivider)
+                .background(isEnabled ? primary : Color.appDivider)
                 .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
         } else {
             buttonContent
-                .foregroundStyle(isEnabled ? Color.appPrimary : Color.appTextLight)
+                .foregroundStyle(isEnabled ? primary : Color.appTextLight)
                 .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
                 .overlay(
                     RoundedRectangle(cornerRadius: cornerRadius)
-                        .stroke(isEnabled ? Color.appPrimary : Color.appDivider, lineWidth: 1.5)
+                        .stroke(isEnabled ? primary : Color.appDivider, lineWidth: 1.5)
                 )
         }
     }

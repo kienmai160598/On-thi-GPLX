@@ -107,6 +107,3 @@ struct Topic: Identifiable, Hashable {
         return copy
     }
 }
-
-/// Views reference `TopicInfo` — alias to `Topic`.
-typealias TopicInfo = Topic

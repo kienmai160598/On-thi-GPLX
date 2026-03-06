@@ -79,11 +79,6 @@ struct Question: Codable, Identifiable, Hashable {
     /// Whether this is a "diem liet" (critical / disqualifying) question.
     var isDiemLiet: Bool { required1 != 0 || required2 != 0 || required3 != 0 }
 
-    /// Remote URL for the question image (as a String for AsyncImage).
-    var imageUrl: String {
-        "https://gplx.app/images/questions/\(image)"
-    }
-
     /// Shuffled copy of the answers array, deterministic per question number.
     var shuffledAnswers: [Answer] {
         var gen = SeededRandomNumberGenerator(seed: UInt64(no))

@@ -14,6 +14,8 @@ struct ScoreRow: View {
             Text(value)
                 .font(.system(size: 15, weight: .bold))
                 .foregroundStyle(color)
+                .contentTransition(.numericText())
+                .animation(.snappy, value: value)
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)

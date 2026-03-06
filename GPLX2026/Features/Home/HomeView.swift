@@ -1,51 +1,59 @@
 import SwiftUI
 
 struct HomeView: View {
-    @AppStorage("selectedTab") private var selectedTab = 0
     @AppStorage("appPrimaryColor") private var primaryColorKey = "default"
-    @State private var examStackId = 0
-    @State private var simStackId = 0
+    @State private var activeExam: ExamScreen?
 
     private var accentColor: Color {
         Color.primaryColor(for: primaryColorKey)
     }
 
     var body: some View {
-        TabView(selection: $selectedTab) {
-            Tab("Trang chủ", systemImage: "house", value: 0) {
+        TabView {
+            Tab("Trang chủ", systemImage: "house") {
                 NavigationStack {
                     HomeTab()
                 }
                 .tint(accentColor)
             }
 
-            Tab("Ôn tập", systemImage: "books.vertical", value: 1) {
+            Tab("Ôn tập", systemImage: "books.vertical") {
                 NavigationStack {
                     StudyMenuView()
                 }
                 .tint(accentColor)
             }
 
-            Tab("Thi thử", systemImage: "doc.text", value: 2) {
+            Tab("Thi thử", systemImage: "doc.text") {
                 NavigationStack {
                     MockExamTab()
                 }
-                .id(examStackId)
-                .environment(\.popToRoot) { examStackId += 1 }
                 .tint(accentColor)
             }
 
-            Tab("Mô phỏng", systemImage: "play.rectangle", value: 3) {
+            Tab("Thực hành", systemImage: "car.side") {
                 NavigationStack {
                     SimulationTab()
                 }
-                .id(simStackId)
-                .environment(\.popToRoot) { simStackId += 1 }
+                .tint(accentColor)
+            }
+
+            Tab(role: .search) {
+                NavigationStack {
+                    QuestionSearchView()
+                }
                 .tint(accentColor)
             }
         }
         .tint(accentColor)
-        .toolbarBackground(.ultraThinMaterial, for: .tabBar)
+        .environment(\.openExam) { screen in activeExam = screen }
+        .fullScreenCover(item: $activeExam) { screen in
+            NavigationStack {
+                screen.destination
+            }
+            .environment(\.popToRoot) { activeExam = nil }
+            .tint(accentColor)
+        }
     }
 }
 

@@ -1,33 +1,23 @@
 import SwiftUI
 
 struct QuestionImage: View {
-    let url: String
+    let imageName: String
 
     var body: some View {
-        AsyncImage(url: URL(string: url)) { phase in
-            switch phase {
-            case .success(let image):
-                image
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .clipShape(RoundedRectangle(cornerRadius: 10))
-            case .failure:
-                RoundedRectangle(cornerRadius: 10)
-                    .fill(Color.appDivider)
-                    .frame(height: 180)
-                    .overlay {
-                        Image(systemName: "photo")
-                            .foregroundStyle(Color.appTextLight)
-                    }
-            default:
-                RoundedRectangle(cornerRadius: 10)
-                    .fill(Color.appDivider.opacity(0.5))
-                    .frame(height: 180)
-                    .overlay {
-                        ProgressView()
-                            .tint(Color.appPrimary)
-                    }
-            }
+        if let path = Bundle.main.path(forResource: imageName, ofType: nil, inDirectory: "Images/Questions"),
+           let uiImage = UIImage(contentsOfFile: path) {
+            Image(uiImage: uiImage)
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .clipShape(RoundedRectangle(cornerRadius: 10))
+        } else {
+            RoundedRectangle(cornerRadius: 10)
+                .fill(Color.appDivider)
+                .frame(height: 180)
+                .overlay {
+                    Image(systemName: "photo")
+                        .foregroundStyle(Color.appTextLight)
+                }
         }
     }
 }

@@ -23,7 +23,7 @@ struct QuestionCard: View {
                 .lineSpacing(4)
 
             if question.hasImage {
-                QuestionImage(url: question.imageUrl)
+                QuestionImage(imageName: question.image)
             }
         }
         .padding(16)

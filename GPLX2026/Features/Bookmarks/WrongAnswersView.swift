@@ -3,6 +3,7 @@ import SwiftUI
 struct WrongAnswersView: View {
     @Environment(QuestionStore.self) private var questionStore
     @Environment(ProgressStore.self) private var progressStore
+    @Environment(\.openExam) private var openExam
 
     var body: some View {
         let wrongByTopic = questionStore.wrongAnswersByTopic(wrongIds: progressStore.wrongAnswers)
@@ -15,7 +16,7 @@ struct WrongAnswersView: View {
                 VStack(alignment: .leading, spacing: 0) {
                     // MARK: - Practice all button
                     if totalWrong > 1 {
-                        NavigationLink(destination: QuestionView(topicKey: "wrong_answers", startIndex: 0)) {
+                        Button { openExam(.questionView(topicKey: AppConstants.TopicKey.wrongAnswers, startIndex: 0)) } label: {
                             AppButton(label: "Luyện tất cả (\(totalWrong) câu)")
                         }
                         .buttonStyle(.plain)
@@ -39,7 +40,8 @@ struct WrongAnswersView: View {
 // MARK: - Wrong Topic Card
 
 private struct WrongTopicCard: View {
-    let topic: TopicInfo
+    @Environment(\.openExam) private var openExam
+    let topic: Topic
     let questions: [Question]
 
     var body: some View {
@@ -61,7 +63,7 @@ private struct WrongTopicCard: View {
             Spacer()
 
             // Practice button
-            NavigationLink(destination: QuestionView(topicKey: topic.key, startIndex: 0)) {
+            Button { openExam(.questionView(topicKey: topic.key, startIndex: 0)) } label: {
                 Text("Luyện")
                     .font(.system(size: 13, weight: .bold))
                     .foregroundStyle(Color.appOnPrimary)

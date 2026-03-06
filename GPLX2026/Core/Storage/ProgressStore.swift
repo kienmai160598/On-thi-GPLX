@@ -1,7 +1,10 @@
 import Foundation
 import Observation
+import os
 
 // MARK: - ProgressStore
+
+private let logger = Logger(subsystem: "com.gplx2026", category: "ProgressStore")
 
 @Observable
 final class ProgressStore {
@@ -15,6 +18,7 @@ final class ProgressStore {
         static let wrongAnswers       = "wrong_answers"
         static let completedExamSets  = "completed_exam_sets"
         static let simulationHistory  = "simulation_history"
+        static let hazardHistory      = "hazard_history"
         static let streakCount        = "streak_count"
         static let lastStudyDate      = "last_study_date"
         static let lastTopicKey       = "last_topic_key"
@@ -33,6 +37,7 @@ final class ProgressStore {
     private var _topicProgressCache: [String: [Int: Bool]] = [:]
     private var _examHistoryCache: [ExamResult]?
     private var _simulationHistoryCache: [SimulationResult]?
+    private var _hazardHistoryCache: [HazardResult]?
     private var _bookmarksCache: Set<Int>?
     private var _wrongAnswersCache: Set<Int>?
     private var _completedExamSetsCache: Set<Int>?
@@ -52,6 +57,7 @@ final class ProgressStore {
         _topicProgressCache.removeAll()
         _examHistoryCache = nil
         _simulationHistoryCache = nil
+        _hazardHistoryCache = nil
         _bookmarksCache = nil
         _wrongAnswersCache = nil
         _completedExamSetsCache = nil
@@ -64,18 +70,24 @@ final class ProgressStore {
         if let cached = _topicProgressCache[key] {
             return cached
         }
-        guard let data = defaults.data(forKey: Keys.progressPrefix + key),
-              let dict = try? JSONDecoder().decode([String: Bool].self, from: data) else {
+        guard let data = defaults.data(forKey: Keys.progressPrefix + key) else {
             _topicProgressCache[key] = [:]
             return [:]
         }
-        let result = dict.reduce(into: [Int: Bool]()) { result, pair in
-            if let intKey = Int(pair.key) {
-                result[intKey] = pair.value
+        do {
+            let dict = try JSONDecoder().decode([String: Bool].self, from: data)
+            let result = dict.reduce(into: [Int: Bool]()) { result, pair in
+                if let intKey = Int(pair.key) {
+                    result[intKey] = pair.value
+                }
             }
+            _topicProgressCache[key] = result
+            return result
+        } catch {
+            logger.warning("Failed to decode topic progress for key '\(key)': \(error.localizedDescription)")
+            _topicProgressCache[key] = [:]
+            return [:]
         }
-        _topicProgressCache[key] = result
-        return result
     }
 
     func saveQuestionResult(topicKey: String, questionNo: Int, correct: Bool) {
@@ -83,8 +95,11 @@ final class ProgressStore {
         current[questionNo] = correct
         _topicProgressCache[topicKey] = current
         let encoded = current.reduce(into: [String: Bool]()) { $0[String($1.key)] = $1.value }
-        if let data = try? JSONEncoder().encode(encoded) {
+        do {
+            let data = try JSONEncoder().encode(encoded)
             defaults.set(data, forKey: Keys.progressPrefix + topicKey)
+        } catch {
+            logger.error("Failed to encode topic progress for '\(topicKey)': \(error.localizedDescription)")
         }
         dataVersion += 1
     }
@@ -94,22 +109,31 @@ final class ProgressStore {
     var examHistory: [ExamResult] {
         _ = dataVersion
         if let cached = _examHistoryCache { return cached }
-        guard let data = defaults.data(forKey: Keys.examHistory),
-              let results = try? JSONDecoder().decode([ExamResult].self, from: data) else {
+        guard let data = defaults.data(forKey: Keys.examHistory) else {
             _examHistoryCache = []
             return []
         }
-        _examHistoryCache = results
-        return results
+        do {
+            let results = try JSONDecoder().decode([ExamResult].self, from: data)
+            _examHistoryCache = results
+            return results
+        } catch {
+            logger.warning("Failed to decode exam history: \(error.localizedDescription)")
+            _examHistoryCache = []
+            return []
+        }
     }
 
     func recordExamResult(_ result: ExamResult) {
         var history = examHistory
         history.insert(result, at: 0)
-        if history.count > 50 { history.removeLast() }
+        if history.count > AppConstants.Storage.historyLimit { history.removeLast() }
         _examHistoryCache = history
-        if let data = try? JSONEncoder().encode(history) {
+        do {
+            let data = try JSONEncoder().encode(history)
             defaults.set(data, forKey: Keys.examHistory)
+        } catch {
+            logger.error("Failed to encode exam history: \(error.localizedDescription)")
         }
         dataVersion += 1
     }
@@ -119,22 +143,65 @@ final class ProgressStore {
     var simulationHistory: [SimulationResult] {
         _ = dataVersion
         if let cached = _simulationHistoryCache { return cached }
-        guard let data = defaults.data(forKey: Keys.simulationHistory),
-              let results = try? JSONDecoder().decode([SimulationResult].self, from: data) else {
+        guard let data = defaults.data(forKey: Keys.simulationHistory) else {
             _simulationHistoryCache = []
             return []
         }
-        _simulationHistoryCache = results
-        return results
+        do {
+            let results = try JSONDecoder().decode([SimulationResult].self, from: data)
+            _simulationHistoryCache = results
+            return results
+        } catch {
+            logger.warning("Failed to decode simulation history: \(error.localizedDescription)")
+            _simulationHistoryCache = []
+            return []
+        }
     }
 
     func recordSimulationResult(_ result: SimulationResult) {
         var history = simulationHistory
         history.insert(result, at: 0)
-        if history.count > 50 { history.removeLast() }
+        if history.count > AppConstants.Storage.historyLimit { history.removeLast() }
         _simulationHistoryCache = history
-        if let data = try? JSONEncoder().encode(history) {
+        do {
+            let data = try JSONEncoder().encode(history)
             defaults.set(data, forKey: Keys.simulationHistory)
+        } catch {
+            logger.error("Failed to encode simulation history: \(error.localizedDescription)")
+        }
+        dataVersion += 1
+    }
+
+    // MARK: - Hazard history
+
+    var hazardHistory: [HazardResult] {
+        _ = dataVersion
+        if let cached = _hazardHistoryCache { return cached }
+        guard let data = defaults.data(forKey: Keys.hazardHistory) else {
+            _hazardHistoryCache = []
+            return []
+        }
+        do {
+            let results = try JSONDecoder().decode([HazardResult].self, from: data)
+            _hazardHistoryCache = results
+            return results
+        } catch {
+            logger.warning("Failed to decode hazard history: \(error.localizedDescription)")
+            _hazardHistoryCache = []
+            return []
+        }
+    }
+
+    func recordHazardResult(_ result: HazardResult) {
+        var history = hazardHistory
+        history.insert(result, at: 0)
+        if history.count > AppConstants.Storage.historyLimit { history.removeLast() }
+        _hazardHistoryCache = history
+        do {
+            let data = try JSONEncoder().encode(history)
+            defaults.set(data, forKey: Keys.hazardHistory)
+        } catch {
+            logger.error("Failed to encode hazard history: \(error.localizedDescription)")
         }
         dataVersion += 1
     }
@@ -144,14 +211,20 @@ final class ProgressStore {
     var bookmarks: Set<Int> {
         _ = dataVersion
         if let cached = _bookmarksCache { return cached }
-        guard let data = defaults.data(forKey: Keys.bookmarks),
-              let list = try? JSONDecoder().decode([Int].self, from: data) else {
+        guard let data = defaults.data(forKey: Keys.bookmarks) else {
             _bookmarksCache = []
             return []
         }
-        let result = Set(list)
-        _bookmarksCache = result
-        return result
+        do {
+            let list = try JSONDecoder().decode([Int].self, from: data)
+            let result = Set(list)
+            _bookmarksCache = result
+            return result
+        } catch {
+            logger.warning("Failed to decode bookmarks: \(error.localizedDescription)")
+            _bookmarksCache = []
+            return []
+        }
     }
 
     func toggleBookmark(questionNo: Int) {
@@ -175,14 +248,20 @@ final class ProgressStore {
     var wrongAnswers: Set<Int> {
         _ = dataVersion
         if let cached = _wrongAnswersCache { return cached }
-        guard let data = defaults.data(forKey: Keys.wrongAnswers),
-              let list = try? JSONDecoder().decode([Int].self, from: data) else {
+        guard let data = defaults.data(forKey: Keys.wrongAnswers) else {
             _wrongAnswersCache = []
             return []
         }
-        let result = Set(list)
-        _wrongAnswersCache = result
-        return result
+        do {
+            let list = try JSONDecoder().decode([Int].self, from: data)
+            let result = Set(list)
+            _wrongAnswersCache = result
+            return result
+        } catch {
+            logger.warning("Failed to decode wrong answers: \(error.localizedDescription)")
+            _wrongAnswersCache = []
+            return []
+        }
     }
 
     func addWrongAnswer(_ questionNo: Int) {
@@ -206,14 +285,20 @@ final class ProgressStore {
     var completedExamSets: Set<Int> {
         _ = dataVersion
         if let cached = _completedExamSetsCache { return cached }
-        guard let data = defaults.data(forKey: Keys.completedExamSets),
-              let list = try? JSONDecoder().decode([Int].self, from: data) else {
+        guard let data = defaults.data(forKey: Keys.completedExamSets) else {
             _completedExamSetsCache = []
             return []
         }
-        let result = Set(list)
-        _completedExamSetsCache = result
-        return result
+        do {
+            let list = try JSONDecoder().decode([Int].self, from: data)
+            let result = Set(list)
+            _completedExamSetsCache = result
+            return result
+        } catch {
+            logger.warning("Failed to decode completed exam sets: \(error.localizedDescription)")
+            _completedExamSetsCache = []
+            return []
+        }
     }
 
     func addCompletedExamSet(_ id: Int) {
@@ -303,7 +388,7 @@ final class ProgressStore {
     // MARK: - Reset
 
     func clearAllProgress() {
-        let topicKeys = Topic.all.map(\.key) + ["diem_liet"]
+        let topicKeys = Topic.all.map(\.key) + [AppConstants.TopicKey.diemLiet]
         for key in topicKeys {
             defaults.removeObject(forKey: Keys.progressPrefix + key)
         }
@@ -316,6 +401,7 @@ final class ProgressStore {
         defaults.removeObject(forKey: Keys.lastStudyDate)
         defaults.removeObject(forKey: Keys.completedExamSets)
         defaults.removeObject(forKey: Keys.simulationHistory)
+        defaults.removeObject(forKey: Keys.hazardHistory)
         invalidateCaches()
         dataVersion += 1
     }
@@ -323,8 +409,11 @@ final class ProgressStore {
     // MARK: - Private helpers
 
     private func saveIntSet(_ set: Set<Int>, forKey key: String) {
-        if let data = try? JSONEncoder().encode(Array(set)) {
+        do {
+            let data = try JSONEncoder().encode(Array(set))
             defaults.set(data, forKey: key)
+        } catch {
+            logger.error("Failed to encode int set for key '\(key)': \(error.localizedDescription)")
         }
     }
 }

@@ -6,7 +6,7 @@ struct MemoryTipsView: View {
     let topicKey: String
 
     var body: some View {
-        let topic = questionStore.topic(forKey: topicKey) ?? TopicInfo.all.first!
+        let topic = questionStore.topic(forKey: topicKey) ?? Topic.all.first!
         let tips = questionStore.memoryTips(forTopicKey: topicKey)
 
         ScrollView {

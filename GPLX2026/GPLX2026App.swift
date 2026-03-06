@@ -4,6 +4,7 @@ import SwiftUI
 struct GPLX2026App: App {
     @State private var questionStore = QuestionStore()
     @State private var progressStore = ProgressStore()
+    @State private var hazardVideoCache = HazardVideoCache()
     @AppStorage("appThemeMode") private var themeMode: String = "system"
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
 
@@ -22,8 +23,8 @@ struct GPLX2026App: App {
                     ContentView()
                         .environment(questionStore)
                         .environment(progressStore)
+                        .environment(hazardVideoCache)
                         .task {
-                            questionStore.progressStore = progressStore
                             questionStore.loadQuestions()
                         }
                         .transition(.opacity)

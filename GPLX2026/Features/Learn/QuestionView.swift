@@ -20,16 +20,24 @@ struct QuestionView: View {
         _currentIndex = State(initialValue: startIndex)
     }
 
+    private var filterIds: Set<Int>? {
+        switch topicKey {
+        case AppConstants.TopicKey.bookmarks: return progressStore.bookmarks
+        case AppConstants.TopicKey.wrongAnswers: return progressStore.wrongAnswers
+        default: return nil
+        }
+    }
+
     private var questions: [Question] {
-        questionStore.questions(forTopicKey: topicKey)
+        questionStore.questions(forTopicKey: topicKey, filterIds: filterIds)
     }
 
     private var topicName: String {
         switch topicKey {
-        case "all_questions": return "Tất cả câu hỏi"
-        case "diem_liet": return "Câu điểm liệt"
-        case "bookmarks": return "Đánh dấu"
-        case "wrong_answers": return "Câu sai"
+        case AppConstants.TopicKey.allQuestions: return "Tất cả câu hỏi"
+        case AppConstants.TopicKey.diemLiet: return "Câu điểm liệt"
+        case AppConstants.TopicKey.bookmarks: return "Đánh dấu"
+        case AppConstants.TopicKey.wrongAnswers: return "Câu sai"
         default: return questionStore.topic(forKey: topicKey)?.name ?? topicKey
         }
     }
@@ -64,42 +72,46 @@ struct QuestionView: View {
         let shuffledAnswers = question.shuffledAnswers
         let isBookmarked = progressStore.isBookmarked(questionNo: question.no)
         let isLast = currentIndex + 1 >= allQuestions.count
-        let isSpecial = topicKey.contains("diem_liet") || topicKey.contains("bookmarks") || topicKey.contains("wrong_answers")
+        let isSpecial = topicKey == AppConstants.TopicKey.diemLiet || topicKey == AppConstants.TopicKey.bookmarks || topicKey == AppConstants.TopicKey.wrongAnswers
 
-        ScrollView {
-            VStack(alignment: .leading, spacing: 0) {
-                QuestionCard(label: "Câu \(question.no):", question: question)
-                    .padding(.bottom, 20)
+        VStack(spacing: 0) {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 0) {
+                    QuestionCard(label: "Câu \(question.no):", question: question)
+                        .padding(.bottom, 20)
 
-                AnswerTileList(
-                    answers: shuffledAnswers,
-                    selectedAnswerId: selectedAnswerId,
-                    isConfirmed: isConfirmed,
-                    showCorrectness: true,
-                    onSelect: { selectAnswer($0) }
-                )
+                    AnswerTileList(
+                        answers: shuffledAnswers,
+                        selectedAnswerId: selectedAnswerId,
+                        isConfirmed: isConfirmed,
+                        showCorrectness: true,
+                        onSelect: { selectAnswer($0) }
+                    )
 
-                // MARK: - Tip after confirm
-                if isConfirmed && !question.tip.isEmpty {
-                    ExplanationBox(content: question.tip)
-                        .padding(.top, 4)
-                        .transition(.opacity.combined(with: .move(edge: .top)))
-                }
-            }
-            .padding(.horizontal, 20)
-            .padding(.top, 12)
-        }
-        .id(currentIndex)
-        .safeAreaInset(edge: .bottom) {
-            HStack(spacing: 10) {
-                if !isSpecial {
-                    NavigationLink(destination: MemoryTipsView(topicKey: topicKey)) {
-                        AppIconButton(icon: "lightbulb", size: 52)
+                    // MARK: - Tip after confirm
+                    if isConfirmed && !question.tip.isEmpty {
+                        ExplanationBox(content: question.tip)
+                            .padding(.top, 4)
+                            .transition(.opacity.combined(with: .move(edge: .top)))
                     }
                 }
+                .padding(.horizontal, 20)
+                .padding(.top, 12)
+            }
+            .id(currentIndex)
 
-                Button {
-                    Haptics.selection()
+            let tipsTopicKey = Topic.keyForTopicId(question.topic)
+            let hasTips = !questionStore.memoryTips(forTopicKey: tipsTopicKey).isEmpty
+
+            ExamBottomBar(
+                currentIndex: currentIndex,
+                totalCount: allQuestions.count,
+                answeredIndices: answeredIndices(for: allQuestions),
+                nextLabel: isConfirmed ? (isLast ? "Xem kết quả" : "Câu tiếp") : "Xác nhận",
+                isNextDisabled: !hasSelected,
+                showPrev: false,
+                onPrev: {},
+                onNext: {
                     if isConfirmed {
                         if isLast {
                             showResultDialog = true
@@ -109,30 +121,23 @@ struct QuestionView: View {
                     } else if hasSelected {
                         confirmAnswer(question: question)
                     }
-                } label: {
-                    AppButton(label: isConfirmed ? (isLast ? "Xem kết quả" : "Câu tiếp theo") : "Xác nhận")
-                }
-                .disabled(!hasSelected)
-
-                QuestionGridButton(
-                    current: currentIndex + 1,
-                    total: allQuestions.count,
-                    answeredIndices: answeredIndices(for: allQuestions)
-                ) { index in
+                },
+                onSelectIndex: { index in
                     withAnimation(.easeOut(duration: 0.25)) {
                         currentIndex = index
                         selectedAnswerId = nil
                         isConfirmed = false
                     }
-                }
-            }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 10)
-            .background(.ultraThinMaterial)
+                },
+                leadingWidget: !isSpecial && hasTips ? AnyView(
+                    NavigationLink(destination: MemoryTipsView(topicKey: tipsTopicKey)) {
+                        AppIconButton(icon: "lightbulb", size: 48)
+                    }
+                ) : nil
+            )
         }
         .background(Color.scaffoldBg.ignoresSafeArea())
         .navigationBarBackButtonHidden(true)
-        .hidesTabBar()
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
                 Button { dismiss() } label: {
@@ -188,7 +193,7 @@ struct QuestionView: View {
         if isCorrect { correctCount += 1 }
         Haptics.notification(isCorrect ? .success : .error)
 
-        let tKey = TopicInfo.keyForTopicId(question.topic)
+        let tKey = Topic.keyForTopicId(question.topic)
         progressStore.recordQuestionAnswer(topicKey: tKey, questionNo: question.no, correct: isCorrect)
     }
 
@@ -213,7 +218,7 @@ struct QuestionView: View {
         var progressCache: [String: [Int: Bool]] = [:]
         var result = Set<Int>()
         for (i, q) in questions.enumerated() {
-            let tk = TopicInfo.keyForTopicId(q.topic)
+            let tk = Topic.keyForTopicId(q.topic)
             if progressCache[tk] == nil {
                 progressCache[tk] = progressStore.topicProgress(for: tk)
             }

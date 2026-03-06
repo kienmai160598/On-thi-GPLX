@@ -104,7 +104,7 @@ struct ExamResult: Codable, Identifiable {
                 correct: isCorrect
             ))
         }
-        let passed = correctCount >= 32 && wrongDiemLietCount == 0
+        let passed = correctCount >= AppConstants.Exam.passThreshold && wrongDiemLietCount == 0
         return ExamResult(
             date: Date(),
             score: correctCount,

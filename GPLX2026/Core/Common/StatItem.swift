@@ -11,6 +11,8 @@ struct StatItem: View {
             Text(value)
                 .font(.system(size: valueFontSize, weight: .heavy))
                 .foregroundStyle(valueColor)
+                .contentTransition(.numericText())
+                .animation(.snappy, value: value)
             Text(label)
                 .font(.system(size: 12, weight: .medium))
                 .foregroundStyle(Color.appTextMedium)

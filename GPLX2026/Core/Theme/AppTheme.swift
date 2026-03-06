@@ -58,15 +58,16 @@ extension Color {
 
     static func primaryColor(for key: String) -> Color {
         switch key {
-        case "blue":   return .blue
-        case "indigo": return .indigo
-        case "purple": return .purple
-        case "pink":   return .pink
-        case "red":    return .red
-        case "orange": return .orange
-        case "green":  return .green
-        case "teal":   return .teal
-        default:       return adaptive(light: 0x171717, dark: 0xFAFAFA)
+        case "blue":       return Color(red: 0/255, green: 122/255, blue: 255/255)   // #007AFF
+        case "cyan":       return Color(red: 0/255, green: 188/255, blue: 212/255)   // #00BCD4
+        case "mint":       return Color(red: 100/255, green: 255/255, blue: 218/255) // #64FFDA
+        case "teal":       return Color(red: 45/255, green: 212/255, blue: 191/255)  // #2DD4BF
+        case "violet":     return Color(red: 124/255, green: 77/255, blue: 255/255)  // #7C4DFF
+        case "purple":     return Color(red: 170/255, green: 0/255, blue: 255/255)   // #AA00FF
+        case "indigo":     return Color(red: 88/255, green: 86/255, blue: 214/255)   // #5856D6
+        case "rose":       return Color(red: 244/255, green: 63/255, blue: 94/255)   // #F43F5E
+        case "chartreuse": return Color(red: 163/255, green: 230/255, blue: 53/255)  // #A3E635
+        default:           return adaptive(light: 0x171717, dark: 0xFAFAFA)
         }
     }
 
@@ -98,13 +99,13 @@ extension Color {
 
     static let appDivider    = adaptive(light: 0xE5E5E5, dark: 0x262626)
 
-    // ── Topic Colors (grayscale) ──────────────────────────────────────
+    // ── Topic Colors ────────────────────────────────────────────────────
 
-    static let topicQuyDinh  = adaptive(light: 0x262626, dark: 0xD4D4D4)
-    static let topicKyThuat  = adaptive(light: 0x404040, dark: 0xA3A3A3)
-    static let topicCauTao   = adaptive(light: 0x525252, dark: 0x8E8E8E)
-    static let topicBienBao  = adaptive(light: 0x333333, dark: 0xC0C0C0)
-    static let topicSaHinh   = adaptive(light: 0x4A4A4A, dark: 0xB0B0B0)
+    static let topicQuyDinh  = adaptive(light: 0x3B82F6, dark: 0x60A5FA)  // Blue
+    static let topicKyThuat  = adaptive(light: 0x8B5CF6, dark: 0xA78BFA)  // Violet
+    static let topicCauTao   = adaptive(light: 0xF59E0B, dark: 0xFBBF24)  // Amber
+    static let topicBienBao  = adaptive(light: 0xEF4444, dark: 0xF87171)  // Red
+    static let topicSaHinh   = adaptive(light: 0x10B981, dark: 0x34D399)  // Emerald
 
     // ── Accents (grayscale aliases) ───────────────────────────────────
 
@@ -122,13 +123,21 @@ extension Color {
 
 struct GlassCard: ViewModifier {
     var cornerRadius: CGFloat = 16
+    var interactive: Bool = true
 
     func body(content: Content) -> some View {
         if #available(iOS 26.0, *) {
-            content
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .contentShape(Rectangle())
-                .glassEffect(.regular.interactive(), in: .rect(cornerRadius: cornerRadius))
+            if interactive {
+                content
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .contentShape(Rectangle())
+                    .glassEffect(.regular.interactive(), in: .rect(cornerRadius: cornerRadius))
+            } else {
+                content
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .contentShape(Rectangle())
+                    .glassEffect(.regular, in: .rect(cornerRadius: cornerRadius))
+            }
         } else {
             content
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -140,29 +149,56 @@ struct GlassCard: ViewModifier {
 }
 
 extension View {
-    func glassCard(cornerRadius: CGFloat = 16) -> some View {
-        modifier(GlassCard(cornerRadius: cornerRadius))
+    func glassCard(cornerRadius: CGFloat = 16, interactive: Bool = true) -> some View {
+        modifier(GlassCard(cornerRadius: cornerRadius, interactive: interactive))
     }
 }
 
-// MARK: - Pop to Root Environment
+// MARK: - Exam Screen Routing
+
+enum ExamScreen: Identifiable {
+    case mockExam(examSetId: Int? = nil)
+    case simulationExam(mode: SimulationExamView.Mode)
+    case hazardTest(mode: HazardTestView.Mode)
+    case questionView(topicKey: String, startIndex: Int)
+
+    var id: String {
+        switch self {
+        case .mockExam(let id): "mock-\(id ?? -1)"
+        case .simulationExam: "sim"
+        case .hazardTest: "hazard"
+        case .questionView(let key, let idx): "q-\(key)-\(idx)"
+        }
+    }
+
+    @ViewBuilder
+    var destination: some View {
+        switch self {
+        case .mockExam(let id): MockExamView(examSetId: id)
+        case .simulationExam(let mode): SimulationExamView(mode: mode)
+        case .hazardTest(let mode): HazardTestView(mode: mode)
+        case .questionView(let key, let idx): QuestionView(topicKey: key, startIndex: idx)
+        }
+    }
+}
+
+private struct OpenExamKey: EnvironmentKey {
+    nonisolated(unsafe) static let defaultValue: (ExamScreen) -> Void = { _ in }
+}
 
 private struct PopToRootKey: EnvironmentKey {
     nonisolated(unsafe) static let defaultValue: () -> Void = {}
 }
 
 extension EnvironmentValues {
+    var openExam: (ExamScreen) -> Void {
+        get { self[OpenExamKey.self] }
+        set { self[OpenExamKey.self] = newValue }
+    }
+
     var popToRoot: () -> Void {
         get { self[PopToRootKey.self] }
         set { self[PopToRootKey.self] = newValue }
-    }
-}
-
-// MARK: - Tab Bar Visibility
-
-extension View {
-    func hidesTabBar() -> some View {
-        self.toolbar(.hidden, for: .tabBar)
     }
 }
 
@@ -172,7 +208,7 @@ extension View {
     func screenHeader(_ title: String) -> some View {
         self
             .navigationTitle(title)
-            .navigationBarTitleDisplayMode(.large)
+            .navigationBarTitleDisplayMode(.inline)
             .background(Color.scaffoldBg.ignoresSafeArea())
     }
 }

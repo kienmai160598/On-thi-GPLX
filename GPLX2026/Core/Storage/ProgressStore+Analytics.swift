@@ -51,9 +51,31 @@ extension ProgressStore {
         return (correct, total)
     }
 
-    // MARK: - Readiness score
+    // MARK: - Readiness
+
+    struct ReadinessStatus {
+        let score: Double
+        let percentage: Int
+        let diemLiet: (correct: Int, total: Int)
+        let totalCorrect: Int
+        let totalQuestions: Int
+        let totalAttempted: Int
+        let isReady: Bool
+        let passRate: Double
+
+        enum Level { case ready, needsWork, notReady }
+
+        var level: Level {
+            if isReady { return .ready }
+            return percentage >= AppConstants.Readiness.intermediatePercentage ? .needsWork : .notReady
+        }
+    }
 
     func readinessScore(topics: [Topic], allQuestions: [Question]) -> Double {
+        readinessStatus(topics: topics, allQuestions: allQuestions).score
+    }
+
+    func readinessStatus(topics: [Topic], allQuestions: [Question]) -> ReadinessStatus {
         let totalCorrect = totalCorrectCount(topics: topics)
         let totalAttempted = totalAttemptedCount(topics: topics)
         let overallAccuracy = totalAttempted > 0 ? Double(totalCorrect) / Double(totalAttempted) : 0
@@ -67,7 +89,22 @@ extension ProgressStore {
         let totalQuestions = topics.reduce(0) { $0 + $1.questionCount }
         let coverage = totalQuestions > 0 ? Double(totalAttempted) / Double(totalQuestions) : 0
 
-        return overallAccuracy * 0.4 + dlAccuracy * 0.3 + passRate * 0.2 + coverage * 0.1
+        let score = overallAccuracy * 0.4 + dlAccuracy * 0.3 + passRate * 0.2 + coverage * 0.1
+        let pct = Int(score * 100)
+        let isReady = pct >= AppConstants.Readiness.readyPercentage
+            && dl.correct == dl.total
+            && totalAttempted >= AppConstants.Readiness.attemptedGoal
+
+        return ReadinessStatus(
+            score: score,
+            percentage: pct,
+            diemLiet: dl,
+            totalCorrect: totalCorrect,
+            totalQuestions: totalQuestions,
+            totalAttempted: totalAttempted,
+            isReady: isReady,
+            passRate: passRate
+        )
     }
 
     // MARK: - Aggregate counts
@@ -114,7 +151,7 @@ extension ProgressStore {
                     let pct = Int(avgAccuracy * 100)
                     return (pct, badge.threshold, pct >= badge.threshold)
                 case .diemLietMaster:
-                    let dlCorrect = correctCount(forTopic: "diem_liet")
+                    let dlCorrect = correctCount(forTopic: AppConstants.TopicKey.diemLiet)
                     return (dlCorrect > 0 ? 1 : 0, 1, dlCorrect > 0)
                 }
             }()

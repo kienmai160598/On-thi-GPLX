@@ -4,102 +4,140 @@ struct TopicsView: View {
     @Environment(QuestionStore.self) private var questionStore
     @Environment(ProgressStore.self) private var progressStore
 
+    var initialTopicKey: String? = nil
     @State private var selectedTopicKey: String? = nil
-
-    private var displayQuestions: [Question] {
-        if let key = selectedTopicKey {
-            return questionStore.questionsForTopic(key: key)
-        }
-        return questionStore.allQuestions
-    }
-
-    private var filterIcon: String {
-        selectedTopicKey != nil ? "line.3.horizontal.decrease.circle.fill" : "line.3.horizontal.decrease.circle"
-    }
 
     var body: some View {
         ScrollView {
-            VStack(spacing: 0) {
-                ForEach(Array(displayQuestions.enumerated()), id: \.element.no) { index, question in
-                    if index > 0 {
-                        Divider().padding(.leading, 60)
-                    }
+            LazyVStack(alignment: .leading, spacing: 0) {
+                if let key = selectedTopicKey {
+                    let questions = questionStore.questionsForTopic(key: key)
+                    let topic = questionStore.topics.first(where: { $0.key == key })
 
-                    let topicKey = TopicInfo.keyForTopicId(question.topic)
-                    let answerStatus = progressStore.answerStatus(topicKey: topicKey, questionNo: question.no)
-                    let navTopicKey = selectedTopicKey ?? topicKey
-                    let navIndex: Int = {
-                        if selectedTopicKey != nil { return index }
-                        return questionStore.allQuestions.firstIndex(where: { $0.no == question.no }) ?? 0
-                    }()
+                    TopicSectionHeader(
+                        topic: topic,
+                        questions: questions,
+                        progressStore: progressStore
+                    )
 
-                    NavigationLink(destination: QuestionView(topicKey: navTopicKey, startIndex: navIndex)) {
-                        HStack(spacing: 12) {
-                            Text("\(question.no)")
-                                .font(.system(size: 14, weight: .semibold))
-                                .foregroundStyle(Color.appTextMedium)
-                                .frame(width: 28, alignment: .center)
+                    QuestionReviewList(
+                        questions: questions,
+                        topicKey: key,
+                        progressStore: progressStore
+                    )
+                } else {
+                    ForEach(questionStore.topics, id: \.id) { topic in
+                        let questions = questionStore.questionsForTopic(key: topic.key)
 
-                            Text(question.text)
-                                .font(.system(size: 15))
-                                .foregroundStyle(Color.appTextDark)
-                                .lineLimit(2)
-                                .multilineTextAlignment(.leading)
-                                .lineSpacing(2)
+                        if !questions.isEmpty {
+                            TopicSectionHeader(
+                                topic: topic,
+                                questions: questions,
+                                progressStore: progressStore
+                            )
 
-                            Spacer(minLength: 8)
-
-                            switch answerStatus {
-                            case .correct:
-                                Image(systemName: "checkmark.circle.fill")
-                                    .font(.system(size: 16))
-                                    .foregroundStyle(Color.appSuccess)
-                            case .wrong:
-                                Image(systemName: "xmark.circle.fill")
-                                    .font(.system(size: 16))
-                                    .foregroundStyle(Color.appError)
-                            case .unanswered:
-                                EmptyView()
-                            }
+                            QuestionReviewList(
+                                questions: questions,
+                                topicKey: topic.key,
+                                progressStore: progressStore
+                            )
+                            .padding(.bottom, 12)
                         }
-                        .padding(.horizontal, 20)
-                        .padding(.vertical, 12)
                     }
-                    .buttonStyle(.plain)
                 }
+            }
+            .padding(.horizontal, 20)
 
-                Spacer().frame(height: 20)
+            Spacer().frame(height: 20)
+        }
+        .onAppear {
+            if selectedTopicKey == nil, let key = initialTopicKey {
+                selectedTopicKey = key
             }
         }
-        .screenHeader("Chủ đề")
+        .screenHeader("Học theo chủ đề")
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 Menu {
                     Button {
-                        selectedTopicKey = nil
+                        withAnimation { selectedTopicKey = nil }
                     } label: {
-                        if selectedTopicKey == nil {
-                            Label("Tất cả (\(questionStore.allQuestions.count))", systemImage: "checkmark")
-                        } else {
-                            Text("Tất cả (\(questionStore.allQuestions.count))")
-                        }
+                        Label("Tất cả (\(questionStore.allQuestions.count))", systemImage: selectedTopicKey == nil ? "checkmark" : "")
                     }
-
                     ForEach(questionStore.topics, id: \.id) { topic in
                         Button {
-                            selectedTopicKey = topic.key
+                            withAnimation { selectedTopicKey = topic.key }
                         } label: {
-                            if selectedTopicKey == topic.key {
-                                Label("\(topic.shortName) (\(topic.questionCount))", systemImage: "checkmark")
-                            } else {
-                                Text("\(topic.shortName) (\(topic.questionCount))")
-                            }
+                            Label(
+                                "\(topic.shortName) (\(topic.questionCount))",
+                                systemImage: selectedTopicKey == topic.key ? "checkmark" : ""
+                            )
                         }
                     }
                 } label: {
-                    Image(systemName: filterIcon)
+                    Image(systemName: selectedTopicKey != nil ? "line.3.horizontal.decrease.circle.fill" : "line.3.horizontal.decrease.circle")
+                        .foregroundStyle(.primary)
+                }
+            }
+        }
+    }
+
+}
+
+// MARK: - Topic Section Header
+
+private struct TopicSectionHeader: View {
+    let topic: Topic?
+    let questions: [Question]
+    let progressStore: ProgressStore
+
+    private var progress: (correct: Int, wrong: Int, total: Int) {
+        guard let topic else { return (0, 0, questions.count) }
+        let prog = progressStore.topicProgress(for: topic.key)
+        let correct = prog.values.filter { $0 }.count
+        let wrong = prog.values.filter { !$0 }.count
+        return (correct, wrong, questions.count)
+    }
+
+    var body: some View {
+        HStack(alignment: .bottom) {
+            VStack(alignment: .leading, spacing: 2) {
+                if let topic {
+                    Text(topic.name)
+                        .font(.system(size: 16, weight: .heavy))
                         .foregroundStyle(Color.appTextDark)
                 }
+                Text("\(progress.correct)/\(progress.total) đã đúng")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(Color.appTextMedium)
+            }
+            Spacer()
+            if progress.wrong > 0 {
+                Text("\(progress.wrong) sai")
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundStyle(Color.appError)
+            }
+        }
+        .padding(.bottom, 8)
+        .padding(.top, 4)
+    }
+}
+
+// MARK: - Question List
+
+private struct QuestionReviewList: View {
+    let questions: [Question]
+    let topicKey: String
+    let progressStore: ProgressStore
+
+    var body: some View {
+        LazyVStack(spacing: 8) {
+            ForEach(questions, id: \.no) { question in
+                let qTopicKey = Topic.keyForTopicId(question.topic)
+                let status = progressStore.answerStatus(topicKey: qTopicKey, questionNo: question.no)
+
+                QuestionReviewRow(question: question, status: status)
+                    .glassCard()
             }
         }
     }

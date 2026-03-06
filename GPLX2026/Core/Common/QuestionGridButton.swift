@@ -23,7 +23,8 @@ struct QuestionGridButton: View {
                 onSelect(index)
                 showGrid = false
             }
-            .presentationDetents([.medium])
+            .presentationDetents([.medium, .large])
+            .presentationDragIndicator(.visible)
         }
     }
 }

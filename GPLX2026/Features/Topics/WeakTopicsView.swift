@@ -3,6 +3,7 @@ import SwiftUI
 struct WeakTopicsView: View {
     @Environment(QuestionStore.self) private var questionStore
     @Environment(ProgressStore.self) private var progressStore
+    @Environment(\.openExam) private var openExam
 
     var body: some View {
         ScrollView {
@@ -16,15 +17,13 @@ struct WeakTopicsView: View {
                 if !weakList.isEmpty {
                     SectionTitle(title: "Cần ôn thêm")
                         .padding(.bottom, 8)
-                        .staggered(0)
 
-                    ForEach(Array(weakList.enumerated()), id: \.element.topic.id) { i, item in
-                        NavigationLink(destination: QuestionView(topicKey: item.topic.key, startIndex: 0)) {
+                    ForEach(Array(weakList.enumerated()), id: \.element.topic.id) { _, item in
+                        Button { openExam(.questionView(topicKey: item.topic.key, startIndex: 0)) } label: {
                             TopicAccuracyRow(item: item)
                         }
                         .buttonStyle(.plain)
                         .padding(.bottom, 8)
-                        .staggered(1 + i)
                     }
                     .padding(.bottom, 12)
                 }
@@ -33,15 +32,13 @@ struct WeakTopicsView: View {
                 if !strongList.isEmpty {
                     SectionTitle(title: "Đã tốt")
                         .padding(.bottom, 8)
-                        .staggered(6)
 
-                    ForEach(Array(strongList.enumerated()), id: \.element.topic.id) { i, item in
-                        NavigationLink(destination: QuestionView(topicKey: item.topic.key, startIndex: 0)) {
+                    ForEach(Array(strongList.enumerated()), id: \.element.topic.id) { _, item in
+                        Button { openExam(.questionView(topicKey: item.topic.key, startIndex: 0)) } label: {
                             TopicAccuracyRow(item: item)
                         }
                         .buttonStyle(.plain)
                         .padding(.bottom, 8)
-                        .staggered(7 + i)
                     }
                     .padding(.bottom, 12)
                 }
@@ -50,10 +47,9 @@ struct WeakTopicsView: View {
                 if !notStarted.isEmpty {
                     SectionTitle(title: "Chưa bắt đầu")
                         .padding(.bottom, 8)
-                        .staggered(12)
 
-                    ForEach(Array(notStarted.enumerated()), id: \.element.topic.id) { i, item in
-                        NavigationLink(destination: QuestionView(topicKey: item.topic.key, startIndex: 0)) {
+                    ForEach(Array(notStarted.enumerated()), id: \.element.topic.id) { _, item in
+                        Button { openExam(.questionView(topicKey: item.topic.key, startIndex: 0)) } label: {
                             ListItemCard(
                                 icon: item.topic.sfSymbol,
                                 title: item.topic.name,
@@ -62,7 +58,6 @@ struct WeakTopicsView: View {
                         }
                         .buttonStyle(.plain)
                         .padding(.bottom, 8)
-                        .staggered(13 + i)
                     }
                 }
 
@@ -106,18 +101,7 @@ private struct TopicAccuracyRow: View {
                     .foregroundStyle(Color.appTextDark)
 
                 // Progress bar
-                GeometryReader { geo in
-                    ZStack(alignment: .leading) {
-                        RoundedRectangle(cornerRadius: 3)
-                            .fill(Color.appDivider)
-                            .frame(height: 6)
-
-                        RoundedRectangle(cornerRadius: 3)
-                            .fill(accentColor)
-                            .frame(width: geo.size.width * item.accuracy, height: 6)
-                    }
-                }
-                .frame(height: 6)
+                ProgressBarView(fraction: item.accuracy, color: accentColor)
 
                 Text("\(item.correct)/\(item.attempted) đúng \u{2022} \(Int(item.accuracy * 100))%")
                     .font(.system(size: 12))

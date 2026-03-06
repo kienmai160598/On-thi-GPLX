@@ -12,40 +12,18 @@ struct BadgesView: View {
 
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
-                // MARK: - Hero header
-                VStack(spacing: 16) {
-                    ZStack {
-                        Circle()
-                            .fill(Color.appPrimary.opacity(0.1))
-                            .frame(width: 80, height: 80)
-                        Image(systemName: "trophy.fill")
-                            .font(.system(size: 36))
-                            .foregroundStyle(Color.appPrimary)
-                    }
-
-                    VStack(spacing: 4) {
-                        Text("\(unlocked)/\(badges.count)")
-                            .font(.system(size: 28, weight: .heavy))
-                            .foregroundStyle(Color.appTextDark)
-                        Text("thành tích đã mở khoá")
-                            .font(.system(size: 14))
-                            .foregroundStyle(Color.appTextMedium)
-                    }
-
-                    Text("Hoàn thành các mục tiêu học tập để mở khoá thành tích")
-                        .font(.system(size: 13))
-                        .foregroundStyle(Color.appTextLight)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal, 20)
-                }
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 20)
-                .glassCard()
+                DetailHero(
+                    icon: "trophy.fill",
+                    iconColor: .appPrimary,
+                    title: "\(unlocked)/\(badges.count)",
+                    subtitle: "thành tích đã mở khoá",
+                    description: "Hoàn thành các mục tiêu học tập để mở khoá thành tích"
+                )
                 .padding(.bottom, 20)
 
                 // MARK: - Badge grid (2 columns)
                 LazyVGrid(columns: columns, spacing: 10) {
-                    ForEach(Array(badges.enumerated()), id: \.element.id) { _, status in
+                    ForEach(badges, id: \.id) { status in
                         BadgeTile(status: status)
                     }
                 }
@@ -61,7 +39,6 @@ struct BadgesView: View {
                 CloseButton { dismiss() }
             }
         }
-        .hidesTabBar()
     }
 }
 
@@ -75,7 +52,6 @@ private struct BadgeTile: View {
         let isUnlocked = status.isUnlocked
 
         VStack(spacing: 10) {
-            // Icon
             ZStack {
                 Circle()
                     .fill(isUnlocked ? badge.color.opacity(0.12) : Color.appDivider.opacity(0.5))
@@ -85,14 +61,12 @@ private struct BadgeTile: View {
                     .foregroundStyle(isUnlocked ? badge.color : Color.appTextLight)
             }
 
-            // Title
             Text(badge.title)
                 .font(.system(size: 13, weight: .bold))
                 .foregroundStyle(isUnlocked ? Color.appTextDark : Color.appTextLight)
                 .lineLimit(1)
                 .minimumScaleFactor(0.8)
 
-            // Description
             Text(badge.description)
                 .font(.system(size: 11))
                 .foregroundStyle(Color.appTextMedium)
@@ -100,7 +74,6 @@ private struct BadgeTile: View {
                 .lineLimit(2)
                 .fixedSize(horizontal: false, vertical: true)
 
-            // Progress
             if isUnlocked {
                 HStack(spacing: 4) {
                     Image(systemName: "checkmark.circle.fill")

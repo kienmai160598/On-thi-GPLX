@@ -20,7 +20,7 @@ struct SimulationResult: Codable, Identifiable {
 
     /// Pass if score >= 70%.
     var passed: Bool {
-        accuracy >= 0.7
+        accuracy >= AppConstants.Simulation.passRate
     }
 
     // MARK: - ScenarioDetail

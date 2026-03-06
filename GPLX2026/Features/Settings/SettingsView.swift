@@ -16,11 +16,8 @@ struct SettingsView: View {
                     .padding(.bottom, 8)
                     .staggered(0)
 
-                VStack(spacing: 0) {
-                    ThemeModePicker(selected: $themeMode, primaryColorKey: primaryColorKey)
-                }
-                .glassCard()
-                .padding(.bottom, 20)
+                ThemeModePicker(selected: $themeMode, primaryColorKey: primaryColorKey)
+                    .padding(.bottom, 20)
                 .staggered(1)
 
                 // MARK: - Primary Color
@@ -152,115 +149,6 @@ struct SettingsTile: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
-    }
-}
-
-// MARK: - Primary Color Picker
-
-private struct PrimaryColorPicker: View {
-    @Binding var selected: String
-
-    private static let colors: [(key: String, color: Color)] = [
-        ("default", .adaptive(light: 0x171717, dark: 0xFAFAFA)),
-        ("blue", .blue),
-        ("indigo", .indigo),
-        ("purple", .purple),
-        ("pink", .pink),
-        ("red", .red),
-        ("orange", .orange),
-        ("green", .green),
-        ("teal", .teal),
-    ]
-
-    var body: some View {
-        HStack(spacing: 0) {
-            ForEach(Self.colors, id: \.key) { item in
-                Button {
-                    Haptics.selection()
-                    selected = item.key
-                } label: {
-                    colorCircle(item: item)
-                        .frame(maxWidth: .infinity)
-                }
-            }
-        }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 14)
-        .glassCard()
-    }
-
-    @ViewBuilder
-    private func colorCircle(item: (key: String, color: Color)) -> some View {
-        let isSelected = selected == item.key
-
-        if #available(iOS 26.0, *) {
-            Circle()
-                .fill(item.color)
-                .frame(width: 28, height: 28)
-                .padding(4)
-                .overlay {
-                    if isSelected {
-                        Circle()
-                            .stroke(item.color, lineWidth: 2)
-                            .frame(width: 36, height: 36)
-                    }
-                }
-                .glassEffect(isSelected ? .regular.interactive() : .clear, in: .circle)
-        } else {
-            ZStack {
-                Circle()
-                    .fill(item.color)
-                    .frame(width: 28, height: 28)
-
-                if isSelected {
-                    Circle()
-                        .stroke(Color.appTextDark, lineWidth: 2.5)
-                        .frame(width: 36, height: 36)
-                }
-            }
-            .frame(width: 36, height: 36)
-        }
-    }
-}
-
-// MARK: - Theme Mode Picker
-
-private struct ThemeModePicker: View {
-    @Binding var selected: String
-    var primaryColorKey: String
-
-    private static let modes: [(key: String, label: String, icon: String)] = [
-        ("system", "Hệ thống", "circle.lefthalf.filled"),
-        ("light", "Sáng", "sun.max.fill"),
-        ("dark", "Tối", "moon.fill"),
-    ]
-
-    private var accentColor: Color { Color.primaryColor(for: primaryColorKey) }
-
-    var body: some View {
-        HStack(spacing: 0) {
-            ForEach(Self.modes, id: \.key) { mode in
-                let isSelected = selected == mode.key
-
-                Button {
-                    Haptics.selection()
-                    selected = mode.key
-                } label: {
-                    VStack(spacing: 8) {
-                        Image(systemName: mode.icon)
-                            .font(.system(size: 24))
-                            .foregroundStyle(isSelected ? accentColor : Color.appTextMedium)
-                        Text(mode.label)
-                            .font(.system(size: 13, weight: isSelected ? .bold : .medium))
-                            .foregroundStyle(isSelected ? accentColor : Color.appTextMedium)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 16)
-                    .background(isSelected ? accentColor.opacity(0.1) : Color.clear)
-                }
-            }
-        }
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
 }
 
