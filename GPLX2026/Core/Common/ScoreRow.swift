@@ -18,6 +18,6 @@ struct ScoreRow: View {
                 .animation(.snappy, value: value)
         }
         .padding(.horizontal, 16)
-        .padding(.vertical, 12)
+        .padding(.vertical, 14)
     }
 }

@@ -51,24 +51,24 @@ private struct BadgeTile: View {
         let badge = status.badge
         let isUnlocked = status.isUnlocked
 
-        VStack(spacing: 10) {
+        VStack(spacing: 12) {
             ZStack {
                 Circle()
                     .fill(isUnlocked ? badge.color.opacity(0.12) : Color.appDivider.opacity(0.5))
-                    .frame(width: 48, height: 48)
+                    .frame(width: 52, height: 52)
                 Image(systemName: badge.sfSymbol)
-                    .font(.system(size: 22))
+                    .font(.system(size: 24))
                     .foregroundStyle(isUnlocked ? badge.color : Color.appTextLight)
             }
 
             Text(badge.title)
-                .font(.system(size: 13, weight: .bold))
+                .font(.system(size: 14, weight: .bold))
                 .foregroundStyle(isUnlocked ? Color.appTextDark : Color.appTextLight)
                 .lineLimit(1)
                 .minimumScaleFactor(0.8)
 
             Text(badge.description)
-                .font(.system(size: 11))
+                .font(.system(size: 12))
                 .foregroundStyle(Color.appTextMedium)
                 .multilineTextAlignment(.center)
                 .lineLimit(2)

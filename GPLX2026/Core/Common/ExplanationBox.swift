@@ -17,7 +17,7 @@ struct ExplanationBox: View {
                 .lineSpacing(3)
                 .multilineTextAlignment(.leading)
         }
-        .padding(12)
-        .glassCard(cornerRadius: 10)
+        .padding(14)
+        .glassCard(cornerRadius: 12)
     }
 }

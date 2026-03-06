@@ -17,7 +17,7 @@ struct SimulationTab: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 0) {
+            VStack(alignment: .leading, spacing: 20) {
                 // Section picker
                 Picker("", selection: $selectedSection) {
                     ForEach(SimSection.allCases, id: \.self) { section in
@@ -25,7 +25,6 @@ struct SimulationTab: View {
                     }
                 }
                 .pickerStyle(.segmented)
-                .padding(.bottom, 20)
 
                 switch selectedSection {
                 case .simulation:
@@ -36,7 +35,7 @@ struct SimulationTab: View {
             }
             .padding(.horizontal, 20)
             .padding(.top, 16)
-            .padding(.bottom, 20)
+            .padding(.bottom, 24)
         }
         .screenHeader("Thực hành")
         .alert("Xoá cache video?", isPresented: $showClearCacheAlert) {
@@ -72,7 +71,7 @@ struct SimulationTab: View {
         // Rules card
         VStack(alignment: .leading, spacing: 14) {
             Text("Quy tắc thi mô phỏng")
-                .font(.system(size: 16, weight: .heavy))
+                .font(.system(size: 17, weight: .heavy))
                 .foregroundStyle(Color.appTextDark)
 
             RuleRow(icon: "photo.on.rectangle", iconColor: Color.appPrimary,
@@ -83,25 +82,14 @@ struct SimulationTab: View {
                     text: "Tự động chuyển sau khi trả lời")
             RuleRow(icon: "checkmark.circle.fill", iconColor: Color.appPrimary,
                     text: "Đạt: \u{2265} 14/20 đúng (70%)")
-        }
-        .padding(16)
-        .glassCard()
-        .padding(.bottom, 20)
 
-        // Tips card
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Mẹo thi")
-                .font(.system(size: 14, weight: .bold))
-                .foregroundStyle(Color.appTextDark)
-
-            Text("\u{2022} Quan sát kỹ hình ảnh trước khi trả lời\n\u{2022} Chú ý biển báo và vạch kẻ đường\n\u{2022} Không để hết thời gian")
+            Text("Mẹo: Quan sát kỹ hình ảnh, chú ý biển báo và vạch kẻ đường.")
                 .font(.system(size: 13))
                 .foregroundStyle(Color.appTextMedium)
-                .lineSpacing(4)
+                .padding(.top, 4)
         }
         .padding(16)
         .glassCard()
-        .padding(.bottom, 20)
 
         // Stats card
         if !progressStore.simulationHistory.isEmpty {
@@ -110,7 +98,6 @@ struct SimulationTab: View {
                 (value: "\(Int(progressStore.averageSimulationScore * 100))%", label: "TB đúng"),
                 (value: "\(Int(progressStore.bestSimulationScore * 100))%", label: "Cao nhất"),
             ])
-            .padding(.bottom, 20)
         }
 
         // Start random exam
@@ -118,7 +105,6 @@ struct SimulationTab: View {
             AppButton(icon: "play.fill", label: "Thi mô phỏng (20 câu)")
         }
         .buttonStyle(.plain)
-        .padding(.bottom, 12)
         .onGeometryChange(for: Bool.self) { proxy in
             proxy.frame(in: .scrollView(axis: .vertical)).minY < 0
         } action: { hidden in
@@ -132,23 +118,22 @@ struct SimulationTab: View {
             AppButton(label: "Luyện tập tất cả (\(questionStore.simulationQuestions.count) câu)", style: .secondary)
         }
         .buttonStyle(.plain)
-        .padding(.bottom, 24)
 
         // Recent history
         if !progressStore.simulationHistory.isEmpty {
-            SectionTitle(title: "Lịch sử mô phỏng")
-                .padding(.bottom, 8)
+            VStack(alignment: .leading, spacing: 12) {
+                SectionTitle(title: "Lịch sử mô phỏng")
 
-            ForEach(progressStore.simulationHistory.prefix(10), id: \.id) { result in
-                NavigationLink(destination: SimulationHistoryDetailView(result: result)) {
-                    HistoryRow(
-                        passed: result.passed,
-                        scoreText: "\(result.score)/\(result.totalScenarios) đúng",
-                        date: result.date
-                    )
+                ForEach(progressStore.simulationHistory.prefix(10), id: \.id) { result in
+                    NavigationLink(destination: SimulationHistoryDetailView(result: result)) {
+                        HistoryRow(
+                            passed: result.passed,
+                            scoreText: "\(result.score)/\(result.totalScenarios) đúng",
+                            date: result.date
+                        )
+                    }
+                    .buttonStyle(.plain)
                 }
-                .buttonStyle(.plain)
-                .padding(.bottom, 8)
             }
         }
     }
@@ -160,7 +145,7 @@ struct SimulationTab: View {
         // Rules card
         VStack(alignment: .leading, spacing: 14) {
             Text("Quy tắc thi tình huống")
-                .font(.system(size: 16, weight: .heavy))
+                .font(.system(size: 17, weight: .heavy))
                 .foregroundStyle(Color.appTextDark)
 
             RuleRow(icon: "play.rectangle.fill", iconColor: Color.appPrimary,
@@ -171,29 +156,17 @@ struct SimulationTab: View {
                     text: "0-5 điểm mỗi tình huống")
             RuleRow(icon: "checkmark.circle.fill", iconColor: Color.appPrimary,
                     text: "Đạt: \u{2265} 35/50 điểm (70%)")
-        }
-        .padding(16)
-        .glassCard()
-        .padding(.bottom, 20)
 
-        // Tips
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Cách tính điểm")
-                .font(.system(size: 14, weight: .bold))
-                .foregroundStyle(Color.appTextDark)
-
-            Text("\u{2022} Nhấn sớm khi vừa thấy nguy hiểm: 5 điểm\n\u{2022} Nhấn muộn: ít điểm hơn\n\u{2022} Không nhấn hoặc nhấn quá sớm: 0 điểm")
+            Text("Mẹo: Nhấn sớm khi vừa thấy nguy hiểm để đạt điểm cao nhất.")
                 .font(.system(size: 13))
                 .foregroundStyle(Color.appTextMedium)
-                .lineSpacing(4)
+                .padding(.top, 4)
         }
         .padding(16)
         .glassCard()
-        .padding(.bottom, 20)
 
         // Download card
         HazardDownloadCard(videoCache: videoCache, showClearAlert: $showClearCacheAlert)
-            .padding(.bottom, 20)
 
         // Stats
         if !progressStore.hazardHistory.isEmpty {
@@ -202,7 +175,6 @@ struct SimulationTab: View {
                 (value: "\(Int(progressStore.averageHazardScore * 100))%", label: "TB điểm"),
                 (value: "\(progressStore.bestHazardScore)", label: "Cao nhất"),
             ])
-            .padding(.bottom, 20)
         }
 
         // Start exam
@@ -210,68 +182,65 @@ struct SimulationTab: View {
             AppButton(icon: "play.fill", label: "Thi tình huống (10 video)")
         }
         .buttonStyle(.plain)
-        .padding(.bottom, 12)
 
         // Full practice
         Button { openExam(.hazardTest(mode: .practice)) } label: {
             AppButton(label: "Luyện tập tất cả (120 tình huống)", style: .secondary)
         }
         .buttonStyle(.plain)
-        .padding(.bottom, 24)
 
         // Chapter browser
-        SectionTitle(title: "Chương trình (\(HazardSituation.all.count) tình huống)")
-            .padding(.bottom, 8)
+        VStack(alignment: .leading, spacing: 12) {
+            SectionTitle(title: "Chương trình (\(HazardSituation.all.count) tình huống)")
 
-        ForEach(HazardSituation.chapters, id: \.id) { chapter in
-            Button { openExam(.hazardTest(mode: .chapter(chapter.id))) } label: {
-                HStack(spacing: 14) {
-                    IconBox(
-                        icon: chapterIcon(chapter.id),
-                        color: .appPrimary,
-                        size: 40,
-                        cornerRadius: 10,
-                        iconFontSize: 17
-                    )
+            ForEach(HazardSituation.chapters, id: \.id) { chapter in
+                Button { openExam(.hazardTest(mode: .chapter(chapter.id))) } label: {
+                    HStack(spacing: 14) {
+                        IconBox(
+                            icon: chapterIcon(chapter.id),
+                            color: .appPrimary,
+                            size: 40,
+                            cornerRadius: 10,
+                            iconFontSize: 17
+                        )
 
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Chương \(chapter.id)")
-                            .font(.system(size: 14, weight: .bold))
-                            .foregroundStyle(Color.appTextDark)
-                        Text("\(chapter.name) (\(chapter.range.count) TH)")
-                            .font(.system(size: 12))
-                            .foregroundStyle(Color.appTextMedium)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Chương \(chapter.id)")
+                                .font(.system(size: 15, weight: .bold))
+                                .foregroundStyle(Color.appTextDark)
+                            Text("\(chapter.name) (\(chapter.range.count) TH)")
+                                .font(.system(size: 13))
+                                .foregroundStyle(Color.appTextMedium)
+                        }
+
+                        Spacer(minLength: 4)
+
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundStyle(Color.appTextLight)
                     }
-
-                    Spacer(minLength: 4)
-
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundStyle(Color.appTextLight)
+                    .padding(14)
+                    .glassCard()
                 }
-                .padding(14)
-                .glassCard()
+                .buttonStyle(.plain)
             }
-            .buttonStyle(.plain)
-            .padding(.bottom, 8)
         }
 
         // Recent history
         if !progressStore.hazardHistory.isEmpty {
-            SectionTitle(title: "Lịch sử tình huống")
-                .padding(.top, 16)
-                .padding(.bottom, 8)
+            VStack(alignment: .leading, spacing: 12) {
+                SectionTitle(title: "Lịch sử tình huống")
 
-            ForEach(progressStore.hazardHistory.prefix(10), id: \.id) { result in
-                NavigationLink(destination: HazardHistoryDetailView(result: result)) {
-                    HistoryRow(
-                        passed: result.passed,
-                        scoreText: "\(result.totalScore)/\(result.maxScore) điểm",
-                        date: result.date
-                    )
+                ForEach(progressStore.hazardHistory.prefix(10), id: \.id) { result in
+                    NavigationLink(destination: HazardHistoryDetailView(result: result)) {
+                        HistoryRow(
+                            passed: result.passed,
+                            scoreText: "\(result.totalScore)/\(result.maxScore) điểm",
+                            date: result.date
+                        )
+                    }
+                    .buttonStyle(.plain)
                 }
-                .buttonStyle(.plain)
-                .padding(.bottom, 8)
             }
         }
     }
@@ -294,6 +263,7 @@ struct SimulationTab: View {
 private struct HazardDownloadCard: View {
     let videoCache: HazardVideoCache
     @Binding var showClearAlert: Bool
+    @State private var showChapters = false
 
     var body: some View {
         let cached = videoCache.cachedCount
@@ -306,10 +276,10 @@ private struct HazardDownloadCard: View {
             VStack(alignment: .leading, spacing: 12) {
                 HStack(spacing: 8) {
                     Image(systemName: allComplete ? "checkmark.icloud.fill" : "icloud.and.arrow.down")
-                        .font(.system(size: 15))
+                        .font(.system(size: 16))
                         .foregroundStyle(allComplete ? Color.appSuccess : Color.appPrimary)
                     Text("Video offline")
-                        .font(.system(size: 14, weight: .bold))
+                        .font(.system(size: 15, weight: .bold))
                         .foregroundStyle(Color.appTextDark)
                     Spacer()
                     Text(String(format: "%.0f MB", videoCache.cacheSizeMB))
@@ -321,15 +291,15 @@ private struct HazardDownloadCard: View {
                     ProgressBarView(
                         fraction: fraction,
                         color: allComplete ? .appSuccess : .appPrimary,
-                        height: 5
+                        height: 6
                     )
 
                     Text("\(cached)/\(total) video đã tải")
-                        .font(.system(size: 12, weight: .medium).monospacedDigit())
+                        .font(.system(size: 13, weight: .medium).monospacedDigit())
                         .foregroundStyle(Color.appTextMedium)
                 }
 
-                // Download all / Cancel / Clear buttons
+                // Buttons
                 HStack(spacing: 10) {
                     if videoCache.isDownloadingAll {
                         Button {
@@ -368,11 +338,29 @@ private struct HazardDownloadCard: View {
                         .frame(width: 80)
                     }
                 }
+
+                // Show/hide chapters toggle
+                if !allComplete {
+                    Button {
+                        withAnimation(.easeOut(duration: 0.2)) {
+                            showChapters.toggle()
+                        }
+                    } label: {
+                        HStack(spacing: 6) {
+                            Text(showChapters ? "Ẩn chi tiết" : "Tải theo chương")
+                                .font(.system(size: 13, weight: .medium))
+                                .foregroundStyle(Color.appPrimary)
+                            Image(systemName: showChapters ? "chevron.up" : "chevron.down")
+                                .font(.system(size: 11, weight: .semibold))
+                                .foregroundStyle(Color.appPrimary)
+                        }
+                    }
+                }
             }
             .padding(16)
 
-            // Per-chapter download rows
-            if !allComplete {
+            // Per-chapter download rows (collapsible)
+            if showChapters && !allComplete {
                 Divider().padding(.horizontal, 16)
 
                 VStack(spacing: 0) {

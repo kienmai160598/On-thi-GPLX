@@ -118,21 +118,21 @@ private struct HazardResultHero: View {
 
                 VStack(spacing: 2) {
                     Text("\(result.totalScore)")
-                        .font(.system(size: 36, weight: .heavy).monospacedDigit())
+                        .font(.system(size: 40, weight: .heavy).monospacedDigit())
                         .foregroundStyle(Color.appTextDark)
                         .contentTransition(.numericText())
 
                     Text("/\(result.maxScore) điểm")
-                        .font(.system(size: 13))
+                        .font(.system(size: 14))
                         .foregroundStyle(Color.appTextMedium)
                 }
             }
-            .frame(width: 120, height: 120)
+            .frame(width: 132, height: 132)
 
             StatusBadge(
                 text: result.passed ? "ĐẠT" : "TRƯỢT",
                 color: ringColor,
-                fontSize: 14
+                fontSize: 15
             )
         }
         .frame(maxWidth: .infinity)

@@ -7,7 +7,7 @@ struct StatItem: View {
     var valueFontSize: CGFloat = 24
 
     var body: some View {
-        VStack(spacing: 2) {
+        VStack(spacing: 4) {
             Text(value)
                 .font(.system(size: valueFontSize, weight: .heavy))
                 .foregroundStyle(valueColor)

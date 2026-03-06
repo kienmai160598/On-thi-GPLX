@@ -15,7 +15,7 @@ struct StudyMenuView: View {
             VStack(alignment: .leading, spacing: 0) {
                 // MARK: - Tra cứu
                 SectionTitle(title: "Tra cứu")
-                    .padding(.bottom, 8)
+                    .padding(.bottom, 10)
 
                 VStack(spacing: 0) {
                     NavigationLink(destination: TrafficSignsReferenceView()) {
@@ -41,7 +41,7 @@ struct StudyMenuView: View {
 
                 // MARK: - Luyện tập
                 SectionTitle(title: "Luyện tập")
-                    .padding(.bottom, 8)
+                    .padding(.bottom, 10)
 
                 VStack(spacing: 0) {
                     Button { openExam(.questionView(topicKey: AppConstants.TopicKey.allQuestions, startIndex: 0)) } label: {
@@ -80,7 +80,7 @@ struct StudyMenuView: View {
 
                 // MARK: - Ôn tập
                 SectionTitle(title: "Ôn tập")
-                    .padding(.bottom, 8)
+                    .padding(.bottom, 10)
 
                 VStack(spacing: 0) {
                     NavigationLink(destination: WrongAnswersView()) {
@@ -122,16 +122,16 @@ private struct StudyRow: View {
     var body: some View {
         HStack(spacing: 14) {
             Image(systemName: icon)
-                .font(.system(size: 17))
+                .font(.system(size: 18))
                 .foregroundStyle(Color.appPrimary)
                 .frame(width: 28)
 
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: 3) {
                 Text(title)
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(.system(size: 15, weight: .semibold))
                     .foregroundStyle(Color.appTextDark)
                 Text(subtitle)
-                    .font(.system(size: 12))
+                    .font(.system(size: 13))
                     .foregroundStyle(Color.appTextMedium)
             }
 
@@ -146,7 +146,7 @@ private struct StudyRow: View {
                 .foregroundStyle(Color.appTextLight)
         }
         .padding(.horizontal, 16)
-        .padding(.vertical, 12)
+        .padding(.vertical, 14)
         .contentShape(Rectangle())
     }
 }

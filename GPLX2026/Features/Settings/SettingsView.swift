@@ -13,25 +13,25 @@ struct SettingsView: View {
             VStack(alignment: .leading, spacing: 0) {
                 // MARK: - Appearance Section
                 SectionTitle(title: "Giao diện")
-                    .padding(.bottom, 8)
+                    .padding(.bottom, 10)
                     .staggered(0)
 
                 ThemeModePicker(selected: $themeMode, primaryColorKey: primaryColorKey)
-                    .padding(.bottom, 20)
-                .staggered(1)
+                    .padding(.bottom, 24)
+                    .staggered(1)
 
                 // MARK: - Primary Color
                 SectionTitle(title: "Màu chủ đạo")
-                    .padding(.bottom, 8)
+                    .padding(.bottom, 10)
                     .staggered(2)
 
                 PrimaryColorPicker(selected: $primaryColorKey)
-                    .padding(.bottom, 20)
+                    .padding(.bottom, 24)
                     .staggered(3)
 
                 // MARK: - Font Size
                 SectionTitle(title: "Cỡ chữ")
-                    .padding(.bottom, 8)
+                    .padding(.bottom, 10)
                     .staggered(4)
 
                 FontSizeSlider(selected: $fontSize, primaryColorKey: primaryColorKey)
@@ -39,12 +39,12 @@ struct SettingsView: View {
                     .staggered(5)
 
                 FontSizePreview(fontSize: fontSize)
-                    .padding(.bottom, 20)
+                    .padding(.bottom, 24)
                     .staggered(6)
 
                 // MARK: - Data Section
                 SectionTitle(title: "Dữ liệu")
-                    .padding(.bottom, 8)
+                    .padding(.bottom, 10)
                     .staggered(7)
 
                 Button {
@@ -57,12 +57,12 @@ struct SettingsView: View {
                     )
                     .glassCard()
                 }
-                .padding(.bottom, 20)
+                .padding(.bottom, 24)
                 .staggered(8)
 
                 // MARK: - Credits Section
                 SectionTitle(title: "Nguồn dữ liệu")
-                    .padding(.bottom, 8)
+                    .padding(.bottom, 10)
                     .staggered(9)
 
                 VStack(spacing: 0) {
@@ -71,12 +71,12 @@ struct SettingsView: View {
                     AboutRow(icon: "video", label: "Video mô phỏng", value: "gmec.vn")
                 }
                 .glassCard()
-                .padding(.bottom, 20)
+                .padding(.bottom, 24)
                 .staggered(10)
 
                 // MARK: - About Section
                 SectionTitle(title: "Thông tin")
-                    .padding(.bottom, 8)
+                    .padding(.bottom, 10)
                     .staggered(11)
 
                 VStack(spacing: 0) {

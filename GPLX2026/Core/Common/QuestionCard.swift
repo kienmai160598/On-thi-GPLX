@@ -6,27 +6,27 @@ struct QuestionCard: View {
     var showDiemLietBadge: Bool = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 14) {
             HStack(spacing: 8) {
                 Text(label)
-                    .font(.system(size: 14, weight: .bold))
+                    .font(.system(size: 15, weight: .bold))
                     .foregroundStyle(Color.appPrimary)
 
                 if showDiemLietBadge && question.isDiemLiet {
-                    StatusBadge(text: "Điểm liệt", color: .appError, fontSize: 10)
+                    StatusBadge(text: "Điểm liệt", color: .appError, fontSize: 11)
                 }
             }
 
             Text(question.text)
                 .font(.system(size: 17, weight: .bold))
                 .foregroundStyle(Color.appTextDark)
-                .lineSpacing(4)
+                .lineSpacing(5)
 
             if question.hasImage {
                 QuestionImage(imageName: question.image)
             }
         }
-        .padding(16)
+        .padding(18)
         .glassCard()
     }
 }

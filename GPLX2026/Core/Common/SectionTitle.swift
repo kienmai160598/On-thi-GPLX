@@ -5,9 +5,9 @@ struct SectionTitle: View {
 
     var body: some View {
         Text(title)
-            .font(.system(size: 14, weight: .semibold))
+            .font(.system(size: 15, weight: .semibold))
             .foregroundStyle(Color.appTextMedium)
-            .tracking(0.5)
+            .tracking(0.3)
             .frame(maxWidth: .infinity, alignment: .leading)
     }
 }

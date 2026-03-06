@@ -24,8 +24,8 @@ struct AnswerOptionCard: View {
 
             statusIcon
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 14)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 16)
         .background(bgColor)
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         .glassCard()

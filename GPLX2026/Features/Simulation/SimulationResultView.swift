@@ -83,17 +83,17 @@ private struct PassFailBadge: View {
     var body: some View {
         let statusColor = isPassed ? Color.appSuccess : Color.appError
 
-        VStack(spacing: 12) {
+        VStack(spacing: 16) {
             Image(systemName: isPassed ? "checkmark.circle.fill" : "xmark.circle.fill")
-                .font(.system(size: 56))
+                .font(.system(size: 64))
                 .foregroundStyle(statusColor)
 
             Text(isPassed ? "ĐẠT" : "TRƯỢT")
-                .font(.system(size: 28, weight: .heavy))
+                .font(.system(size: 32, weight: .heavy))
                 .foregroundStyle(statusColor)
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 28)
+        .padding(.vertical, 32)
         .glassCard()
     }
 }

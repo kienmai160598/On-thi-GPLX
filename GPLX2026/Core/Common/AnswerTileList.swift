@@ -24,7 +24,7 @@ struct AnswerTileList: View {
                 )
             }
             .disabled(showCorrectness && isConfirmed)
-            .padding(.bottom, 8)
+            .padding(.bottom, 10)
         }
     }
 }

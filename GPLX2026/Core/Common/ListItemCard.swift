@@ -14,15 +14,15 @@ struct ListItemCard<Trailing: View>: View {
         HStack(spacing: 12) {
             IconBox(icon: icon, color: Color.primaryColor(for: primaryColorKey), size: iconSize, cornerRadius: iconCornerRadius, iconFontSize: iconFontSize)
 
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: 3) {
                 Text(title)
-                    .font(.system(size: 14, weight: .bold))
+                    .font(.system(size: 15, weight: .bold))
                     .foregroundStyle(Color.appTextDark)
                     .lineLimit(1)
 
                 if let subtitle {
                     Text(subtitle)
-                        .font(.system(size: 12, weight: .medium))
+                        .font(.system(size: 13, weight: .medium))
                         .foregroundStyle(Color.appTextMedium)
                         .lineLimit(1)
                 }

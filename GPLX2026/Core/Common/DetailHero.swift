@@ -13,37 +13,37 @@ struct DetailHero: View {
             ZStack {
                 Circle()
                     .fill(iconColor.opacity(0.1))
-                    .frame(width: 80, height: 80)
+                    .frame(width: 88, height: 88)
                 Image(systemName: icon)
-                    .font(.system(size: 36))
+                    .font(.system(size: 40))
                     .foregroundStyle(iconColor)
             }
 
-            VStack(spacing: 4) {
+            VStack(spacing: 6) {
                 Text(title)
-                    .font(.system(size: 28, weight: .heavy).monospacedDigit())
+                    .font(.system(size: 32, weight: .heavy).monospacedDigit())
                     .foregroundStyle(Color.appTextDark)
                     .contentTransition(.numericText())
                     .animation(.snappy, value: title)
                 Text(subtitle)
-                    .font(.system(size: 14))
+                    .font(.system(size: 15))
                     .foregroundStyle(Color.appTextMedium)
             }
 
             if let desc = description {
                 Text(desc)
-                    .font(.system(size: 13))
+                    .font(.system(size: 14))
                     .foregroundStyle(Color.appTextLight)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 20)
             }
 
             if let badge {
-                StatusBadge(text: badge.text, color: badge.color, fontSize: 12)
+                StatusBadge(text: badge.text, color: badge.color, fontSize: 13)
             }
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 20)
+        .padding(.vertical, 24)
         .glassCard()
     }
 }

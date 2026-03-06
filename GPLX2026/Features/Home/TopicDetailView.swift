@@ -27,26 +27,26 @@ struct TopicDetailView: View {
                     IconBox(
                         icon: item.topic.sfSymbol,
                         color: .appPrimary,
-                        size: 64,
-                        cornerRadius: 16,
-                        iconFontSize: 28
+                        size: 72,
+                        cornerRadius: 18,
+                        iconFontSize: 32
                     )
 
-                    VStack(spacing: 6) {
+                    VStack(spacing: 8) {
                         Text(item.topic.name)
-                            .font(.system(size: 20, weight: .heavy))
+                            .font(.system(size: 22, weight: .heavy))
                             .foregroundStyle(Color.appTextDark)
 
                         Text(item.topic.topicDescription)
-                            .font(.system(size: 13))
+                            .font(.system(size: 14))
                             .foregroundStyle(Color.appTextMedium)
                             .multilineTextAlignment(.center)
                     }
 
-                    StatusBadge(text: status.label, color: status.color, fontSize: 12)
+                    StatusBadge(text: status.label, color: status.color, fontSize: 13)
                 }
                 .frame(maxWidth: .infinity)
-                .padding(.vertical, 20)
+                .padding(.vertical, 24)
                 .glassCard()
 
                 // Stats
