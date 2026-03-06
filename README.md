@@ -1,6 +1,6 @@
-# GPLX 2026 — Vietnamese Driving License Exam Prep
+# GPLX B 2026 — Vietnamese Driving License Exam Prep (Class B)
 
-A native iOS app for preparing the Vietnamese B1/B2 driving license theory exam, built entirely with SwiftUI and aligned with the latest 2026 exam format from the Ministry of Transport (Bo GTVT).
+A native iOS app for preparing the Vietnamese class B (B1/B2) driving license theory exam, built entirely with SwiftUI and aligned with the latest 2026 exam format from the Ministry of Transport (Bo GTVT).
 
 ## Features
 

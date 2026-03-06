@@ -8,8 +8,8 @@ struct OnboardingView: View {
         OnboardingPage(
             id: 0,
             icon: "car.fill",
-            title: "Chào mừng đến với\nGPLX 2026",
-            subtitle: "Ứng dụng ôn thi giấy phép lái xe hạng B2\nCập nhật đề thi mới nhất 2026"
+            title: "Chào mừng đến với\nGPLX B 2026",
+            subtitle: "Ôn thi giấy phép lái xe bằng B\nTheo đề thi mới nhất 2026 của Bộ GTVT"
         ),
         OnboardingPage(
             id: 1,
