@@ -10,43 +10,22 @@ struct SettingsView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 0) {
-                // MARK: - Appearance Section
+            VStack(alignment: .leading, spacing: 24) {
+                // MARK: - Appearance
                 SectionTitle(title: "Giao diện")
-                    .padding(.bottom, 10)
-                    .staggered(0)
-
                 ThemeModePicker(selected: $themeMode, primaryColorKey: primaryColorKey)
-                    .padding(.bottom, 24)
-                    .staggered(1)
 
                 // MARK: - Primary Color
                 SectionTitle(title: "Màu chủ đạo")
-                    .padding(.bottom, 10)
-                    .staggered(2)
-
                 PrimaryColorPicker(selected: $primaryColorKey)
-                    .padding(.bottom, 24)
-                    .staggered(3)
 
                 // MARK: - Font Size
                 SectionTitle(title: "Cỡ chữ")
-                    .padding(.bottom, 10)
-                    .staggered(4)
-
                 FontSizeSlider(selected: $fontSize, primaryColorKey: primaryColorKey)
-                    .padding(.bottom, 12)
-                    .staggered(5)
-
                 FontSizePreview(fontSize: fontSize)
-                    .padding(.bottom, 24)
-                    .staggered(6)
 
-                // MARK: - Data Section
+                // MARK: - Data
                 SectionTitle(title: "Dữ liệu")
-                    .padding(.bottom, 10)
-                    .staggered(7)
-
                 Button {
                     showResetConfirmation = true
                 } label: {
@@ -57,28 +36,18 @@ struct SettingsView: View {
                     )
                     .glassCard()
                 }
-                .padding(.bottom, 24)
-                .staggered(8)
 
-                // MARK: - Credits Section
+                // MARK: - Credits
                 SectionTitle(title: "Nguồn dữ liệu")
-                    .padding(.bottom, 10)
-                    .staggered(9)
-
                 VStack(spacing: 0) {
                     AboutRow(icon: "doc.text", label: "Ngân hàng đề thi", value: "Bộ GTVT")
                     Divider().padding(.horizontal, 16)
                     AboutRow(icon: "video", label: "Video mô phỏng", value: "gmec.vn")
                 }
                 .glassCard()
-                .padding(.bottom, 24)
-                .staggered(10)
 
-                // MARK: - About Section
+                // MARK: - About
                 SectionTitle(title: "Thông tin")
-                    .padding(.bottom, 10)
-                    .staggered(11)
-
                 VStack(spacing: 0) {
                     AboutRow(icon: "person.fill", label: "Tác giả", value: "Kien Mai")
                     Divider().padding(.horizontal, 16)
@@ -93,7 +62,7 @@ struct SettingsView: View {
                 .glassCard()
             }
             .padding(.horizontal, 20)
-            .padding(.bottom, 20)
+            .padding(.bottom, 24)
         }
         .screenHeader("Cài đặt")
         .alert("Xóa tiến độ?", isPresented: $showResetConfirmation) {
@@ -142,7 +111,6 @@ struct SettingsTile: View {
     let icon: String
     let title: String
     var iconColor: Color = Color.appTextMedium
-    var trailing: AnyView? = nil
 
     var body: some View {
         HStack(spacing: 14) {
@@ -156,13 +124,9 @@ struct SettingsTile: View {
                 .foregroundStyle(Color.appTextDark)
 
             Spacer()
-
-            if let trailing = trailing {
-                trailing
-            }
         }
         .padding(.horizontal, 16)
-        .padding(.vertical, 12)
+        .padding(.vertical, 14)
     }
 }
 
@@ -199,7 +163,7 @@ private struct FontSizeSlider: View {
                 .foregroundStyle(Color.appTextMedium)
         }
         .padding(.horizontal, 14)
-        .padding(.vertical, 8)
+        .padding(.vertical, 10)
         .glassCard()
     }
 }
@@ -226,7 +190,6 @@ private struct FontSizePreview: View {
                 Text("Xem trước")
                     .font(.system(size: 12, weight: .semibold))
                     .foregroundStyle(Color.appTextLight)
-                    .tracking(0.3)
             }
 
             Text("Khi điều khiển xe trên đường mà tầm nhìn bị hạn chế, người lái xe cần giảm tốc độ và chú ý quan sát.")
@@ -238,4 +201,3 @@ private struct FontSizePreview: View {
         .glassCard()
     }
 }
-

@@ -34,13 +34,13 @@ struct OnboardingView: View {
                     Button("Bỏ qua") {
                         completeOnboarding()
                     }
-                    .font(.system(size: 15, weight: .medium))
+                    .font(.system(size: 15, weight: .semibold))
                     .foregroundStyle(Color.appTextMedium)
-                    .padding(.trailing, 20)
-                    .padding(.top, 8)
+                    .padding(.trailing, 24)
+                    .padding(.top, 12)
                 }
             }
-            .frame(height: 44)
+            .frame(height: 48)
 
             // Pages
             TabView(selection: $currentPage) {
@@ -56,15 +56,15 @@ struct OnboardingView: View {
             HStack(spacing: 8) {
                 ForEach(0..<3, id: \.self) { index in
                     Capsule()
-                        .fill(index == currentPage ? Color.appPrimary : Color.appTextLight)
+                        .fill(index == currentPage ? Color.appPrimary : Color.appTextLight.opacity(0.4))
                         .frame(
-                            width: index == currentPage ? 24 : 8,
+                            width: index == currentPage ? 28 : 8,
                             height: 8
                         )
                         .animation(.spring(duration: 0.3), value: currentPage)
                 }
             }
-            .padding(.bottom, 24)
+            .padding(.bottom, 32)
 
             // CTA button
             Button {
@@ -81,8 +81,8 @@ struct OnboardingView: View {
                     label: currentPage == 2 ? "Bắt đầu ngay" : "Tiếp tục"
                 )
             }
-            .padding(.horizontal, 20)
-            .padding(.bottom, 32)
+            .padding(.horizontal, 24)
+            .padding(.bottom, 40)
         }
         .glassBackground()
     }

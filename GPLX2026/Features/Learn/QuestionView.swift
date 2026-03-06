@@ -57,11 +57,8 @@ struct QuestionView: View {
 
     @ViewBuilder
     private var emptyState: some View {
-        VStack {
-            Text("Không có câu hỏi")
-                .foregroundStyle(Color.appTextMedium)
-        }
-        .navigationBarTitleDisplayMode(.inline)
+        EmptyState(icon: "text.page.slash", message: "Không có câu hỏi")
+            .navigationBarTitleDisplayMode(.inline)
     }
 
     // MARK: - Question Content
@@ -88,7 +85,6 @@ struct QuestionView: View {
                         onSelect: { selectAnswer($0) }
                     )
 
-                    // MARK: - Tip after confirm
                     if isConfirmed && !question.tip.isEmpty {
                         ExplanationBox(content: question.tip)
                             .padding(.top, 4)
@@ -96,7 +92,7 @@ struct QuestionView: View {
                     }
                 }
                 .padding(.horizontal, 20)
-                .padding(.top, 12)
+                .padding(.top, 16)
             }
             .id(currentIndex)
 
@@ -214,7 +210,6 @@ struct QuestionView: View {
     }
 
     private func answeredIndices(for questions: [Question]) -> Set<Int> {
-        // Load topic progress once per topic key to avoid N+1 JSON decodes
         var progressCache: [String: [Int: Bool]] = [:]
         var result = Set<Int>()
         for (i, q) in questions.enumerated() {

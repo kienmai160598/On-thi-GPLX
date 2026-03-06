@@ -25,27 +25,27 @@ struct SpeedDistanceReferenceView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
+            VStack(alignment: .leading, spacing: 24) {
                     // MARK: - Alcohol Warning (always on top)
-                    HStack(spacing: 12) {
+                    HStack(spacing: 14) {
                         Image(systemName: "hand.raised.fill")
                             .font(.system(size: 22))
                             .foregroundStyle(.white)
-                            .frame(width: 44, height: 44)
-                            .background(Color.appError, in: RoundedRectangle(cornerRadius: 11))
+                            .frame(width: 48, height: 48)
+                            .background(Color.appError, in: RoundedRectangle(cornerRadius: 12))
 
-                        VStack(alignment: .leading, spacing: 2) {
+                        VStack(alignment: .leading, spacing: 4) {
                             Text("Nghiêm cấm tuyệt đối")
-                                .font(.system(size: 15, weight: .heavy))
+                                .font(.system(size: 16, weight: .heavy))
                                 .foregroundStyle(Color.appError)
                             Text("Không được điều khiển xe khi có nồng độ cồn")
-                                .font(.system(size: 12))
+                                .font(.system(size: 13))
                                 .foregroundStyle(Color.appTextMedium)
                         }
 
                         Spacer(minLength: 0)
                     }
-                    .padding(14)
+                    .padding(16)
                     .glassCard()
 
                     // MARK: - Speed (Thông tư 38/2024, từ 01/01/2025)
@@ -102,6 +102,7 @@ struct SpeedDistanceReferenceView: View {
                     // MARK: - Rules
                     if selectedSection == nil || selectedSection == .rules {
                         SectionTitle(title: "Quy tắc quan trọng")
+                            .padding(.bottom, 4)
 
                         VStack(spacing: 8) {
                             RuleCard(icon: "list.number", title: "Thứ tự ưu tiên điều khiển GT",
@@ -125,6 +126,7 @@ struct SpeedDistanceReferenceView: View {
                     // MARK: - Penalty
                     if selectedSection == nil || selectedSection == .penalty {
                         SectionTitle(title: "Mức phạt ô tô (NĐ 168/2024)")
+                            .padding(.bottom, 4)
 
                         VStack(spacing: 0) {
                             PenaltyRow(icon: "light.max", violation: "Vượt đèn đỏ", penalty: "18–20 triệu + trừ 4 điểm")
@@ -177,13 +179,13 @@ private struct RefSection<Content: View>: View {
     @ViewBuilder let content: () -> Content
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 6) {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 8) {
                 Image(systemName: icon)
-                    .font(.system(size: 13, weight: .medium))
+                    .font(.system(size: 14, weight: .semibold))
                     .foregroundStyle(accentColor)
                 Text(title)
-                    .font(.system(size: 14, weight: .heavy))
+                    .font(.system(size: 15, weight: .heavy))
                     .foregroundStyle(Color.appTextDark)
             }
 
@@ -216,17 +218,17 @@ private struct RefRow: View {
                 .font(.system(size: 14))
                 .foregroundStyle(Color.appTextDark)
             Spacer()
-            HStack(spacing: 3) {
+            HStack(spacing: 4) {
                 Text(value)
-                    .font(.system(size: 15, weight: .bold).monospacedDigit())
+                    .font(.system(size: 16, weight: .heavy).monospacedDigit())
                     .foregroundStyle(accentColor)
                 Text(unit)
-                    .font(.system(size: 11))
+                    .font(.system(size: 11, weight: .medium))
                     .foregroundStyle(Color.appTextLight)
             }
         }
         .padding(.horizontal, 16)
-        .padding(.vertical, 11)
+        .padding(.vertical, 12)
     }
 }
 
@@ -239,26 +241,26 @@ private struct RuleCard: View {
     var accentColor: Color = .appPrimary
 
     var body: some View {
-        HStack(alignment: .top, spacing: 12) {
+        HStack(alignment: .top, spacing: 14) {
             Image(systemName: icon)
-                .font(.system(size: 14))
+                .font(.system(size: 15))
                 .foregroundStyle(accentColor)
-                .frame(width: 28, height: 28)
+                .frame(width: 36, height: 36)
                 .background(accentColor.opacity(0.1))
-                .clipShape(RoundedRectangle(cornerRadius: 7))
+                .clipShape(RoundedRectangle(cornerRadius: 9))
 
-            VStack(alignment: .leading, spacing: 3) {
+            VStack(alignment: .leading, spacing: 4) {
                 Text(title)
-                    .font(.system(size: 14, weight: .bold))
+                    .font(.system(size: 15, weight: .bold))
                     .foregroundStyle(Color.appTextDark)
                 Text(detail)
                     .font(.system(size: 13))
                     .foregroundStyle(Color.appTextMedium)
-                    .lineSpacing(2)
+                    .lineSpacing(3)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(14)
+        .padding(16)
         .glassCard()
     }
 }
@@ -271,24 +273,24 @@ private struct PenaltyRow: View {
     let penalty: String
 
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: 14) {
             Image(systemName: icon)
-                .font(.system(size: 14))
-                .foregroundStyle(Color.appPrimary)
-                .frame(width: 24)
+                .font(.system(size: 15))
+                .foregroundStyle(Color.appError)
+                .frame(width: 28)
 
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: 3) {
                 Text(violation)
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(.system(size: 14, weight: .bold))
                     .foregroundStyle(Color.appTextDark)
                 Text(penalty)
-                    .font(.system(size: 12))
+                    .font(.system(size: 13))
                     .foregroundStyle(Color.appTextMedium)
             }
 
             Spacer(minLength: 0)
         }
         .padding(.horizontal, 16)
-        .padding(.vertical, 11)
+        .padding(.vertical, 13)
     }
 }

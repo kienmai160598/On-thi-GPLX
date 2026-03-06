@@ -88,7 +88,6 @@ struct SimulationExamView: View {
                         onSelect: { handleAnswerSelection(answer: $0, question: question) }
                     )
 
-                    // MARK: - Tip after reveal
                     if isRevealed && !question.tip.isEmpty {
                         ExplanationBox(content: question.tip)
                             .padding(.top, 4)
@@ -96,7 +95,7 @@ struct SimulationExamView: View {
                     }
                 }
                 .padding(.horizontal, 20)
-                .padding(.top, 12)
+                .padding(.top, 16)
             }
             .id(currentIndex)
 

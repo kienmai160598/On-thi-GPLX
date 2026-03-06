@@ -7,17 +7,22 @@ struct ExplanationBox: View {
     var contentFontSize: CGFloat = 14
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(label)
-                .font(.system(size: labelFontSize, weight: .bold))
-                .foregroundStyle(Color.appTextDark)
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 6) {
+                Image(systemName: "lightbulb.fill")
+                    .font(.system(size: 12))
+                    .foregroundStyle(Color.appWarning)
+                Text(label)
+                    .font(.system(size: labelFontSize, weight: .bold))
+                    .foregroundStyle(Color.appTextDark)
+            }
             Text(content)
                 .font(.system(size: contentFontSize))
                 .foregroundStyle(Color.appTextMedium)
-                .lineSpacing(3)
+                .lineSpacing(4)
                 .multilineTextAlignment(.leading)
         }
-        .padding(14)
+        .padding(16)
         .glassCard(cornerRadius: 12)
     }
 }

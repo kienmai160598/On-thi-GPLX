@@ -19,22 +19,30 @@ struct TopicDetailView: View {
 
     var body: some View {
         let status = statusInfo
+        let fraction = item.total > 0 ? Double(item.correct) / Double(item.total) : 0
 
         ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
-                // Hero: icon + name + badge + description
-                VStack(spacing: 16) {
-                    IconBox(
-                        icon: item.topic.sfSymbol,
-                        color: .appPrimary,
-                        size: 72,
-                        cornerRadius: 18,
-                        iconFontSize: 32
-                    )
+            VStack(alignment: .leading, spacing: 24) {
+                // Hero with animated ring
+                VStack(spacing: 20) {
+                    ZStack {
+                        Circle()
+                            .stroke(Color.appDivider, lineWidth: 8)
+                        Circle()
+                            .trim(from: 0, to: fraction)
+                            .stroke(status.color, style: StrokeStyle(lineWidth: 8, lineCap: .round))
+                            .rotationEffect(.degrees(-90))
+                            .animation(.spring(duration: 0.8, bounce: 0.15), value: fraction)
+
+                        Image(systemName: item.topic.sfSymbol)
+                            .font(.system(size: 32))
+                            .foregroundStyle(status.color)
+                    }
+                    .frame(width: 100, height: 100)
 
                     VStack(spacing: 8) {
                         Text(item.topic.name)
-                            .font(.system(size: 22, weight: .heavy))
+                            .font(.system(size: 24, weight: .heavy))
                             .foregroundStyle(Color.appTextDark)
 
                         Text(item.topic.topicDescription)
@@ -46,7 +54,7 @@ struct TopicDetailView: View {
                     StatusBadge(text: status.label, color: status.color, fontSize: 13)
                 }
                 .frame(maxWidth: .infinity)
-                .padding(.vertical, 24)
+                .padding(.vertical, 28)
                 .glassCard()
 
                 // Stats
@@ -57,21 +65,21 @@ struct TopicDetailView: View {
                     (value: "\(item.total)", label: "Tổng"),
                 ])
 
-                // Progress bar
-                VStack(alignment: .leading, spacing: 8) {
+                // Progress
+                VStack(alignment: .leading, spacing: 10) {
                     HStack {
                         Text("Tiến độ")
-                            .font(.system(size: 14, weight: .bold))
+                            .font(.system(size: 16, weight: .bold))
                             .foregroundStyle(Color.appTextDark)
                         Spacer()
                         Text("\(item.correct)/\(item.total) câu đúng")
-                            .font(.system(size: 12).monospacedDigit())
+                            .font(.system(size: 13).monospacedDigit())
                             .foregroundStyle(Color.appTextMedium)
                             .contentTransition(.numericText())
                     }
 
                     ProgressBarView(
-                        fraction: item.total > 0 ? Double(item.correct) / Double(item.total) : 0,
+                        fraction: fraction,
                         color: status.color,
                         height: 10,
                         cornerRadius: 5
@@ -80,7 +88,7 @@ struct TopicDetailView: View {
                 .padding(16)
                 .glassCard()
 
-                // Action button
+                // CTA
                 Button { openExam(.questionView(topicKey: item.topic.key, startIndex: 0)) } label: {
                     AppButton(icon: "play.fill", label: "Ôn tập chủ đề này")
                 }

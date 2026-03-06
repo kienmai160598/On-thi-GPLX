@@ -9,7 +9,7 @@ struct QuestionCard: View {
         VStack(alignment: .leading, spacing: 14) {
             HStack(spacing: 8) {
                 Text(label)
-                    .font(.system(size: 15, weight: .bold))
+                    .font(.system(size: 14, weight: .bold))
                     .foregroundStyle(Color.appPrimary)
 
                 if showDiemLietBadge && question.isDiemLiet {
@@ -18,7 +18,7 @@ struct QuestionCard: View {
             }
 
             Text(question.text)
-                .font(.system(size: 17, weight: .bold))
+                .font(.system(size: 17, weight: .semibold))
                 .foregroundStyle(Color.appTextDark)
                 .lineSpacing(5)
 
@@ -26,7 +26,7 @@ struct QuestionCard: View {
                 QuestionImage(imageName: question.image)
             }
         }
-        .padding(18)
+        .padding(20)
         .glassCard()
     }
 }

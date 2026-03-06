@@ -22,11 +22,7 @@ struct FlashcardView: View {
     var body: some View {
         Group {
             if questions.isEmpty {
-                VStack(spacing: 12) {
-                    Text("Không có câu hỏi")
-                        .font(.system(size: 16))
-                        .foregroundStyle(Color.appTextMedium)
-                }
+                EmptyState(icon: "rectangle.on.rectangle.slash", message: "Không có câu hỏi")
             } else if isFinished {
                 finishedView
             } else {
@@ -44,7 +40,17 @@ struct FlashcardView: View {
         let correctAnswer = question.answers.first(where: \.correct)
         let progress = Double(currentIndex + 1) / Double(totalQuestions)
 
-        VStack {
+        VStack(spacing: 0) {
+            // Progress indicator
+            VStack(spacing: 6) {
+                ProgressBarView(fraction: progress, height: 4, cornerRadius: 2)
+                Text("\(currentIndex + 1) / \(totalQuestions)")
+                    .font(.system(size: 13, weight: .semibold).monospacedDigit())
+                    .foregroundStyle(Color.appTextMedium)
+            }
+            .padding(.horizontal, 20)
+            .padding(.top, 8)
+
             Spacer()
 
             ZStack {
@@ -83,7 +89,7 @@ struct FlashcardView: View {
 
     @ViewBuilder
     private func frontCard(question: Question) -> some View {
-        VStack(spacing: 16) {
+        VStack(spacing: 20) {
             Spacer()
 
             if question.hasImage {
@@ -92,20 +98,24 @@ struct FlashcardView: View {
             }
 
             Text(question.text)
-                .font(.system(size: 16, weight: .semibold))
+                .font(.system(size: 18, weight: .semibold))
                 .foregroundStyle(Color.appTextDark)
                 .multilineTextAlignment(.center)
-                .lineSpacing(4)
+                .lineSpacing(5)
 
-            Spacer().frame(height: 8)
+            Spacer().frame(height: 12)
 
-            Text("Nhấn để xem đáp án")
-                .font(.system(size: 13))
-                .foregroundStyle(Color.appTextLight)
+            HStack(spacing: 6) {
+                Image(systemName: "hand.tap")
+                    .font(.system(size: 14))
+                Text("Nhấn để xem đáp án")
+                    .font(.system(size: 14, weight: .medium))
+            }
+            .foregroundStyle(Color.appTextLight)
 
             Spacer()
         }
-        .padding(24)
+        .padding(28)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .glassCard()
     }
@@ -114,23 +124,23 @@ struct FlashcardView: View {
 
     @ViewBuilder
     private func backCard(question: Question, correctAnswer: Answer?) -> some View {
-        VStack(spacing: 12) {
+        VStack(spacing: 16) {
             Spacer()
 
             Image(systemName: "checkmark.circle.fill")
-                .font(.system(size: 40))
+                .font(.system(size: 48))
                 .foregroundStyle(Color.appSuccess)
 
             Text("Đáp án đúng:")
-                .font(.system(size: 13, weight: .semibold))
+                .font(.system(size: 14, weight: .semibold))
                 .foregroundStyle(Color.appTextMedium)
 
             if let answer = correctAnswer {
                 Text(answer.text)
-                    .font(.system(size: 16, weight: .bold))
+                    .font(.system(size: 18, weight: .bold))
                     .foregroundStyle(Color.appSuccess)
                     .multilineTextAlignment(.center)
-                    .lineSpacing(4)
+                    .lineSpacing(5)
             }
 
             if !question.tip.isEmpty {
@@ -140,7 +150,7 @@ struct FlashcardView: View {
 
             Spacer()
         }
-        .padding(24)
+        .padding(28)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .glassCard()
     }
@@ -148,41 +158,44 @@ struct FlashcardView: View {
     // MARK: - Finished View
 
     private var finishedView: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: 24) {
             Spacer()
 
             Image(systemName: "party.popper.fill")
-                .font(.system(size: 56))
+                .font(.system(size: 72))
                 .foregroundStyle(Color.appPrimary)
 
-            Text("Hoàn thành!")
-                .font(.system(size: 24, weight: .heavy))
-                .foregroundStyle(Color.appTextDark)
+            VStack(spacing: 8) {
+                Text("Hoàn thành!")
+                    .font(.system(size: 32, weight: .heavy))
+                    .foregroundStyle(Color.appTextDark)
+
+                Text("\(totalQuestions) thẻ đã xong")
+                    .font(.system(size: 16))
+                    .foregroundStyle(Color.appTextMedium)
+            }
 
             HStack(spacing: 0) {
                 StatItem(value: "\(knownCount)", label: "Đã biết", valueColor: .appSuccess, valueFontSize: 28)
 
                 Rectangle()
                     .fill(Color.appDivider)
-                    .frame(width: 1, height: 40)
+                    .frame(width: 1, height: 44)
 
                 StatItem(value: "\(unknownCount)", label: "Chưa biết", valueColor: .appError, valueFontSize: 28)
             }
-            .padding(16)
+            .padding(20)
             .glassCard()
 
-            Spacer().frame(height: 8)
+            Spacer().frame(height: 12)
 
-            Button {
-                resetFlashcards()
-            } label: {
-                AppButton(label: "Làm lại")
-            }
-
-            Button {
-                dismiss()
-            } label: {
-                AppButton(label: "Quay lại", style: .secondary)
+            VStack(spacing: 12) {
+                Button { resetFlashcards() } label: {
+                    AppButton(label: "Làm lại")
+                }
+                Button { dismiss() } label: {
+                    AppButton(label: "Quay lại", style: .secondary)
+                }
             }
 
             Spacer()

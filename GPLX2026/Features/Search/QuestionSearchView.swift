@@ -21,18 +21,17 @@ struct QuestionSearchView: View {
                 ContentUnavailableView.search(text: searchText)
                     .padding(.top, 60)
             } else {
-                VStack(alignment: .leading, spacing: 8) {
-                    if searchText.isEmpty {
-                        Text("Câu điểm liệt")
-                            .font(.system(size: 13, weight: .semibold))
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack {
+                        Text(searchText.isEmpty ? "Câu điểm liệt" : "\(displayQuestions.count) kết quả")
+                            .font(.system(size: 13, weight: .bold))
                             .foregroundStyle(Color.appTextMedium)
-                            .padding(.horizontal, 20)
-                    } else {
-                        Text("\(displayQuestions.count) kết quả")
-                            .font(.system(size: 13, weight: .medium))
-                            .foregroundStyle(Color.appTextMedium)
-                            .padding(.horizontal, 20)
+                            .textCase(.uppercase)
+                            .tracking(0.5)
+
+                        Spacer()
                     }
+                    .padding(.horizontal, 20)
 
                     LazyVStack(spacing: 8) {
                         ForEach(displayQuestions, id: \.no) { question in
@@ -52,7 +51,13 @@ struct QuestionSearchView: View {
         .screenHeader("Câu hỏi")
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
-                NavigationLink("Xem tất cả", destination: TopicsView())
+                NavigationLink {
+                    TopicsView()
+                } label: {
+                    Text("Xem tất cả")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(Color.appPrimary)
+                }
             }
         }
     }

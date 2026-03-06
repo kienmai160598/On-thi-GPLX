@@ -8,31 +8,37 @@ struct MockExamTab: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
-                // MARK: - Rules card
-                VStack(alignment: .leading, spacing: 14) {
-                    Text("Quy tắc thi")
-                        .font(.system(size: 17, weight: .heavy))
-                        .foregroundStyle(Color.appTextDark)
-
-                    RuleRow(icon: "questionmark.circle.fill", iconColor: Color.appPrimary, text: "35 câu hỏi ngẫu nhiên")
-                    RuleRow(icon: "timer", iconColor: Color.appPrimary, text: "25 phút làm bài")
-                    RuleRow(icon: "checkmark.circle.fill", iconColor: Color.appPrimary, text: "Đạt: \u{2265} 32 câu đúng")
-                    RuleRow(icon: "exclamationmark.triangle.fill", iconColor: Color.appPrimary, text: "Sai câu điểm liệt = Trượt")
-
-                    // Tips inline
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Mẹo: Làm câu điểm liệt trước, không bỏ trống câu nào.")
-                            .font(.system(size: 13))
-                            .foregroundStyle(Color.appTextMedium)
-                            .lineSpacing(2)
+            VStack(alignment: .leading, spacing: 24) {
+                // MARK: - CTA + Rules
+                VStack(spacing: 16) {
+                    Button { openExam(.mockExam()) } label: {
+                        AppButton(icon: "play.fill", label: "Bắt đầu thi thử")
                     }
-                    .padding(.top, 4)
+                    .buttonStyle(.plain)
+                    .onGeometryChange(for: Bool.self) { proxy in
+                        proxy.frame(in: .scrollView(axis: .vertical)).minY < 0
+                    } action: { hidden in
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            showNavPlay = hidden
+                        }
+                    }
+
+                    // Rules summary
+                    HStack(spacing: 16) {
+                        RulePill(icon: "questionmark.circle", text: "35 câu")
+                        RulePill(icon: "timer", text: "25 phút")
+                        RulePill(icon: "checkmark.circle", text: "≥ 32 đạt")
+                    }
+
+                    Text("Sai câu điểm liệt = Trượt. Làm câu điểm liệt trước, không bỏ trống câu nào.")
+                        .font(.system(size: 13))
+                        .foregroundStyle(Color.appTextMedium)
+                        .lineSpacing(3)
                 }
-                .padding(16)
+                .padding(20)
                 .glassCard()
 
-                // MARK: - Stats card
+                // MARK: - Stats
                 if !progressStore.examHistory.isEmpty {
                     ExamStatsRow(items: [
                         (value: "\(progressStore.examCount)", label: "Đã thi"),
@@ -41,27 +47,14 @@ struct MockExamTab: View {
                     ])
                 }
 
-                // MARK: - Start button
-                Button { openExam(.mockExam()) } label: {
-                    AppButton(icon: "play.fill", label: "Bắt đầu thi thử")
-                }
-                .buttonStyle(.plain)
-                .onGeometryChange(for: Bool.self) { proxy in
-                    proxy.frame(in: .scrollView(axis: .vertical)).minY < 0
-                } action: { hidden in
-                    withAnimation(.easeInOut(duration: 0.2)) {
-                        showNavPlay = hidden
-                    }
-                }
-
-                // MARK: - Fixed exam sets (grid)
-                VStack(alignment: .leading, spacing: 12) {
+                // MARK: - Fixed exam sets
+                VStack(alignment: .leading, spacing: 14) {
                     Text("Đề thi cố định")
-                        .font(.system(size: 18, weight: .heavy))
+                        .font(.system(size: 20, weight: .heavy))
                         .foregroundStyle(Color.appTextDark)
 
                     Text("20 đề thi giống thực tế")
-                        .font(.system(size: 13))
+                        .font(.system(size: 14))
                         .foregroundStyle(Color.appTextMedium)
 
                     let completedSets = progressStore.completedExamSets
@@ -72,38 +65,36 @@ struct MockExamTab: View {
                             let isCompleted = completedSets.contains(setId)
 
                             Button { openExam(.mockExam(examSetId: setId)) } label: {
-                                ZStack {
-                                    RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                        .fill(isCompleted ? Color.appPrimary.opacity(0.1) : Color.clear)
-                                        .overlay(
-                                            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                                .stroke(isCompleted ? Color.appPrimary.opacity(0.3) : Color.appDivider, lineWidth: 1.5)
-                                        )
+                                VStack(spacing: 4) {
+                                    Text("\(setId)")
+                                        .font(.system(size: 17, weight: .bold).monospacedDigit())
+                                        .foregroundStyle(isCompleted ? Color.appPrimary : Color.appTextDark)
 
-                                    VStack(spacing: 4) {
-                                        Text("\(setId)")
-                                            .font(.system(size: 16, weight: .bold).monospacedDigit())
-                                            .foregroundStyle(isCompleted ? Color.appPrimary : Color.appTextDark)
-
-                                        if isCompleted {
-                                            Image(systemName: "checkmark")
-                                                .font(.system(size: 10, weight: .bold))
-                                                .foregroundStyle(Color.appSuccess)
-                                        }
+                                    if isCompleted {
+                                        Image(systemName: "checkmark")
+                                            .font(.system(size: 10, weight: .bold))
+                                            .foregroundStyle(Color.appSuccess)
                                     }
                                 }
+                                .frame(maxWidth: .infinity)
                                 .frame(height: 56)
+                                .background(isCompleted ? Color.appPrimary.opacity(0.08) : Color.clear)
+                                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                        .stroke(isCompleted ? Color.appPrimary.opacity(0.3) : Color.appDivider, lineWidth: 1.5)
+                                )
                             }
                             .buttonStyle(.plain)
                         }
                     }
                 }
 
-                // MARK: - Recent history
+                // MARK: - History
                 if !progressStore.examHistory.isEmpty {
-                    VStack(alignment: .leading, spacing: 12) {
+                    VStack(alignment: .leading, spacing: 14) {
                         Text("Lịch sử")
-                            .font(.system(size: 18, weight: .heavy))
+                            .font(.system(size: 20, weight: .heavy))
                             .foregroundStyle(Color.appTextDark)
 
                         ForEach(progressStore.examHistory.prefix(10), id: \.id) { result in
@@ -121,7 +112,7 @@ struct MockExamTab: View {
             }
             .padding(.horizontal, 20)
             .padding(.top, 16)
-            .padding(.bottom, 24)
+            .padding(.bottom, 32)
         }
         .screenHeader("Thi thử")
         .toolbar {
@@ -135,5 +126,27 @@ struct MockExamTab: View {
                 }
             }
         }
+    }
+}
+
+// MARK: - Rule Pill
+
+private struct RulePill: View {
+    let icon: String
+    let text: String
+
+    var body: some View {
+        HStack(spacing: 5) {
+            Image(systemName: icon)
+                .font(.system(size: 12, weight: .medium))
+                .foregroundStyle(Color.appPrimary)
+            Text(text)
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(Color.appTextDark)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 8)
+        .background(Color.appPrimary.opacity(0.06))
+        .clipShape(RoundedRectangle(cornerRadius: 10))
     }
 }

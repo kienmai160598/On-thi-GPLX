@@ -4,7 +4,7 @@ struct ExamResultView: View {
     @Environment(\.popToRoot) private var popToRoot
 
     let questions: [Question]
-    let answers: [Int: Int]  // questionIndex -> answerId
+    let answers: [Int: Int]
     let timeUsedSeconds: Int
     let examResult: ExamResult
     var isFromHistory: Bool = false
@@ -15,31 +15,51 @@ struct ExamResultView: View {
 
     var body: some View {
         ScrollView {
-            VStack(spacing: 0) {
-                Spacer().frame(height: 16)
+            VStack(spacing: 24) {
+                Spacer().frame(height: 8)
 
-                // MARK: - Pass/Fail badge
-                PassFailBadge(isPassed: isPassed)
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, 20)
-                    .staggered(0)
+                // MARK: - Result Hero
+                ResultHero(
+                    isPassed: isPassed,
+                    score: correctCount,
+                    total: questions.count,
+                    subtitle: isPassed
+                        ? "Chúc mừng bạn đã vượt qua!"
+                        : "Hãy ôn tập thêm và thử lại nhé"
+                )
 
                 // MARK: - Score details
-                ScoreDetailsCard(
-                    correctCount: correctCount,
-                    totalQuestions: questions.count,
-                    wrongDiemLietCount: wrongDiemLietCount,
-                    timeUsedSeconds: timeUsedSeconds
-                )
-                .padding(.horizontal, 20)
-                .padding(.bottom, 20)
-                .staggered(1)
+                VStack(spacing: 0) {
+                    ScoreRow(label: "Câu đúng", value: "\(correctCount)/\(questions.count)", color: Color.appSuccess)
+                    Divider().padding(.horizontal, 16)
+                    ScoreRow(label: "Câu sai", value: "\(questions.count - correctCount)/\(questions.count)", color: Color.appError)
+                    Divider().padding(.horizontal, 16)
+                    ScoreRow(
+                        label: "Điểm liệt sai",
+                        value: "\(wrongDiemLietCount)",
+                        color: wrongDiemLietCount > 0 ? Color.appError : Color.appSuccess
+                    )
+                    Divider().padding(.horizontal, 16)
 
-                // MARK: - Review answers
+                    let minutes = timeUsedSeconds / 60
+                    let seconds = timeUsedSeconds % 60
+                    ScoreRow(
+                        label: "Thời gian",
+                        value: String(format: "%02d:%02d", minutes, seconds),
+                        color: Color.appTextMedium
+                    )
+                    Divider().padding(.horizontal, 16)
+                    ScoreRow(
+                        label: "Yêu cầu đạt",
+                        value: "\u{2265} 32 & 0 ĐL sai",
+                        color: Color.appTextMedium
+                    )
+                }
+                .padding(.vertical, 4)
+                .glassCard()
+
+                // MARK: - Review
                 SectionTitle(title: "Xem lại đáp án")
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, 8)
-                    .staggered(2)
 
                 LazyVStack(spacing: 8) {
                     ForEach(Array(questions.enumerated()), id: \.element.no) { index, question in
@@ -48,23 +68,18 @@ struct ExamResultView: View {
                             question: question,
                             selectedAnswerId: answers[index]
                         )
-                        .staggered(min(3 + index, 8))
                     }
                 }
-                .padding(.horizontal, 20)
-                .padding(.bottom, 20)
-
-                Spacer().frame(height: 20)
             }
+            .padding(.horizontal, 20)
+            .padding(.bottom, 32)
         }
         .navigationBarBackButtonHidden(!isFromHistory)
         .screenHeader(isFromHistory ? "Chi tiết bài thi" : "Kết quả thi")
         .toolbar {
             if !isFromHistory {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button {
-                        popToRoot()
-                    } label: {
+                    Button { popToRoot() } label: {
                         Image(systemName: "checkmark")
                             .font(.system(size: 15, weight: .semibold))
                     }
@@ -74,66 +89,63 @@ struct ExamResultView: View {
     }
 }
 
-// MARK: - Pass/Fail Badge
+// MARK: - Result Hero
 
-private struct PassFailBadge: View {
+private struct ResultHero: View {
     let isPassed: Bool
+    let score: Int
+    let total: Int
+    let subtitle: String
+
+    @State private var animateRing = false
+
+    private var statusColor: Color { isPassed ? .appSuccess : .appError }
+    private var fraction: Double { total > 0 ? Double(score) / Double(total) : 0 }
 
     var body: some View {
-        let statusColor = isPassed ? Color.appSuccess : Color.appError
+        VStack(spacing: 20) {
+            // Animated score ring
+            ZStack {
+                Circle()
+                    .stroke(Color.appDivider, lineWidth: 10)
 
-        VStack(spacing: 16) {
-            Image(systemName: isPassed ? "checkmark.circle.fill" : "xmark.circle.fill")
-                .font(.system(size: 64))
-                .foregroundStyle(statusColor)
+                Circle()
+                    .trim(from: 0, to: animateRing ? fraction : 0)
+                    .stroke(statusColor, style: StrokeStyle(lineWidth: 10, lineCap: .round))
+                    .rotationEffect(.degrees(-90))
+                    .animation(.spring(duration: 1.0, bounce: 0.15), value: animateRing)
 
-            Text(isPassed ? "ĐẠT" : "TRƯỢT")
-                .font(.system(size: 32, weight: .heavy))
-                .foregroundStyle(statusColor)
+                VStack(spacing: 2) {
+                    Text("\(score)")
+                        .font(.system(size: 44, weight: .heavy).monospacedDigit())
+                        .foregroundStyle(Color.appTextDark)
+                        .contentTransition(.numericText())
+                    Text("/\(total) câu")
+                        .font(.system(size: 14))
+                        .foregroundStyle(Color.appTextMedium)
+                }
+            }
+            .frame(width: 140, height: 140)
+
+            StatusBadge(
+                text: isPassed ? "ĐẠT" : "TRƯỢT",
+                color: statusColor,
+                fontSize: 16
+            )
+
+            Text(subtitle)
+                .font(.system(size: 15))
+                .foregroundStyle(Color.appTextMedium)
+                .multilineTextAlignment(.center)
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 32)
+        .padding(.vertical, 28)
         .glassCard()
-    }
-}
-
-// MARK: - Score Details Card
-
-private struct ScoreDetailsCard: View {
-    let correctCount: Int
-    let totalQuestions: Int
-    let wrongDiemLietCount: Int
-    let timeUsedSeconds: Int
-
-    var body: some View {
-        VStack(spacing: 0) {
-            ScoreRow(label: "Câu đúng", value: "\(correctCount)/\(totalQuestions)", color: Color.appSuccess)
-            Divider().padding(.horizontal, 16)
-            ScoreRow(label: "Câu sai", value: "\(totalQuestions - correctCount)/\(totalQuestions)", color: Color.appError)
-            Divider().padding(.horizontal, 16)
-            ScoreRow(
-                label: "Điểm liệt sai",
-                value: "\(wrongDiemLietCount)",
-                color: wrongDiemLietCount > 0 ? Color.appError : Color.appSuccess
-            )
-            Divider().padding(.horizontal, 16)
-
-            let minutes = timeUsedSeconds / 60
-            let seconds = timeUsedSeconds % 60
-            ScoreRow(
-                label: "Thời gian",
-                value: String(format: "%02d:%02d", minutes, seconds),
-                color: Color.appTextMedium
-            )
-            Divider().padding(.horizontal, 16)
-            ScoreRow(
-                label: "Yêu cầu đạt",
-                value: "\u{2265} 32 & 0 điểm liệt sai",
-                color: Color.appTextMedium
-            )
+        .onAppear {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                animateRing = true
+            }
         }
-        .padding(.vertical, 4)
-        .glassCard()
     }
 }
 
@@ -169,9 +181,7 @@ private struct ReviewRow: View {
             }
         } label: {
             VStack(alignment: .leading, spacing: 0) {
-                // Summary row
                 HStack(alignment: .top, spacing: 12) {
-                    // Status circle
                     Image(systemName: isUnanswered ? "minus" : isCorrect ? "checkmark" : "xmark")
                         .font(.system(size: 12, weight: .bold))
                         .foregroundStyle(statusColor)
@@ -214,7 +224,6 @@ private struct ReviewRow: View {
                         .animation(.easeOut(duration: 0.2), value: isExpanded)
                 }
 
-                // Expanded detail
                 if isExpanded {
                     VStack(alignment: .leading, spacing: 6) {
                         ForEach(question.answers, id: \.id) { answer in
@@ -251,7 +260,7 @@ private struct ReviewRow: View {
                 }
             }
             .padding(.horizontal, 16)
-            .padding(.vertical, 12)
+            .padding(.vertical, 14)
         }
         .glassCard()
     }

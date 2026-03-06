@@ -82,7 +82,6 @@
 		E0787CD54F6D41F7C2D4FC64 /* HazardHistoryDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFFD54F49F0E6E20614F3B50 /* HazardHistoryDetailView.swift */; };
 		E4A528F226186A4B5B6319B9 /* ProgressBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F25DF249B850AF6A514E55C /* ProgressBarView.swift */; };
 		EA324879EAB25BA364B1B68A /* MemoryTipsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 45C2FB731F1E33EB06E101B4 /* MemoryTipsView.swift */; };
-		ED23C584EA97C9BFA15F4BAD /* RuleRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22850445AF38EBC0D797C2FB /* RuleRow.swift */; };
 		EE9A7E7115D563263453B206 /* ExplanationBox.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3895E5553E267643E4B077E1 /* ExplanationBox.swift */; };
 		F0CA566352C5F00E607FCA51 /* DetailHero.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA26E2F51860493B99A8A785 /* DetailHero.swift */; };
 		F211CC9CCA0554ADE9392E4D /* HomeTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9194A31E0E165FC50E7F8CA8 /* HomeTab.swift */; };
@@ -102,7 +101,6 @@
 		1608C9A45BBEE9E29C98E3FB /* HazardResultView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HazardResultView.swift; sourceTree = "<group>"; };
 		175AA94FF74A23284B6D85CF /* ExamToolbar.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ExamToolbar.swift; sourceTree = "<group>"; };
 		1CCC7C2ED624D59D9F0E5CBC /* ProgressRing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProgressRing.swift; sourceTree = "<group>"; };
-		22850445AF38EBC0D797C2FB /* RuleRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RuleRow.swift; sourceTree = "<group>"; };
 		23C5C6F270D4D8EDF0967437 /* ExamTimerCapsule.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ExamTimerCapsule.swift; sourceTree = "<group>"; };
 		293A93A716F729FC6FBDC4CB /* ScoreRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScoreRow.swift; sourceTree = "<group>"; };
 		2A33907E13AA0C7ABB32151E /* QuestionStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuestionStore.swift; sourceTree = "<group>"; };
@@ -230,7 +228,6 @@
 				E1064C5BF237E44EB9B67DF7 /* QuestionCard.swift */,
 				13A736D692B513429C2D7E2E /* QuestionGridButton.swift */,
 				72266FB465D34A0AE5952584 /* QuestionImage.swift */,
-				22850445AF38EBC0D797C2FB /* RuleRow.swift */,
 				293A93A716F729FC6FBDC4CB /* ScoreRow.swift */,
 				2F6B8A1F84B9EB25EA81EE6C /* SectionHeader.swift */,
 				D3E0D9CBD7857BD67DFAFD18 /* SectionTitle.swift */,
@@ -598,7 +595,6 @@
 				9B6311C12DDE5C3039DBBDD9 /* QuestionImage.swift in Sources */,
 				386D75231E5E3728771BDFA0 /* QuestionStore.swift in Sources */,
 				B61828445891068E542348B0 /* QuestionView.swift in Sources */,
-				ED23C584EA97C9BFA15F4BAD /* RuleRow.swift in Sources */,
 				0C4DE614D43BF39972EBCB87 /* ScoreRow.swift in Sources */,
 				6D62AF4A1CAABE774E0B0006 /* SectionHeader.swift in Sources */,
 				8CD54F0A1A2EF6DA6AD833AC /* SectionTitle.swift in Sources */,

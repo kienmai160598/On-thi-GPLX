@@ -97,7 +97,7 @@ struct MockExamView: View {
                     )
                 }
                 .padding(.horizontal, 20)
-                .padding(.top, 12)
+                .padding(.top, 16)
             }
             .id(currentIndex)
 

@@ -35,21 +35,72 @@ struct DiemLietTab: View {
             return questions
         }()
 
+        let correctCount = allDiemLiet.filter { q in
+            let key = Topic.keyForTopicId(q.topic)
+            return topicProgressCache[key]?[q.no] == true
+        }.count
+
         ScrollView {
             VStack(spacing: 0) {
-                // MARK: - Practice all button
-                Button { openExam(.questionView(topicKey: AppConstants.TopicKey.diemLiet, startIndex: 0)) } label: {
-                    AppButton(label: "Ôn tập \(allDiemLiet.count) câu điểm liệt")
-                }
-                .buttonStyle(.plain)
-                .padding(.horizontal, 20)
-                .padding(.bottom, 16)
-                .onGeometryChange(for: Bool.self) { proxy in
-                    proxy.frame(in: .scrollView(axis: .vertical)).maxY < 60
-                } action: { hidden in
-                    withAnimation(.easeInOut(duration: 0.2)) {
-                        showNavPlay = hidden
+                // MARK: - Hero
+                VStack(spacing: 16) {
+                    HStack(spacing: 0) {
+                        ProgressRing(
+                            current: correctCount,
+                            total: allDiemLiet.count,
+                            size: 80
+                        )
+
+                        Spacer()
+
+                        VStack(alignment: .trailing, spacing: 6) {
+                            Text("Câu hỏi điểm liệt")
+                                .font(.system(size: 18, weight: .heavy))
+                                .foregroundStyle(Color.appTextDark)
+
+                            Text("Sai 1 câu là trượt, hãy nắm vững!")
+                                .font(.system(size: 13))
+                                .foregroundStyle(Color.appTextMedium)
+                                .multilineTextAlignment(.trailing)
+                        }
                     }
+
+                    Button { openExam(.questionView(topicKey: AppConstants.TopicKey.diemLiet, startIndex: 0)) } label: {
+                        AppButton(label: "Ôn tập \(allDiemLiet.count) câu điểm liệt")
+                    }
+                    .buttonStyle(.plain)
+                    .onGeometryChange(for: Bool.self) { proxy in
+                        proxy.frame(in: .scrollView(axis: .vertical)).maxY < 60
+                    } action: { hidden in
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            showNavPlay = hidden
+                        }
+                    }
+                }
+                .padding(20)
+                .glassCard()
+                .padding(.horizontal, 20)
+                .padding(.bottom, 20)
+
+                // MARK: - Topic filter chips
+                if byTopic.count > 1 {
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 8) {
+                            FilterChip(label: "Tất cả (\(allDiemLiet.count))", isSelected: selectedTopicKey == nil) {
+                                withAnimation { selectedTopicKey = nil }
+                            }
+                            ForEach(byTopic, id: \.topic.id) { entry in
+                                FilterChip(
+                                    label: "\(entry.topic.shortName) (\(entry.questions.count))",
+                                    isSelected: selectedTopicKey == entry.topic.key
+                                ) {
+                                    withAnimation { selectedTopicKey = entry.topic.key }
+                                }
+                            }
+                        }
+                        .padding(.horizontal, 20)
+                    }
+                    .padding(.bottom, 14)
                 }
 
                 // MARK: - Review rows
@@ -82,28 +133,27 @@ struct DiemLietTab: View {
                     }
                 }
             }
-            ToolbarItem(placement: .navigationBarTrailing) {
-                Menu {
-                    Button {
-                        withAnimation { selectedTopicKey = nil }
-                    } label: {
-                        Label("Tất cả", systemImage: selectedTopicKey == nil ? "checkmark" : "")
-                    }
-                    ForEach(byTopic, id: \.topic.id) { entry in
-                        Button {
-                            withAnimation { selectedTopicKey = entry.topic.key }
-                        } label: {
-                            Label(
-                                "\(entry.topic.shortName) (\(entry.questions.count))",
-                                systemImage: selectedTopicKey == entry.topic.key ? "checkmark" : ""
-                            )
-                        }
-                    }
-                } label: {
-                    Image(systemName: selectedTopicKey != nil ? "line.3.horizontal.decrease.circle.fill" : "line.3.horizontal.decrease.circle")
-                        .foregroundStyle(.primary)
-                }
-            }
         }
+    }
+}
+
+// MARK: - Filter Chip
+
+private struct FilterChip: View {
+    let label: String
+    let isSelected: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Text(label)
+                .font(.system(size: 13, weight: isSelected ? .bold : .medium))
+                .foregroundStyle(isSelected ? Color.white : Color.appTextMedium)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 8)
+                .background(isSelected ? Color.appPrimary : Color.appDivider)
+                .clipShape(Capsule())
+        }
+        .buttonStyle(.plain)
     }
 }

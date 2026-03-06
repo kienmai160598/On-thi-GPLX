@@ -13,40 +13,37 @@ struct WeakTopicsView: View {
                 let strongList = allTopics.filter { $0.attempted > 0 && $0.accuracy >= 0.8 }
                 let notStarted = allTopics.filter { $0.attempted == 0 }
 
-                // MARK: - Weak topics
                 if !weakList.isEmpty {
                     SectionTitle(title: "Cần ôn thêm")
-                        .padding(.bottom, 8)
+                        .padding(.bottom, 10)
 
                     ForEach(Array(weakList.enumerated()), id: \.element.topic.id) { _, item in
                         Button { openExam(.questionView(topicKey: item.topic.key, startIndex: 0)) } label: {
                             TopicAccuracyRow(item: item)
                         }
                         .buttonStyle(.plain)
-                        .padding(.bottom, 8)
+                        .padding(.bottom, 10)
                     }
-                    .padding(.bottom, 12)
+                    .padding(.bottom, 14)
                 }
 
-                // MARK: - Strong topics
                 if !strongList.isEmpty {
                     SectionTitle(title: "Đã tốt")
-                        .padding(.bottom, 8)
+                        .padding(.bottom, 10)
 
                     ForEach(Array(strongList.enumerated()), id: \.element.topic.id) { _, item in
                         Button { openExam(.questionView(topicKey: item.topic.key, startIndex: 0)) } label: {
                             TopicAccuracyRow(item: item)
                         }
                         .buttonStyle(.plain)
-                        .padding(.bottom, 8)
+                        .padding(.bottom, 10)
                     }
-                    .padding(.bottom, 12)
+                    .padding(.bottom, 14)
                 }
 
-                // MARK: - Not started
                 if !notStarted.isEmpty {
                     SectionTitle(title: "Chưa bắt đầu")
-                        .padding(.bottom, 8)
+                        .padding(.bottom, 10)
 
                     ForEach(Array(notStarted.enumerated()), id: \.element.topic.id) { _, item in
                         Button { openExam(.questionView(topicKey: item.topic.key, startIndex: 0)) } label: {
@@ -57,7 +54,7 @@ struct WeakTopicsView: View {
                             )
                         }
                         .buttonStyle(.plain)
-                        .padding(.bottom, 8)
+                        .padding(.bottom, 10)
                     }
                 }
 
@@ -70,7 +67,7 @@ struct WeakTopicsView: View {
                 }
             }
             .padding(.horizontal, 20)
-            .padding(.bottom, 20)
+            .padding(.bottom, 24)
         }
         .screenHeader("Phân tích điểm yếu")
     }
@@ -87,35 +84,37 @@ private struct TopicAccuracyRow: View {
 
     var body: some View {
         HStack(spacing: 14) {
-            IconBox(
-                icon: item.topic.sfSymbol,
-                color: accentColor,
-                size: 40,
-                cornerRadius: 10,
-                iconFontSize: 17
-            )
+            ZStack {
+                Circle()
+                    .stroke(Color.appDivider, lineWidth: 3)
+                Circle()
+                    .trim(from: 0, to: item.accuracy)
+                    .stroke(accentColor, style: StrokeStyle(lineWidth: 3, lineCap: .round))
+                    .rotationEffect(.degrees(-90))
+                Image(systemName: item.topic.sfSymbol)
+                    .font(.system(size: 16))
+                    .foregroundStyle(accentColor)
+            }
+            .frame(width: 44, height: 44)
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(item.topic.name)
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(.system(size: 15, weight: .semibold))
                     .foregroundStyle(Color.appTextDark)
 
-                // Progress bar
-                ProgressBarView(fraction: item.accuracy, color: accentColor)
-
-                Text("\(item.correct)/\(item.attempted) đúng \u{2022} \(Int(item.accuracy * 100))%")
-                    .font(.system(size: 12))
+                Text("\(item.correct)/\(item.attempted) đúng · \(Int(item.accuracy * 100))%")
+                    .font(.system(size: 13))
                     .foregroundStyle(Color.appTextMedium)
             }
 
             Spacer(minLength: 4)
 
             Text("Ôn tập")
-                .font(.system(size: 12, weight: .semibold))
+                .font(.system(size: 13, weight: .semibold))
                 .foregroundStyle(Color.appPrimary)
         }
         .padding(.horizontal, 16)
-        .padding(.vertical, 12)
+        .padding(.vertical, 14)
         .glassCard()
     }
 }

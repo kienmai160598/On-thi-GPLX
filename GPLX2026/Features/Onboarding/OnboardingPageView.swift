@@ -18,17 +18,18 @@ struct OnboardingPageView: View {
                 .staggered(0)
 
             Text(page.title)
-                .font(.system(size: 28, weight: .bold))
+                .font(.system(size: 32, weight: .heavy))
                 .multilineTextAlignment(.center)
                 .foregroundStyle(Color.appTextDark)
-                .padding(.top, 40)
+                .padding(.top, 44)
                 .staggered(1)
 
             Text(page.subtitle)
                 .font(.system(size: 16))
                 .multilineTextAlignment(.center)
                 .foregroundStyle(Color.appTextMedium)
-                .padding(.top, 12)
+                .lineSpacing(4)
+                .padding(.top, 14)
                 .staggered(2)
 
             Spacer()
@@ -53,16 +54,16 @@ struct OnboardingPageView: View {
         ZStack {
             Circle()
                 .fill(.ultraThinMaterial)
-                .frame(width: 180, height: 180)
+                .frame(width: 200, height: 200)
 
             if page.id == 2 {
                 Image(systemName: page.icon)
-                    .font(.system(size: 80))
+                    .font(.system(size: 88))
                     .foregroundStyle(Color.appPrimary)
                     .symbolEffect(.breathe, isActive: true)
             } else {
                 Image(systemName: page.icon)
-                    .font(.system(size: 80))
+                    .font(.system(size: 88))
                     .foregroundStyle(Color.appPrimary)
                     .symbolEffect(.bounce, value: bouncetrigger)
                     .onAppear { bouncetrigger += 1 }
@@ -71,7 +72,7 @@ struct OnboardingPageView: View {
     }
 
     private var featureIconsHero: some View {
-        HStack(spacing: 20) {
+        HStack(spacing: 24) {
             featureIcon(icon: "book.fill", label: "Lý thuyết", delay: 0)
             featureIcon(icon: "checkmark.circle.fill", label: "Thi thử", delay: 1)
             featureIcon(icon: "chart.line.uptrend.xyaxis", label: "Tiến độ", delay: 2)
@@ -79,20 +80,20 @@ struct OnboardingPageView: View {
     }
 
     private func featureIcon(icon: String, label: String, delay: Int) -> some View {
-        VStack(spacing: 8) {
+        VStack(spacing: 10) {
             ZStack {
                 Circle()
                     .fill(.ultraThinMaterial)
-                    .frame(width: 72, height: 72)
+                    .frame(width: 80, height: 80)
 
                 Image(systemName: icon)
-                    .font(.system(size: 36))
+                    .font(.system(size: 40))
                     .foregroundStyle(Color.appPrimary)
                     .symbolEffect(.wiggle, options: .repeating.speed(0.5), isActive: true)
             }
 
             Text(label)
-                .font(.system(size: 13, weight: .medium))
+                .font(.system(size: 14, weight: .semibold))
                 .foregroundStyle(Color.appTextMedium)
         }
     }

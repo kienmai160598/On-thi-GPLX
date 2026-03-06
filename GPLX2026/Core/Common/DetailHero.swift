@@ -13,15 +13,15 @@ struct DetailHero: View {
             ZStack {
                 Circle()
                     .fill(iconColor.opacity(0.1))
-                    .frame(width: 88, height: 88)
+                    .frame(width: 96, height: 96)
                 Image(systemName: icon)
-                    .font(.system(size: 40))
+                    .font(.system(size: 44))
                     .foregroundStyle(iconColor)
             }
 
             VStack(spacing: 6) {
                 Text(title)
-                    .font(.system(size: 32, weight: .heavy).monospacedDigit())
+                    .font(.system(size: 36, weight: .heavy).monospacedDigit())
                     .foregroundStyle(Color.appTextDark)
                     .contentTransition(.numericText())
                     .animation(.snappy, value: title)
@@ -43,7 +43,7 @@ struct DetailHero: View {
             }
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 24)
+        .padding(.vertical, 28)
         .glassCard()
     }
 }

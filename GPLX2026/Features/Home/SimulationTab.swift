@@ -17,8 +17,7 @@ struct SimulationTab: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
-                // Section picker
+            VStack(alignment: .leading, spacing: 24) {
                 Picker("", selection: $selectedSection) {
                     ForEach(SimSection.allCases, id: \.self) { section in
                         Text(section.rawValue).tag(section)
@@ -35,7 +34,7 @@ struct SimulationTab: View {
             }
             .padding(.horizontal, 20)
             .padding(.top, 16)
-            .padding(.bottom, 24)
+            .padding(.bottom, 32)
         }
         .screenHeader("Thực hành")
         .alert("Xoá cache video?", isPresented: $showClearCacheAlert) {
@@ -68,30 +67,35 @@ struct SimulationTab: View {
 
     @ViewBuilder
     private var simulationContent: some View {
-        // Rules card
-        VStack(alignment: .leading, spacing: 14) {
-            Text("Quy tắc thi mô phỏng")
-                .font(.system(size: 17, weight: .heavy))
-                .foregroundStyle(Color.appTextDark)
+        // CTA + Rules
+        VStack(spacing: 16) {
+            Button { openExam(.simulationExam(mode: .random)) } label: {
+                AppButton(icon: "play.fill", label: "Thi mô phỏng (20 câu)")
+            }
+            .buttonStyle(.plain)
+            .onGeometryChange(for: Bool.self) { proxy in
+                proxy.frame(in: .scrollView(axis: .vertical)).minY < 0
+            } action: { hidden in
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    showNavPlay = hidden
+                }
+            }
 
-            RuleRow(icon: "photo.on.rectangle", iconColor: Color.appPrimary,
-                    text: "20 tình huống ngẫu nhiên")
-            RuleRow(icon: "timer", iconColor: Color.appPrimary,
-                    text: "60 giây mỗi tình huống")
-            RuleRow(icon: "arrow.right.circle.fill", iconColor: Color.appPrimary,
-                    text: "Tự động chuyển sau khi trả lời")
-            RuleRow(icon: "checkmark.circle.fill", iconColor: Color.appPrimary,
-                    text: "Đạt: \u{2265} 14/20 đúng (70%)")
+            HStack(spacing: 16) {
+                RulePill(icon: "photo.on.rectangle", text: "20 câu")
+                RulePill(icon: "timer", text: "60s/câu")
+                RulePill(icon: "checkmark.circle", text: "≥ 70%")
+            }
 
-            Text("Mẹo: Quan sát kỹ hình ảnh, chú ý biển báo và vạch kẻ đường.")
+            Text("Quan sát kỹ hình ảnh, chú ý biển báo và vạch kẻ đường.")
                 .font(.system(size: 13))
                 .foregroundStyle(Color.appTextMedium)
-                .padding(.top, 4)
+                .lineSpacing(3)
         }
-        .padding(16)
+        .padding(20)
         .glassCard()
 
-        // Stats card
+        // Stats
         if !progressStore.simulationHistory.isEmpty {
             ExamStatsRow(items: [
                 (value: "\(progressStore.simulationExamCount)", label: "Đã thi"),
@@ -100,29 +104,18 @@ struct SimulationTab: View {
             ])
         }
 
-        // Start random exam
-        Button { openExam(.simulationExam(mode: .random)) } label: {
-            AppButton(icon: "play.fill", label: "Thi mô phỏng (20 câu)")
-        }
-        .buttonStyle(.plain)
-        .onGeometryChange(for: Bool.self) { proxy in
-            proxy.frame(in: .scrollView(axis: .vertical)).minY < 0
-        } action: { hidden in
-            withAnimation(.easeInOut(duration: 0.2)) {
-                showNavPlay = hidden
-            }
-        }
-
-        // Full practice mode
+        // Full practice
         Button { openExam(.simulationExam(mode: .fullPractice)) } label: {
             AppButton(label: "Luyện tập tất cả (\(questionStore.simulationQuestions.count) câu)", style: .secondary)
         }
         .buttonStyle(.plain)
 
-        // Recent history
+        // History
         if !progressStore.simulationHistory.isEmpty {
-            VStack(alignment: .leading, spacing: 12) {
-                SectionTitle(title: "Lịch sử mô phỏng")
+            VStack(alignment: .leading, spacing: 14) {
+                Text("Lịch sử mô phỏng")
+                    .font(.system(size: 20, weight: .heavy))
+                    .foregroundStyle(Color.appTextDark)
 
                 ForEach(progressStore.simulationHistory.prefix(10), id: \.id) { result in
                     NavigationLink(destination: SimulationHistoryDetailView(result: result)) {
@@ -142,30 +135,28 @@ struct SimulationTab: View {
 
     @ViewBuilder
     private var hazardContent: some View {
-        // Rules card
-        VStack(alignment: .leading, spacing: 14) {
-            Text("Quy tắc thi tình huống")
-                .font(.system(size: 17, weight: .heavy))
-                .foregroundStyle(Color.appTextDark)
+        // CTA + Rules
+        VStack(spacing: 16) {
+            Button { openExam(.hazardTest(mode: .exam)) } label: {
+                AppButton(icon: "play.fill", label: "Thi tình huống (10 video)")
+            }
+            .buttonStyle(.plain)
 
-            RuleRow(icon: "play.rectangle.fill", iconColor: Color.appPrimary,
-                    text: "10 tình huống video ngẫu nhiên")
-            RuleRow(icon: "hand.tap.fill", iconColor: Color.appPrimary,
-                    text: "Nhấn khi phát hiện nguy hiểm")
-            RuleRow(icon: "star.fill", iconColor: Color.appPrimary,
-                    text: "0-5 điểm mỗi tình huống")
-            RuleRow(icon: "checkmark.circle.fill", iconColor: Color.appPrimary,
-                    text: "Đạt: \u{2265} 35/50 điểm (70%)")
+            HStack(spacing: 16) {
+                RulePill(icon: "play.rectangle", text: "10 video")
+                RulePill(icon: "hand.tap", text: "Nhấn nhanh")
+                RulePill(icon: "star", text: "≥ 35/50")
+            }
 
-            Text("Mẹo: Nhấn sớm khi vừa thấy nguy hiểm để đạt điểm cao nhất.")
+            Text("Nhấn sớm khi vừa thấy nguy hiểm để đạt điểm cao nhất.")
                 .font(.system(size: 13))
                 .foregroundStyle(Color.appTextMedium)
-                .padding(.top, 4)
+                .lineSpacing(3)
         }
-        .padding(16)
+        .padding(20)
         .glassCard()
 
-        // Download card
+        // Download
         HazardDownloadCard(videoCache: videoCache, showClearAlert: $showClearCacheAlert)
 
         // Stats
@@ -177,21 +168,17 @@ struct SimulationTab: View {
             ])
         }
 
-        // Start exam
-        Button { openExam(.hazardTest(mode: .exam)) } label: {
-            AppButton(icon: "play.fill", label: "Thi tình huống (10 video)")
-        }
-        .buttonStyle(.plain)
-
         // Full practice
         Button { openExam(.hazardTest(mode: .practice)) } label: {
             AppButton(label: "Luyện tập tất cả (120 tình huống)", style: .secondary)
         }
         .buttonStyle(.plain)
 
-        // Chapter browser
-        VStack(alignment: .leading, spacing: 12) {
-            SectionTitle(title: "Chương trình (\(HazardSituation.all.count) tình huống)")
+        // Chapters
+        VStack(alignment: .leading, spacing: 14) {
+            Text("Chương trình (\(HazardSituation.all.count) tình huống)")
+                .font(.system(size: 20, weight: .heavy))
+                .foregroundStyle(Color.appTextDark)
 
             ForEach(HazardSituation.chapters, id: \.id) { chapter in
                 Button { openExam(.hazardTest(mode: .chapter(chapter.id))) } label: {
@@ -226,10 +213,12 @@ struct SimulationTab: View {
             }
         }
 
-        // Recent history
+        // History
         if !progressStore.hazardHistory.isEmpty {
-            VStack(alignment: .leading, spacing: 12) {
-                SectionTitle(title: "Lịch sử tình huống")
+            VStack(alignment: .leading, spacing: 14) {
+                Text("Lịch sử tình huống")
+                    .font(.system(size: 20, weight: .heavy))
+                    .foregroundStyle(Color.appTextDark)
 
                 ForEach(progressStore.hazardHistory.prefix(10), id: \.id) { result in
                     NavigationLink(destination: HazardHistoryDetailView(result: result)) {
@@ -258,6 +247,28 @@ struct SimulationTab: View {
     }
 }
 
+// MARK: - Rule Pill
+
+private struct RulePill: View {
+    let icon: String
+    let text: String
+
+    var body: some View {
+        HStack(spacing: 5) {
+            Image(systemName: icon)
+                .font(.system(size: 12, weight: .medium))
+                .foregroundStyle(Color.appPrimary)
+            Text(text)
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(Color.appTextDark)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 8)
+        .background(Color.appPrimary.opacity(0.06))
+        .clipShape(RoundedRectangle(cornerRadius: 10))
+    }
+}
+
 // MARK: - Hazard Download Card
 
 private struct HazardDownloadCard: View {
@@ -272,7 +283,6 @@ private struct HazardDownloadCard: View {
         let allComplete = cached == total
 
         VStack(alignment: .leading, spacing: 0) {
-            // Header
             VStack(alignment: .leading, spacing: 12) {
                 HStack(spacing: 8) {
                     Image(systemName: allComplete ? "checkmark.icloud.fill" : "icloud.and.arrow.down")
@@ -288,18 +298,12 @@ private struct HazardDownloadCard: View {
                 }
 
                 VStack(alignment: .leading, spacing: 4) {
-                    ProgressBarView(
-                        fraction: fraction,
-                        color: allComplete ? .appSuccess : .appPrimary,
-                        height: 6
-                    )
-
+                    ProgressBarView(fraction: fraction, color: allComplete ? .appSuccess : .appPrimary, height: 6)
                     Text("\(cached)/\(total) video đã tải")
                         .font(.system(size: 13, weight: .medium).monospacedDigit())
                         .foregroundStyle(Color.appTextMedium)
                 }
 
-                // Buttons
                 HStack(spacing: 10) {
                     if videoCache.isDownloadingAll {
                         Button {
@@ -307,9 +311,7 @@ private struct HazardDownloadCard: View {
                             Haptics.impact(.medium)
                         } label: {
                             HStack(spacing: 6) {
-                                ProgressView()
-                                    .scaleEffect(0.7)
-                                    .tint(Color.appPrimary)
+                                ProgressView().scaleEffect(0.7).tint(Color.appPrimary)
                                 Text(videoCache.downloadSpeedMBps > 0
                                      ? String(format: "%.1f MB/s (Huỷ)", videoCache.downloadSpeedMBps)
                                      : "Đang tải... (Huỷ)")
@@ -330,16 +332,13 @@ private struct HazardDownloadCard: View {
                     }
 
                     if cached > 0 && !videoCache.isDownloading {
-                        Button {
-                            showClearAlert = true
-                        } label: {
+                        Button { showClearAlert = true } label: {
                             AppButton(label: "Xoá", style: .secondary, height: 36, cornerRadius: 18)
                         }
                         .frame(width: 80)
                     }
                 }
 
-                // Show/hide chapters toggle
                 if !allComplete {
                     Button {
                         withAnimation(.easeOut(duration: 0.2)) {
@@ -359,7 +358,6 @@ private struct HazardDownloadCard: View {
             }
             .padding(16)
 
-            // Per-chapter download rows (collapsible)
             if showChapters && !allComplete {
                 Divider().padding(.horizontal, 16)
 
@@ -400,9 +398,7 @@ private struct HazardDownloadCard: View {
                             } label: {
                                 Group {
                                     if isDownloading {
-                                        ProgressView()
-                                            .scaleEffect(0.65)
-                                            .tint(Color.appPrimary)
+                                        ProgressView().scaleEffect(0.65).tint(Color.appPrimary)
                                     } else if chComplete {
                                         Image(systemName: "checkmark.circle.fill")
                                             .font(.system(size: 16))

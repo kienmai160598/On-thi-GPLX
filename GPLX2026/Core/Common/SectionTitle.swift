@@ -5,9 +5,10 @@ struct SectionTitle: View {
 
     var body: some View {
         Text(title)
-            .font(.system(size: 15, weight: .semibold))
+            .font(.system(size: 13, weight: .bold))
             .foregroundStyle(Color.appTextMedium)
-            .tracking(0.3)
+            .textCase(.uppercase)
+            .tracking(0.5)
             .frame(maxWidth: .infinity, alignment: .leading)
     }
 }

@@ -18,7 +18,7 @@ struct TrafficSignsReferenceView: View {
                     let signs = filteredSigns(category.signs)
                     if !signs.isEmpty {
                         SectionTitle(title: category.name)
-                            .padding(.bottom, 8)
+                            .padding(.bottom, 10)
 
                         VStack(spacing: 0) {
                             ForEach(Array(signs.enumerated()), id: \.element.id) { j, sign in
@@ -29,7 +29,7 @@ struct TrafficSignsReferenceView: View {
                             }
                         }
                         .glassCard()
-                        .padding(.bottom, 20)
+                        .padding(.bottom, 24)
                     }
                 }
             }
@@ -87,34 +87,34 @@ private struct SignRow: View {
                 Image(uiImage: uiImage)
                     .resizable()
                     .aspectRatio(contentMode: .fit)
-                    .frame(width: 44, height: 44)
+                    .frame(width: 48, height: 48)
             }
 
-            VStack(alignment: .leading, spacing: 3) {
+            VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 6) {
                     Text(sign.code)
                         .font(.system(size: 11, weight: .bold))
                         .foregroundStyle(sign.codeColor)
-                        .padding(.horizontal, 5)
+                        .padding(.horizontal, 6)
                         .padding(.vertical, 2)
                         .background(sign.codeBgColor)
-                        .clipShape(RoundedRectangle(cornerRadius: 3))
+                        .clipShape(RoundedRectangle(cornerRadius: 4))
 
                     Text(sign.name)
-                        .font(.system(size: 14, weight: .semibold))
+                        .font(.system(size: 14, weight: .bold))
                         .foregroundStyle(Color.appTextDark)
                 }
 
                 Text(sign.description)
-                    .font(.system(size: 12))
+                    .font(.system(size: 13))
                     .foregroundStyle(Color.appTextMedium)
-                    .lineSpacing(2)
+                    .lineSpacing(3)
             }
 
             Spacer()
         }
         .padding(.horizontal, 16)
-        .padding(.vertical, 10)
+        .padding(.vertical, 12)
     }
 }
 

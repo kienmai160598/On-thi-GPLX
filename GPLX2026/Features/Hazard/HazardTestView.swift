@@ -88,24 +88,26 @@ struct HazardTestView: View {
             ScrollView {
                 VStack(spacing: 16) {
                     // MARK: Situation Info
-                    HStack(spacing: 10) {
+                    HStack(spacing: 12) {
                         Image(systemName: "film")
-                            .font(.system(size: 13))
-                            .foregroundStyle(Color.appPrimary)
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundStyle(.white)
+                            .frame(width: 36, height: 36)
+                            .background(Color.appPrimary, in: RoundedRectangle(cornerRadius: 9))
 
-                        VStack(alignment: .leading, spacing: 2) {
+                        VStack(alignment: .leading, spacing: 3) {
                             Text("Tình huống \(situation.id)")
-                                .font(.system(size: 14, weight: .bold))
+                                .font(.system(size: 15, weight: .bold))
                                 .foregroundStyle(Color.appTextDark)
                             Text("Chương \(situation.chapter): \(situation.chapterName)")
-                                .font(.system(size: 12))
+                                .font(.system(size: 13))
                                 .foregroundStyle(Color.appTextMedium)
                         }
 
                         Spacer(minLength: 4)
                     }
                     .padding(.horizontal, 16)
-                    .padding(.vertical, 12)
+                    .padding(.vertical, 14)
                     .glassCard()
 
                     // MARK: Video Player

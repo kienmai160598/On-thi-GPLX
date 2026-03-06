@@ -33,9 +33,7 @@ struct QuestionReviewRow: View {
             }
         } label: {
             VStack(alignment: .leading, spacing: 0) {
-                // Summary row
                 HStack(alignment: .top, spacing: 12) {
-                    // Status circle
                     Image(systemName: statusIcon)
                         .font(.system(size: 12, weight: .bold))
                         .foregroundStyle(statusColor)
@@ -78,7 +76,6 @@ struct QuestionReviewRow: View {
                         .animation(.easeOut(duration: 0.2), value: isExpanded)
                 }
 
-                // Expanded detail
                 if isExpanded {
                     VStack(alignment: .leading, spacing: 6) {
                         ForEach(question.answers, id: \.id) { answer in
