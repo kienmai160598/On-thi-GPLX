@@ -60,10 +60,24 @@ struct SettingsView: View {
                 .padding(.bottom, 20)
                 .staggered(8)
 
+                // MARK: - Credits Section
+                SectionTitle(title: "Nguồn dữ liệu")
+                    .padding(.bottom, 8)
+                    .staggered(9)
+
+                VStack(spacing: 0) {
+                    AboutRow(icon: "doc.text", label: "Ngân hàng đề thi", value: "Bộ GTVT")
+                    Divider().padding(.horizontal, 16)
+                    AboutRow(icon: "video", label: "Video mô phỏng", value: "gmec.vn")
+                }
+                .glassCard()
+                .padding(.bottom, 20)
+                .staggered(10)
+
                 // MARK: - About Section
                 SectionTitle(title: "Thông tin")
                     .padding(.bottom, 8)
-                    .staggered(9)
+                    .staggered(11)
 
                 VStack(spacing: 0) {
                     AboutRow(icon: "person.fill", label: "Tác giả", value: "Kien Mai")

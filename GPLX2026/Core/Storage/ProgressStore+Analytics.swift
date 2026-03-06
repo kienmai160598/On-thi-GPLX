@@ -71,10 +71,6 @@ extension ProgressStore {
         }
     }
 
-    func readinessScore(topics: [Topic], allQuestions: [Question]) -> Double {
-        readinessStatus(topics: topics, allQuestions: allQuestions).score
-    }
-
     func readinessStatus(topics: [Topic], allQuestions: [Question]) -> ReadinessStatus {
         let totalCorrect = totalCorrectCount(topics: topics)
         let totalAttempted = totalAttemptedCount(topics: topics)

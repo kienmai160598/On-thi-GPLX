@@ -52,12 +52,7 @@ struct QuestionSearchView: View {
         .screenHeader("Câu hỏi")
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
-                NavigationLink {
-                    TopicsView()
-                } label: {
-                    Text("Xem tất cả")
-                        .font(.system(size: 15, weight: .medium))
-                }
+                NavigationLink("Xem tất cả", destination: TopicsView())
             }
         }
     }

@@ -282,19 +282,6 @@ struct HazardTestView: View {
         }
     }
 
-    private func skipSituation() {
-        tapTimes[currentIndex] = nil
-        if isLast {
-            finishTest()
-        } else {
-            withAnimation(.easeOut(duration: 0.25)) {
-                currentIndex += 1
-                playerState = PlayerState()
-                scoreRevealed = false
-            }
-        }
-    }
-
     private func finishTest() {
         Haptics.notification(.success)
 

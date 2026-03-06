@@ -119,8 +119,8 @@ struct SimulationExamView: View {
                 onNext: {
                     if isRevealed {
                         advanceOrFinish()
-                    } else if selectedAnswerId != nil {
-                        confirmAnswer(answer: selectedAnswerId!, question: question)
+                    } else if let answerId = selectedAnswerId {
+                        confirmAnswer(answer: answerId, question: question)
                     }
                 },
                 onSelectIndex: { index in
@@ -150,11 +150,13 @@ struct SimulationExamView: View {
     private func startScenarioTimer() {
         scenarioSecondsRemaining = scenarioTimeLimit
         scenarioTimer?.invalidate()
-        scenarioTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { _ in
-            if scenarioSecondsRemaining <= 1 {
-                handleTimeout()
-            } else {
-                scenarioSecondsRemaining -= 1
+        scenarioTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [self] _ in
+            Task { @MainActor in
+                if scenarioSecondsRemaining <= 1 {
+                    handleTimeout()
+                } else {
+                    scenarioSecondsRemaining -= 1
+                }
             }
         }
     }

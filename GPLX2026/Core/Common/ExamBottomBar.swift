@@ -53,13 +53,6 @@ struct ExamBottomBar: View {
         }
         .padding(.horizontal, 16)
         .padding(.top, 10)
-        .padding(.bottom, 4)
-        .background {
-            if #available(iOS 26.0, *) {
-                Color.clear
-            } else {
-                Color.scaffoldBg
-            }
-        }
+        .padding(.bottom, 0)
     }
 }

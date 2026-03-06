@@ -110,6 +110,7 @@ final class HazardVideoCache {
                 config.timeoutIntervalForResource = 300
                 let dlSession = URLSession(configuration: config, delegate: delegate, delegateQueue: nil)
                 let task = dlSession.downloadTask(with: situation.videoURL)
+                dlSession.finishTasksAndInvalidate()
                 self.activeTasks[situation.id] = task
                 task.resume()
             }
@@ -213,8 +214,12 @@ private final class DownloadProgressTracker: NSObject, URLSessionDownloadDelegat
 
     func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask, didFinishDownloadingTo location: URL) {
         let tempFile = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".mp4")
-        try? FileManager.default.copyItem(at: location, to: tempFile)
-        continuation?.resume(returning: tempFile)
+        do {
+            try FileManager.default.copyItem(at: location, to: tempFile)
+            continuation?.resume(returning: tempFile)
+        } catch {
+            continuation?.resume(throwing: error)
+        }
         continuation = nil
     }
 

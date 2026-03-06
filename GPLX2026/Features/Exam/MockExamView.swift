@@ -142,12 +142,14 @@ struct MockExamView: View {
 
     private func startTimer() {
         timer?.invalidate()
-        timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { _ in
-            if remainingSeconds <= 1 {
-                timer?.invalidate()
-                submitExam()
-            } else {
-                remainingSeconds -= 1
+        timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [self] _ in
+            Task { @MainActor in
+                if remainingSeconds <= 1 {
+                    timer?.invalidate()
+                    submitExam()
+                } else {
+                    remainingSeconds -= 1
+                }
             }
         }
     }

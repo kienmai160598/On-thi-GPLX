@@ -38,7 +38,7 @@ struct SimulationTab: View {
             .padding(.top, 16)
             .padding(.bottom, 20)
         }
-        .screenHeader("Mô phỏng")
+        .screenHeader("Thực hành")
         .alert("Xoá cache video?", isPresented: $showClearCacheAlert) {
             Button("Huỷ", role: .cancel) {}
             Button("Xoá", role: .destructive) {

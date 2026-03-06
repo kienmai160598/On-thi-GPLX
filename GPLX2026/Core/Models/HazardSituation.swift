@@ -15,7 +15,11 @@ struct HazardSituation: Codable, Identifiable {
     }
 
     var videoURL: URL {
-        URL(string: "https://gmec.vn/videos/\(videoFileName).mp4")!
+        // Safe: format is always valid ASCII URL
+        guard let url = URL(string: "https://gmec.vn/videos/\(videoFileName).mp4") else {
+            fatalError("Invalid video URL for situation \(id)")
+        }
+        return url
     }
 
     /// Score based on tap time. Linear interpolation: perfectStart = 5, perfectEnd = 0.
