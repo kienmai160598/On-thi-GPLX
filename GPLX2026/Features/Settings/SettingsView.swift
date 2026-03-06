@@ -7,6 +7,7 @@ struct SettingsView: View {
     @AppStorage("appPrimaryColor") private var primaryColorKey: String = "default"
     @AppStorage("hapticsEnabled") private var hapticsEnabled: Bool = true
     @AppStorage("backgroundAnimation") private var backgroundAnimation: String = "none"
+    @AppStorage("backgroundSpeed") private var backgroundSpeed: String = "normal"
 
     @State private var showResetConfirmation = false
 
@@ -30,6 +31,7 @@ struct SettingsView: View {
                 SectionTitle(title: "Hiệu ứng nền")
                 BackgroundAnimationPicker(
                     selected: $backgroundAnimation,
+                    speedKey: $backgroundSpeed,
                     primaryColorKey: primaryColorKey
                 )
 
