@@ -47,11 +47,12 @@ struct HomeView: View {
         }
         .tint(accentColor)
         .environment(\.openExam) { screen in activeExam = screen }
-        .fullScreenCover(item: $activeExam) { screen in
+        .fullScreenCover(item: $activeExam) { exam in
             NavigationStack {
-                screen.destination
+                exam.destination
             }
             .environment(\.popToRoot) { activeExam = nil }
+            .environment(\.openExam) { newScreen in activeExam = newScreen }
             .tint(accentColor)
         }
     }

@@ -48,56 +48,60 @@ struct MockExamTab: View {
                 }
 
                 // MARK: - Fixed exam sets
-                VStack(alignment: .leading, spacing: 14) {
-                    Text("Đề thi cố định")
-                        .font(.system(size: 20, weight: .heavy))
-                        .foregroundStyle(Color.appTextDark)
+                SectionTitle(title: "Đề thi cố định")
 
-                    Text("20 đề thi giống thực tế")
-                        .font(.system(size: 14))
-                        .foregroundStyle(Color.appTextMedium)
-
+                VStack(spacing: 0) {
                     let completedSets = progressStore.completedExamSets
-                    let columns = Array(repeating: GridItem(.flexible(), spacing: 10), count: 5)
 
-                    LazyVGrid(columns: columns, spacing: 10) {
-                        ForEach(1...20, id: \.self) { setId in
-                            let isCompleted = completedSets.contains(setId)
+                    ForEach(Array(stride(from: 1, through: 20, by: 2)), id: \.self) { rowStart in
+                        if rowStart > 1 {
+                            Divider().padding(.horizontal, 16)
+                        }
 
-                            Button { openExam(.mockExam(examSetId: setId)) } label: {
-                                VStack(spacing: 4) {
-                                    Text("\(setId)")
-                                        .font(.system(size: 17, weight: .bold).monospacedDigit())
-                                        .foregroundStyle(isCompleted ? Color.appPrimary : Color.appTextDark)
-
-                                    if isCompleted {
-                                        Image(systemName: "checkmark")
-                                            .font(.system(size: 10, weight: .bold))
-                                            .foregroundStyle(Color.appSuccess)
-                                    }
+                        HStack(spacing: 0) {
+                            ForEach([rowStart, rowStart + 1], id: \.self) { setId in
+                                if setId > rowStart {
+                                    Divider().frame(height: 56)
                                 }
-                                .frame(maxWidth: .infinity)
-                                .frame(height: 56)
-                                .background(isCompleted ? Color.appPrimary.opacity(0.08) : Color.clear)
-                                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                        .stroke(isCompleted ? Color.appPrimary.opacity(0.3) : Color.appDivider, lineWidth: 1.5)
-                                )
+
+                                let isCompleted = completedSets.contains(setId)
+
+                                Button { openExam(.mockExam(examSetId: setId)) } label: {
+                                    HStack(spacing: 10) {
+                                        Text("Đề \(setId)")
+                                            .font(.system(size: 15, weight: .semibold).monospacedDigit())
+                                            .foregroundStyle(Color.appTextDark)
+
+                                        Spacer()
+
+                                        if isCompleted {
+                                            Image(systemName: "checkmark.circle.fill")
+                                                .font(.system(size: 16))
+                                                .foregroundStyle(Color.appSuccess)
+                                        } else {
+                                            Image(systemName: "chevron.right")
+                                                .font(.system(size: 11, weight: .semibold))
+                                                .foregroundStyle(Color.appTextLight)
+                                        }
+                                    }
+                                    .padding(.horizontal, 16)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .frame(height: 56)
+                                    .contentShape(Rectangle())
+                                }
+                                .buttonStyle(.plain)
                             }
-                            .buttonStyle(.plain)
                         }
                     }
                 }
+                .glassCard()
 
                 // MARK: - History
                 if !progressStore.examHistory.isEmpty {
-                    VStack(alignment: .leading, spacing: 14) {
-                        Text("Lịch sử")
-                            .font(.system(size: 20, weight: .heavy))
-                            .foregroundStyle(Color.appTextDark)
+                    SectionTitle(title: "Lịch sử")
 
-                        ForEach(progressStore.examHistory.prefix(10), id: \.id) { result in
+                    VStack(spacing: 0) {
+                        ForEach(Array(progressStore.examHistory.prefix(10).enumerated()), id: \.element.id) { index, result in
                             NavigationLink(destination: ExamHistoryDetailView(result: result)) {
                                 HistoryRow(
                                     passed: result.passed,
@@ -106,8 +110,13 @@ struct MockExamTab: View {
                                 )
                             }
                             .buttonStyle(.plain)
+
+                            if index < min(progressStore.examHistory.count, 10) - 1 {
+                                Divider().padding(.leading, 60)
+                            }
                         }
                     }
+                    .glassCard()
                 }
             }
             .padding(.horizontal, 20)

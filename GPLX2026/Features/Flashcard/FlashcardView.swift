@@ -11,7 +11,6 @@ struct FlashcardView: View {
     @State private var knownCount = 0
     @State private var unknownCount = 0
     @State private var isFinished = false
-    @State private var flipDegrees: Double = 0
 
     private var questions: [Question] {
         questionStore.questions(forTopicKey: topicKey)
@@ -29,7 +28,27 @@ struct FlashcardView: View {
                 flashcardContent
             }
         }
-        .screenHeader("Flashcard")
+        .navigationBarBackButtonHidden(true)
+        .navigationBarTitleDisplayMode(.inline)
+        .background {
+            ZStack {
+                Color.scaffoldBg.ignoresSafeArea()
+                AnimatedBackground()
+            }
+        }
+        .toolbar {
+            ToolbarItem(placement: .navigationBarLeading) {
+                Button { dismiss() } label: {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 15, weight: .semibold))
+                }
+            }
+
+            ToolbarItem(placement: .principal) {
+                Text("Flashcard")
+                    .font(.system(size: 17, weight: .semibold))
+            }
+        }
     }
 
     // MARK: - Flashcard Content
@@ -53,15 +72,22 @@ struct FlashcardView: View {
 
             Spacer()
 
+            // Card with simple flip transition
             ZStack {
-                if flipDegrees < 90 {
+                if !isFlipped {
                     frontCard(question: question)
+                        .transition(.asymmetric(
+                            insertion: .scale(scale: 0.92).combined(with: .opacity),
+                            removal: .scale(scale: 0.92).combined(with: .opacity)
+                        ))
                 } else {
                     backCard(question: question, correctAnswer: correctAnswer)
-                        .rotation3DEffect(.degrees(180), axis: (x: 0, y: 1, z: 0))
+                        .transition(.asymmetric(
+                            insertion: .scale(scale: 0.92).combined(with: .opacity),
+                            removal: .scale(scale: 0.92).combined(with: .opacity)
+                        ))
                 }
             }
-            .rotation3DEffect(.degrees(flipDegrees), axis: (x: 0, y: 1, z: 0))
             .onTapGesture { flipCard() }
             .padding(.horizontal, 20)
 
@@ -207,12 +233,7 @@ struct FlashcardView: View {
 
     private func flipCard() {
         Haptics.impact(.light)
-        withAnimation(.easeInOut(duration: 0.4)) {
-            if isFlipped {
-                flipDegrees = 0
-            } else {
-                flipDegrees = 180
-            }
+        withAnimation(.easeInOut(duration: 0.25)) {
             isFlipped.toggle()
         }
     }
@@ -232,7 +253,6 @@ struct FlashcardView: View {
     }
 
     private func advanceCard() {
-        flipDegrees = 0
         isFlipped = false
 
         if currentIndex + 1 >= totalQuestions {
@@ -250,6 +270,5 @@ struct FlashcardView: View {
         knownCount = 0
         unknownCount = 0
         isFinished = false
-        flipDegrees = 0
     }
 }

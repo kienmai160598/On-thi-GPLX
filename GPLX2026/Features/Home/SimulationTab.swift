@@ -112,12 +112,10 @@ struct SimulationTab: View {
 
         // History
         if !progressStore.simulationHistory.isEmpty {
-            VStack(alignment: .leading, spacing: 14) {
-                Text("Lịch sử mô phỏng")
-                    .font(.system(size: 20, weight: .heavy))
-                    .foregroundStyle(Color.appTextDark)
+            SectionTitle(title: "Lịch sử mô phỏng")
 
-                ForEach(progressStore.simulationHistory.prefix(10), id: \.id) { result in
+            VStack(spacing: 0) {
+                ForEach(Array(progressStore.simulationHistory.prefix(10).enumerated()), id: \.element.id) { index, result in
                     NavigationLink(destination: SimulationHistoryDetailView(result: result)) {
                         HistoryRow(
                             passed: result.passed,
@@ -126,8 +124,13 @@ struct SimulationTab: View {
                         )
                     }
                     .buttonStyle(.plain)
+
+                    if index < min(progressStore.simulationHistory.count, 10) - 1 {
+                        Divider().padding(.leading, 60)
+                    }
                 }
             }
+            .glassCard()
         }
     }
 
@@ -175,12 +178,10 @@ struct SimulationTab: View {
         .buttonStyle(.plain)
 
         // Chapters
-        VStack(alignment: .leading, spacing: 14) {
-            Text("Chương trình (\(HazardSituation.all.count) tình huống)")
-                .font(.system(size: 20, weight: .heavy))
-                .foregroundStyle(Color.appTextDark)
+        SectionTitle(title: "Chương trình · \(HazardSituation.all.count) tình huống")
 
-            ForEach(HazardSituation.chapters, id: \.id) { chapter in
+        VStack(spacing: 0) {
+            ForEach(Array(HazardSituation.chapters.enumerated()), id: \.element.id) { index, chapter in
                 Button { openExam(.hazardTest(mode: .chapter(chapter.id))) } label: {
                     HStack(spacing: 14) {
                         IconBox(
@@ -206,21 +207,25 @@ struct SimulationTab: View {
                             .font(.system(size: 12, weight: .semibold))
                             .foregroundStyle(Color.appTextLight)
                     }
-                    .padding(14)
-                    .glassCard()
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 12)
+                    .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
+
+                if index < HazardSituation.chapters.count - 1 {
+                    Divider().padding(.leading, 68)
+                }
             }
         }
+        .glassCard()
 
         // History
         if !progressStore.hazardHistory.isEmpty {
-            VStack(alignment: .leading, spacing: 14) {
-                Text("Lịch sử tình huống")
-                    .font(.system(size: 20, weight: .heavy))
-                    .foregroundStyle(Color.appTextDark)
+            SectionTitle(title: "Lịch sử tình huống")
 
-                ForEach(progressStore.hazardHistory.prefix(10), id: \.id) { result in
+            VStack(spacing: 0) {
+                ForEach(Array(progressStore.hazardHistory.prefix(10).enumerated()), id: \.element.id) { index, result in
                     NavigationLink(destination: HazardHistoryDetailView(result: result)) {
                         HistoryRow(
                             passed: result.passed,
@@ -229,8 +234,13 @@ struct SimulationTab: View {
                         )
                     }
                     .buttonStyle(.plain)
+
+                    if index < min(progressStore.hazardHistory.count, 10) - 1 {
+                        Divider().padding(.leading, 60)
+                    }
                 }
             }
+            .glassCard()
         }
     }
 

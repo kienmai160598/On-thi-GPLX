@@ -9,8 +9,6 @@ struct BackgroundAnimationPicker: View {
         ("none", "Tắt", "xmark"),
         ("bubbles", "Bong bóng", "bubbles.and.sparkles"),
         ("waves", "Sóng", "water.waves"),
-        ("mesh", "Lưới", "circle.grid.3x3"),
-        ("aurora", "Cực quang", "aurora"),
     ]
 
     private static let speeds: [(key: String, label: String)] = [
@@ -20,7 +18,7 @@ struct BackgroundAnimationPicker: View {
     ]
 
     private var accentColor: Color { Color.primaryColor(for: primaryColorKey) }
-    private let columns = Array(repeating: GridItem(.flexible(), spacing: 10), count: 5)
+    private let columns = Array(repeating: GridItem(.flexible(), spacing: 12), count: 3)
 
     var body: some View {
         VStack(spacing: 12) {

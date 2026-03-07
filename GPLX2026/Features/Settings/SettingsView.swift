@@ -248,8 +248,6 @@ struct SettingsView: View {
         switch backgroundAnimation {
         case "bubbles": return "Bong bóng"
         case "waves": return "Sóng"
-        case "mesh": return "Lưới"
-        case "aurora": return "Cực quang"
         default: return "Tắt"
         }
     }

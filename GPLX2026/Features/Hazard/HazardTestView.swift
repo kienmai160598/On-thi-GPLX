@@ -51,10 +51,12 @@ struct HazardTestView: View {
 
             ToolbarItem(placement: .principal) {
                 HazardProgressCapsule(
+                    situationId: situations.isEmpty ? 0 : situations[currentIndex].id,
                     current: currentIndex + 1,
                     total: situations.count
                 )
             }
+
         }
         .alert("Thoát bài thi?", isPresented: $showExitDialog) {
             Button("Tiếp tục", role: .cancel) {}
@@ -71,7 +73,8 @@ struct HazardTestView: View {
                 HazardResultView(
                     situations: situations,
                     tapTimes: tapTimes,
-                    result: result
+                    result: result,
+                    retryMode: mode
                 )
             }
         }
@@ -86,54 +89,19 @@ struct HazardTestView: View {
 
         VStack(spacing: 0) {
             ScrollView {
-                VStack(spacing: 16) {
-                    // MARK: Situation Info
-                    HStack(spacing: 12) {
-                        Image(systemName: "film")
-                            .font(.system(size: 15, weight: .semibold))
-                            .foregroundStyle(.white)
-                            .frame(width: 36, height: 36)
-                            .background(Color.appPrimary, in: RoundedRectangle(cornerRadius: 9))
-
-                        VStack(alignment: .leading, spacing: 3) {
-                            Text("Tình huống \(situation.id)")
-                                .font(.system(size: 15, weight: .bold))
-                                .foregroundStyle(Color.appTextDark)
-                            Text("Chương \(situation.chapter): \(situation.chapterName)")
-                                .font(.system(size: 13))
-                                .foregroundStyle(Color.appTextMedium)
-                        }
-
-                        Spacer(minLength: 4)
-                    }
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 14)
-                    .glassCard()
-
+                VStack(spacing: 14) {
                     // MARK: Video Player
                     ZStack {
                         HazardVideoPlayer(
                             url: videoCache.playableURL(for: situation),
                             state: $playerState
                         )
-                        .aspectRatio(16/9, contentMode: .fit)
+                        .aspectRatio(16 / 9, contentMode: .fit)
                         .clipShape(RoundedRectangle(cornerRadius: 14))
                         .overlay(
                             RoundedRectangle(cornerRadius: 14)
-                                .strokeBorder(
-                                    LinearGradient(
-                                        colors: [
-                                            Color.white.opacity(0.25),
-                                            Color.appPrimary.opacity(0.08),
-                                            Color.white.opacity(0.06),
-                                        ],
-                                        startPoint: .topLeading,
-                                        endPoint: .bottomTrailing
-                                    ),
-                                    lineWidth: 1
-                                )
+                                .strokeBorder(Color.white.opacity(0.15), lineWidth: 1)
                         )
-                        .shadow(color: Color.appPrimary.opacity(0.06), radius: 10, y: 3)
 
                         if playerState.hasError {
                             VStack(spacing: 8) {
@@ -148,7 +116,7 @@ struct HazardTestView: View {
                                     .foregroundStyle(Color.appTextMedium)
                             }
                             .frame(maxWidth: .infinity)
-                            .aspectRatio(16/9, contentMode: .fit)
+                            .aspectRatio(16 / 9, contentMode: .fit)
                             .background(Color.scaffoldBg)
                             .clipShape(RoundedRectangle(cornerRadius: 14))
                         } else if playerState.isBuffering {
@@ -156,88 +124,105 @@ struct HazardTestView: View {
                                 .tint(Color.appPrimary)
                         }
                     }
+                    .padding(.horizontal, 16)
 
-                    // MARK: Divider
-                    Divider()
-                        .padding(.horizontal, 4)
+                    // MARK: Chapter info + timer
+                    HStack(spacing: 8) {
+                        Text("Ch.\(situation.chapter): \(situation.chapterName)")
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundStyle(Color.appTextMedium)
+                            .lineLimit(1)
 
-                    // MARK: Hazard Button / Score
-                    if playerState.isFinished && scoreRevealed {
-                        // Score + Tip
-                        let score = situation.score(tapTime: tapTimes[currentIndex] ?? nil)
+                        Spacer()
 
-                        VStack(spacing: 14) {
-                            HazardScoreReveal(score: score)
-
-                            // Timeline with 3 zones
-                            HazardTimeline(
-                                situation: situation,
-                                tapTime: tapTimes[currentIndex] ?? nil,
-                                duration: playerState.duration
-                            )
-                            .padding(.horizontal, 16)
-
-                            Divider().padding(.horizontal, 20)
-
-                            HStack(alignment: .top, spacing: 8) {
-                                Image(systemName: "lightbulb.fill")
-                                    .font(.system(size: 13))
-                                    .foregroundStyle(Color.appWarning)
-                                    .padding(.top, 1)
-                                Text(situation.tip)
-                                    .font(.system(size: 13))
+                        if playerState.duration > 0 && !playerState.isFinished {
+                            HStack(spacing: 4) {
+                                Circle()
+                                    .fill(hasTapped ? Color.appSuccess : Color.appError)
+                                    .frame(width: 6, height: 6)
+                                Text(timeText)
+                                    .font(.system(size: 12, weight: .semibold).monospacedDigit())
                                     .foregroundStyle(Color.appTextMedium)
-                                    .fixedSize(horizontal: false, vertical: true)
                             }
-                            .padding(.horizontal, 16)
                         }
-                        .padding(.vertical, 16)
-                        .glassCard()
+                    }
+                    .padding(.horizontal, 20)
+
+                    // MARK: Video progress bar (3-state after tap)
+                    if !playerState.isFinished && playerState.duration > 0 {
+                        HazardPlayingBar(
+                            currentTime: playerState.currentTime,
+                            duration: playerState.duration,
+                            situation: situation,
+                            hasTapped: hasTapped
+                        )
+                        .padding(.horizontal, 20)
+                    }
+
+                    // MARK: Action area
+                    if playerState.isFinished && scoreRevealed {
+                        let score = situation.score(tapTime: tapTimes[currentIndex] ?? nil)
+                        HazardScoreCard(
+                            score: score,
+                            situation: situation,
+                            tapTime: tapTimes[currentIndex] ?? nil,
+                            duration: playerState.duration
+                        )
+                        .padding(.horizontal, 16)
                         .transition(.asymmetric(
-                            insertion: .scale(scale: 0.95).combined(with: .opacity),
+                            insertion: .scale(scale: 0.96).combined(with: .opacity),
                             removal: .opacity
                         ))
+                    } else if playerState.isFinished && !scoreRevealed {
+                        // Brief processing state before score reveal
+                        VStack(spacing: 8) {
+                            ProgressView()
+                                .tint(Color.appPrimary)
+                            Text("Đang tính điểm...")
+                                .font(.system(size: 13, weight: .medium))
+                                .foregroundStyle(Color.appTextLight)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 80)
+                        .transition(.opacity)
                     } else if !playerState.isFinished {
-                        // Detect button
-                        Button {
-                            handleTap(at: playerState.currentTime)
-                        } label: {
-                            let content = HStack(spacing: 10) {
-                                Image(systemName: hasTapped ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
-                                    .font(.system(size: 20, weight: .semibold))
-                                    .contentTransition(.symbolEffect(.replace))
-
-                                Text(hasTapped ? "Đã phát hiện nguy hiểm!" : "Nhấn khi phát hiện nguy hiểm")
-                                    .font(.system(size: 16, weight: .bold))
+                        VStack(spacing: 10) {
+                            HazardDangerButton(hasTapped: hasTapped) {
+                                handleTap(at: playerState.currentTime)
                             }
-                            .foregroundStyle(hasTapped ? Color.appSuccess : .white)
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 56)
 
-                            if #available(iOS 26.0, *) {
-                                content
-                                    .background(
-                                        RoundedRectangle(cornerRadius: 14)
-                                            .fill(hasTapped ? Color.appSuccess.opacity(0.15) : Color.appError.opacity(0.85))
-                                    )
-                                    .clipShape(RoundedRectangle(cornerRadius: 14))
-                                    .glassEffect(.regular.interactive(), in: .rect(cornerRadius: 14))
-                            } else {
-                                content
-                                    .background(hasTapped ? Color.appSuccess.opacity(0.15) : Color.appError)
-                                    .clipShape(RoundedRectangle(cornerRadius: 14))
+                            // Skip button after confirming
+                            if hasTapped {
+                                Button {
+                                    Haptics.selection()
+                                    skipVideo()
+                                } label: {
+                                    HStack(spacing: 6) {
+                                        Image(systemName: "forward.fill")
+                                            .font(.system(size: 12))
+                                        Text("Bỏ qua")
+                                            .font(.system(size: 14, weight: .semibold))
+                                    }
+                                    .foregroundStyle(Color.appPrimary)
+                                    .frame(maxWidth: .infinity)
+                                    .frame(height: 40)
+                                }
+                                .transition(.move(edge: .top).combined(with: .opacity))
                             }
                         }
-                        .disabled(hasTapped)
+                        .padding(.horizontal, 16)
+                        .transition(.opacity)
+                        .animation(.easeOut(duration: 0.25), value: hasTapped)
                     }
                 }
-                .padding(.horizontal, 20)
-                .padding(.top, 12)
+                .padding(.top, 10)
                 .padding(.bottom, 20)
+                .animation(.spring(duration: 0.4, bounce: 0.1), value: playerState.isFinished && scoreRevealed)
+                .animation(.easeOut(duration: 0.15), value: currentIndex)
             }
             .id(currentIndex)
 
-            // MARK: Bottom Bar
+            // MARK: Bottom Navigation
             HStack(spacing: 10) {
                 if isPractice {
                     Button {
@@ -262,18 +247,26 @@ struct HazardTestView: View {
                         )
                     }
                 } else {
-                    HazardTimerButton(
-                        currentTime: playerState.currentTime,
-                        duration: playerState.duration,
-                        situation: situation,
-                        hasTapped: hasTapped
-                    )
+                    // Subtle progress indicator during playback
+                    Text("\(currentIndex + 1) / \(situations.count)")
+                        .font(.system(size: 14, weight: .semibold).monospacedDigit())
+                        .foregroundStyle(Color.appTextLight)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 48)
+                        .contentTransition(.numericText())
                 }
             }
             .padding(.horizontal, 16)
             .padding(.top, 10)
             .padding(.bottom, 4)
+            .animation(.easeOut(duration: 0.25), value: playerState.isFinished)
         }
+    }
+
+    private var timeText: String {
+        let cur = Int(playerState.currentTime)
+        let dur = Int(playerState.duration)
+        return String(format: "%d:%02d / %d:%02d", cur / 60, cur % 60, dur / 60, dur % 60)
     }
 
     // MARK: - Logic
@@ -296,25 +289,25 @@ struct HazardTestView: View {
         Haptics.impact(.rigid)
     }
 
+    private func skipVideo() {
+        playerState.isFinished = true
+    }
+
     private func advanceOrFinish() {
         if isLast {
             finishTest()
         } else {
-            withAnimation(.easeOut(duration: 0.25)) {
-                currentIndex += 1
-                playerState = PlayerState()
-                scoreRevealed = false
-            }
+            currentIndex += 1
+            playerState = PlayerState()
+            scoreRevealed = false
         }
     }
 
     private func goToPrevious() {
         guard currentIndex > 0 else { return }
-        withAnimation(.easeOut(duration: 0.25)) {
-            currentIndex -= 1
-            playerState = PlayerState()
-            scoreRevealed = false
-        }
+        currentIndex -= 1
+        playerState = PlayerState()
+        scoreRevealed = false
     }
 
     private func finishTest() {
@@ -357,20 +350,125 @@ struct PlayerState {
     var hasError = false
 }
 
-// MARK: - Hazard Progress Capsule
+// MARK: - Playing Progress Bar (3-state after tap)
+
+private struct HazardPlayingBar: View {
+    let currentTime: Double
+    let duration: Double
+    let situation: HazardSituation
+    let hasTapped: Bool
+
+    private var fraction: Double {
+        duration > 0 ? min(currentTime / duration, 1.0) : 0
+    }
+
+    private enum Zone { case early, perfect, late }
+
+    private var currentZone: Zone {
+        if currentTime < situation.perfectStart { return .early }
+        if currentTime <= situation.perfectEnd { return .perfect }
+        return .late
+    }
+
+    private var progressColor: Color {
+        if !hasTapped { return .appPrimary }
+        switch currentZone {
+        case .early: return .appTextLight
+        case .perfect: return .appSuccess
+        case .late: return .appError
+        }
+    }
+
+    var body: some View {
+        GeometryReader { geo in
+            let w = geo.size.width
+
+            ZStack(alignment: .leading) {
+                // Track
+                Capsule()
+                    .fill(Color.appDivider.opacity(0.4))
+
+                // 3 zone backgrounds (only visible after tap)
+                if hasTapped && duration > 0 {
+                    let startFrac = situation.perfectStart / duration
+                    let endFrac = min(situation.perfectEnd / duration, 1.0)
+
+                    // Early zone
+                    Capsule()
+                        .fill(Color.appTextLight.opacity(0.15))
+                        .frame(width: max(w * startFrac, 0))
+
+                    // Perfect zone
+                    RoundedRectangle(cornerRadius: 2)
+                        .fill(Color.appSuccess.opacity(0.2))
+                        .frame(width: max(w * (endFrac - startFrac), 0))
+                        .offset(x: w * startFrac)
+
+                    // Late zone
+                    RoundedRectangle(cornerRadius: 2)
+                        .fill(Color.appError.opacity(0.12))
+                        .frame(width: max(w * (1.0 - endFrac), 0))
+                        .offset(x: w * endFrac)
+                }
+
+                // Progress fill
+                Capsule()
+                    .fill(progressColor.opacity(0.6))
+                    .frame(width: max(w * fraction, 0))
+                    .animation(.linear(duration: 0.1), value: fraction)
+            }
+        }
+        .frame(height: hasTapped ? 8 : 4)
+        .animation(.easeOut(duration: 0.3), value: hasTapped)
+
+        // Zone labels (only after tap)
+        if hasTapped {
+            HStack(spacing: 0) {
+                HStack(spacing: 3) {
+                    Circle().fill(Color.appTextLight).frame(width: 5, height: 5)
+                    Text("Sớm")
+                }
+                .foregroundStyle(Color.appTextLight)
+                Spacer()
+                HStack(spacing: 3) {
+                    Circle().fill(Color.appSuccess).frame(width: 5, height: 5)
+                    Text("Đúng lúc")
+                }
+                .foregroundStyle(Color.appSuccess)
+                Spacer()
+                HStack(spacing: 3) {
+                    Circle().fill(Color.appError).frame(width: 5, height: 5)
+                    Text("Muộn")
+                }
+                .foregroundStyle(Color.appError)
+            }
+            .font(.system(size: 10, weight: .semibold))
+            .transition(.opacity)
+        }
+    }
+}
+
+// MARK: - Hazard Progress Capsule (toolbar principal)
 
 private struct HazardProgressCapsule: View {
+    let situationId: Int
     let current: Int
     let total: Int
 
     var body: some View {
         let content = HStack(spacing: 6) {
             Image(systemName: "play.rectangle.fill")
-                .font(.system(size: 14))
+                .font(.system(size: 13))
                 .foregroundStyle(Color.appPrimary)
-            Text("\(current)/\(total)")
-                .font(.system(size: 16, weight: .bold).monospacedDigit())
+            Text("TH \(situationId)")
+                .font(.system(size: 15, weight: .bold))
                 .foregroundStyle(Color.appTextDark)
+            Text("·")
+                .font(.system(size: 13, weight: .regular))
+                .foregroundStyle(Color.appTextLight)
+            Text("\(current)/\(total)")
+                .font(.system(size: 15, weight: .bold).monospacedDigit())
+                .foregroundStyle(Color.appTextMedium)
                 .contentTransition(.numericText())
         }
         .padding(.horizontal, 14)
@@ -387,93 +485,101 @@ private struct HazardProgressCapsule: View {
     }
 }
 
-// MARK: - Timer Button
+// MARK: - Hazard Danger Button
 
-private struct HazardTimerButton: View {
-    let currentTime: Double
-    let duration: Double
-    let situation: HazardSituation
+private struct HazardDangerButton: View {
     let hasTapped: Bool
+    let action: () -> Void
 
-    private var fraction: Double {
-        duration > 0 ? min(currentTime / duration, 1.0) : 0
-    }
-
-    private var timeText: String {
-        let cur = Int(currentTime)
-        let dur = Int(duration)
-        return String(format: "%d:%02d / %d:%02d", cur / 60, cur % 60, dur / 60, dur % 60)
-    }
-
-    private enum Zone {
-        case early, perfect, late
-    }
-
-    private var currentZone: Zone {
-        if currentTime < situation.perfectStart { return .early }
-        if currentTime <= situation.perfectEnd { return .perfect }
-        return .late
-    }
-
-    private var zoneColor: Color {
-        switch currentZone {
-        case .early: return .appPrimary
-        case .perfect: return .appSuccess
-        case .late: return .appError
-        }
-    }
-
-    private var zoneIcon: String {
-        switch currentZone {
-        case .early: return "play.fill"
-        case .perfect: return "exclamationmark.triangle.fill"
-        case .late: return "clock.badge.xmark"
-        }
-    }
+    @State private var isPulsing = false
 
     var body: some View {
-        HStack(spacing: 8) {
-            Image(systemName: hasTapped ? "checkmark.circle.fill" : zoneIcon)
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundStyle(hasTapped ? Color.appSuccess : zoneColor)
-                .contentTransition(.symbolEffect(.replace))
-            Text(duration > 0 ? timeText : "Đang tải...")
-                .font(.system(size: 14, weight: .semibold).monospacedDigit())
-                .foregroundStyle(Color.appTextMedium)
-        }
-        .frame(maxWidth: .infinity)
-        .frame(height: 48)
-        .background {
-            Capsule()
-                .fill(Color.appDivider.opacity(0.4))
-        }
-        .overlay(alignment: .leading) {
-            GeometryReader { geo in
-                let w = geo.size.width
+        Button(action: action) {
+            let content = HStack(spacing: 10) {
+                Image(systemName: hasTapped ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
+                    .font(.system(size: 22, weight: .semibold))
+                    .contentTransition(.symbolEffect(.replace))
 
-                ZStack(alignment: .leading) {
-                    // 3-zone background markers (subtle)
-                    if duration > 0 {
-                        let startFrac = situation.perfectStart / duration
-                        let endFrac = min(situation.perfectEnd / duration, 1.0)
+                Text(hasTapped ? "Đã phát hiện nguy hiểm!" : "Nhấn khi phát hiện nguy hiểm")
+                    .font(.system(size: 17, weight: .bold))
+            }
+            .foregroundStyle(hasTapped ? Color.appSuccess : .white)
+            .frame(maxWidth: .infinity)
+            .frame(height: 64)
 
-                        // Perfect zone indicator (subtle green band)
-                        Capsule()
-                            .fill(Color.appSuccess.opacity(0.12))
-                            .frame(width: max(w * (endFrac - startFrac), 0))
-                            .offset(x: w * startFrac)
-                    }
-
-                    // Progress fill
-                    Capsule()
-                        .fill(zoneColor.opacity(hasTapped ? 0.15 : 0.25))
-                        .frame(width: max(w * fraction, 0))
-                        .animation(.linear(duration: 0.1), value: fraction)
-                }
+            if #available(iOS 26.0, *) {
+                content
+                    .background(
+                        RoundedRectangle(cornerRadius: 18)
+                            .fill(hasTapped ? Color.appSuccess.opacity(0.15) : Color.appError.opacity(0.85))
+                    )
+                    .clipShape(RoundedRectangle(cornerRadius: 18))
+                    .glassEffect(.regular.interactive(), in: .rect(cornerRadius: 18))
+            } else {
+                content
+                    .background(hasTapped ? Color.appSuccess.opacity(0.15) : Color.appError)
+                    .clipShape(RoundedRectangle(cornerRadius: 18))
             }
         }
-        .clipShape(Capsule())
-        .animation(.easeInOut(duration: 0.3), value: currentZone)
+        .disabled(hasTapped)
+        // Pulsing red glow when active (not yet tapped)
+        .shadow(
+            color: hasTapped ? .clear : Color.appError.opacity(isPulsing ? 0.55 : 0.15),
+            radius: isPulsing ? 18 : 6,
+            y: isPulsing ? 4 : 2
+        )
+        .scaleEffect(hasTapped ? 0.97 : 1.0)
+        .animation(.spring(duration: 0.35, bounce: 0.3), value: hasTapped)
+        .onAppear {
+            guard !hasTapped else { return }
+            withAnimation(
+                .easeInOut(duration: 1.1)
+                .repeatForever(autoreverses: true)
+            ) {
+                isPulsing = true
+            }
+        }
+        .onChange(of: hasTapped) { _, tapped in
+            if tapped { isPulsing = false }
+        }
+    }
+}
+
+// MARK: - Hazard Score Card (combined score + timeline + tip)
+
+private struct HazardScoreCard: View {
+    let score: Int
+    let situation: HazardSituation
+    let tapTime: Double?
+    let duration: Double
+
+    var body: some View {
+        VStack(spacing: 14) {
+            HazardScoreReveal(score: score)
+
+            HazardTimeline(
+                situation: situation,
+                tapTime: tapTime,
+                duration: duration
+            )
+            .padding(.horizontal, 4)
+
+            // Tip inline at bottom — no separate divider
+            HStack(alignment: .top, spacing: 8) {
+                Image(systemName: "lightbulb.fill")
+                    .font(.system(size: 13))
+                    .foregroundStyle(Color.appWarning)
+                    .padding(.top, 1)
+                Text(situation.tip)
+                    .font(.system(size: 13))
+                    .foregroundStyle(Color.appTextMedium)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .padding(.horizontal, 4)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 16)
+        .glassCard(interactive: false)
     }
 }
 
@@ -482,19 +588,20 @@ private struct HazardTimerButton: View {
 private struct HazardScoreReveal: View {
     let score: Int
 
+    @State private var displayedScore = 0
     @State private var animatedDots = 0
 
-    private var scoreColor: Color {
-        if score >= 4 { return .appSuccess }
-        if score >= 2 { return .appWarning }
+    private var displayScoreColor: Color {
+        if displayedScore >= 4 { return .appSuccess }
+        if displayedScore >= 2 { return .appWarning }
         return .appError
     }
 
     var body: some View {
         VStack(spacing: 8) {
-            Text("\(score)")
-                .font(.system(size: 40, weight: .heavy).monospacedDigit())
-                .foregroundStyle(scoreColor)
+            Text("\(displayedScore)")
+                .font(.system(size: 44, weight: .heavy).monospacedDigit())
+                .foregroundStyle(displayScoreColor)
                 .contentTransition(.numericText())
 
             HStack(spacing: 6) {
@@ -510,19 +617,36 @@ private struct HazardScoreReveal: View {
                 }
             }
 
-            Text(scoreLabel)
+            Text(displayScoreLabel)
                 .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(scoreColor)
+                .foregroundStyle(displayScoreColor)
         }
+        .frame(maxWidth: .infinity)
         .onAppear {
-            withAnimation {
-                animatedDots = score
+            // Count up score from 0 with numericText transition
+            Task { @MainActor in
+                try? await Task.sleep(for: .milliseconds(150))
+                for i in 1...max(score, 1) {
+                    withAnimation(.spring(duration: 0.3, bounce: 0.15)) {
+                        displayedScore = min(i, score)
+                    }
+                    try? await Task.sleep(for: .milliseconds(120))
+                }
+                // Ensure final value if score is 0
+                if score == 0 {
+                    withAnimation(.spring(duration: 0.3, bounce: 0.15)) {
+                        displayedScore = 0
+                    }
+                }
+                withAnimation {
+                    animatedDots = score
+                }
             }
         }
     }
 
-    private var scoreLabel: String {
-        switch score {
+    private var displayScoreLabel: String {
+        switch displayedScore {
         case 5: return "Hoàn hảo!"
         case 4: return "Rất tốt"
         case 3: return "Tốt"
@@ -571,7 +695,7 @@ private struct HazardTimeline: View {
                         .fill(Color.appTextLight.opacity(0.3))
                         .frame(width: max(startX, 0))
 
-                    // Zone 2: Perfect zone (green gradient)
+                    // Zone 2: Perfect zone (green → yellow → red gradient)
                     RoundedRectangle(cornerRadius: 4)
                         .fill(
                             LinearGradient(
@@ -582,8 +706,6 @@ private struct HazardTimeline: View {
                         )
                         .frame(width: max(endX - startX, 0))
                         .offset(x: startX)
-
-                    // Zone 3: After danger (red tint) — already gray track, no extra fill needed
 
                     // Tap marker
                     if let tapFraction {
@@ -604,7 +726,7 @@ private struct HazardTimeline: View {
             }
             .frame(height: 14)
 
-            // Labels
+            // Zone labels
             HStack(spacing: 0) {
                 Label("Sớm", systemImage: "clock")
                     .foregroundStyle(Color.appTextLight)

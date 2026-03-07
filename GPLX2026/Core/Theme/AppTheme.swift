@@ -212,6 +212,7 @@ extension View {
         self
             .navigationTitle(title)
             .navigationBarTitleDisplayMode(.inline)
+            .toolbarBackgroundVisibility(.hidden, for: .navigationBar)
             .background {
                 ZStack {
                     Color.scaffoldBg.ignoresSafeArea()
@@ -243,6 +244,7 @@ struct GlassBackground: ViewModifier {
     func body(content: Content) -> some View {
         ZStack {
             Color.scaffoldBg.ignoresSafeArea()
+            AnimatedBackground()
             content
         }
     }

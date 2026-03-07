@@ -3,6 +3,7 @@ import SwiftUI
 struct QuestionReviewRow: View {
     let question: Question
     let status: AnswerStatus
+    var showStatusIcon: Bool = true
 
     @State private var isExpanded = false
 
@@ -34,12 +35,14 @@ struct QuestionReviewRow: View {
         } label: {
             VStack(alignment: .leading, spacing: 0) {
                 HStack(alignment: .top, spacing: 12) {
-                    Image(systemName: statusIcon)
-                        .font(.system(size: 12, weight: .bold))
-                        .foregroundStyle(statusColor)
-                        .frame(width: 28, height: 28)
-                        .background(statusColor.opacity(0.12))
-                        .clipShape(Circle())
+                    if showStatusIcon {
+                        Image(systemName: statusIcon)
+                            .font(.system(size: 12, weight: .bold))
+                            .foregroundStyle(statusColor)
+                            .frame(width: 28, height: 28)
+                            .background(statusColor.opacity(0.12))
+                            .clipShape(Circle())
+                    }
 
                     VStack(alignment: .leading, spacing: 4) {
                         HStack(spacing: 6) {
@@ -97,7 +100,7 @@ struct QuestionReviewRow: View {
                                 .padding(.top, 8)
                         }
                     }
-                    .padding(.leading, 40)
+                    .padding(.leading, showStatusIcon ? 40 : 0)
                     .padding(.top, 10)
                 }
             }

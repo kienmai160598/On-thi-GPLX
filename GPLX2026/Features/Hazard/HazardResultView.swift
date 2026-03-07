@@ -2,11 +2,13 @@ import SwiftUI
 
 struct HazardResultView: View {
     @Environment(\.popToRoot) private var popToRoot
+    @Environment(\.openExam) private var openExam
 
     let situations: [HazardSituation]
     let tapTimes: [Int: Double?]
     let result: HazardResult
     var isFromHistory: Bool = false
+    var retryMode: HazardTestView.Mode? = nil
 
     var body: some View {
         ScrollView {
@@ -75,21 +77,40 @@ struct HazardResultView: View {
                 .padding(.horizontal, 20)
                 .padding(.bottom, 20)
 
-                Spacer().frame(height: 20)
+                Spacer().frame(height: 32)
+            }
+        }
+        .safeAreaInset(edge: .bottom) {
+            if !isFromHistory {
+                VStack(spacing: 10) {
+                    if let retryMode {
+                        HStack(spacing: 10) {
+                            Button {
+                                popToRoot()
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                                    openExam(.hazardTest(mode: retryMode))
+                                }
+                            } label: {
+                                AppButton(icon: "arrow.counterclockwise", label: "Làm lại", style: .secondary, height: 48, cornerRadius: 24)
+                            }
+
+                            Button { popToRoot() } label: {
+                                AppButton(icon: "checkmark", label: "Hoàn thành", height: 48, cornerRadius: 24)
+                            }
+                        }
+                    } else {
+                        Button { popToRoot() } label: {
+                            AppButton(icon: "checkmark", label: "Hoàn thành", height: 48, cornerRadius: 24)
+                        }
+                    }
+                }
+                .padding(.horizontal, 20)
+                .padding(.vertical, 12)
+                .background(.ultraThinMaterial)
             }
         }
         .navigationBarBackButtonHidden(!isFromHistory)
         .screenHeader(isFromHistory ? "Chi tiết tình huống" : "Kết quả tình huống")
-        .toolbar {
-            if !isFromHistory {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button { popToRoot() } label: {
-                        Image(systemName: "checkmark")
-                            .font(.system(size: 15, weight: .semibold))
-                    }
-                }
-            }
-        }
     }
 }
 
