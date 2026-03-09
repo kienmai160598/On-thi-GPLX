@@ -37,7 +37,7 @@
 		0D3F9A66237CC0DEC5FD077D /* ProgressStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BEA1F9B8E23844A1EBE2B58 /* ProgressStore.swift */; };
 		0D728B11FDE5357ADBBE3E94 /* ExamLoadingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC0A478DE3552115DF07A586 /* ExamLoadingView.swift */; };
 		0F3456840690F3602BA4EA80 /* ExamStatsRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBAB9B876EA93EB809F5CEC6 /* ExamStatsRow.swift */; };
-		0F7164913A072D241C395D43 /* MockExamTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C40111D27AE692E6AF8F059 /* MockExamTab.swift */; };
+		0F7164913A072D241C395D43 /* TheoryTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C40111D27AE692E6AF8F059 /* TheoryTab.swift */; };
 		0FC5DAC65E4145A2BD81907C /* q414.png in Resources */ = {isa = PBXBuildFile; fileRef = F9E79BE90D3C76ECD2898F69 /* q414.png */; };
 		10B1FDE2686CCB5312ED3975 /* IconBox.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14CBA2E218F97456987FD2B1 /* IconBox.swift */; };
 		1106834FF1C171633CFEE7CD /* q579.png in Resources */ = {isa = PBXBuildFile; fileRef = 4BCFC243540D46DF3CF3E365 /* q579.png */; };
@@ -540,7 +540,7 @@
 		3875DEC77E5FDD95319E1C2F /* q569.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = q569.png; sourceTree = "<group>"; };
 		39F2C02A5348B1C00A232C41 /* W209.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = W209.png; sourceTree = "<group>"; };
 		3BCC097983DB62C8CCB6D1AE /* q363.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = q363.png; sourceTree = "<group>"; };
-		3C40111D27AE692E6AF8F059 /* MockExamTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockExamTab.swift; sourceTree = "<group>"; };
+		3C40111D27AE692E6AF8F059 /* TheoryTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TheoryTab.swift; sourceTree = "<group>"; };
 		3CCE1FE177E047F38E78BD74 /* q323.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = q323.png; sourceTree = "<group>"; };
 		3DB7FC077629EFFA89533F80 /* q399.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = q399.png; sourceTree = "<group>"; };
 		3DE4AC543979B1885C5677D0 /* q507.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = q507.png; sourceTree = "<group>"; };
@@ -1307,7 +1307,7 @@
 				E622FC0936D4215FB2B395EB /* CriticalQuestionsTab.swift */,
 				9194A31E0E165FC50E7F8CA8 /* HomeTab.swift */,
 				D19122BB4CBD830A2A251C31 /* HomeView.swift */,
-				3C40111D27AE692E6AF8F059 /* MockExamTab.swift */,
+				3C40111D27AE692E6AF8F059 /* TheoryTab.swift */,
 				CE1720A87A25357D483E5FA4 /* SimulationTab.swift */,
 				92A4AD9D64F77E4C701B555D /* TopicDetailView.swift */,
 			);
@@ -2047,7 +2047,7 @@
 				C12B9759C483872A599F21D8 /* ListItemCard.swift in Sources */,
 				61BCC847086C979937021C3E /* MemoryTip.swift in Sources */,
 				EA324879EAB25BA364B1B68A /* MemoryTipsView.swift in Sources */,
-				0F7164913A072D241C395D43 /* MockExamTab.swift in Sources */,
+				0F7164913A072D241C395D43 /* TheoryTab.swift in Sources */,
 				AAAA684036C6704F6584E88A /* MockExamView.swift in Sources */,
 				B903E5EFABDC9D5BBAD72BA8 /* NumberBadge.swift in Sources */,
 				74E158AD14EC7B66DA02B034 /* OnboardingPageView.swift in Sources */,
