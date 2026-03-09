@@ -187,6 +187,7 @@
 		6C80C41664102D97DDF3AEFF /* CriticalQuestionsTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = E622FC0936D4215FB2B395EB /* CriticalQuestionsTab.swift */; };
 		6CB1C5686DA2358F70375665 /* q481.png in Resources */ = {isa = PBXBuildFile; fileRef = ECD6223F938352627ED8EAE8 /* q481.png */; };
 		6D2D3984FCC79052BBE37DE3 /* q542.png in Resources */ = {isa = PBXBuildFile; fileRef = 4D45D7E817A7ABA1A568B82D /* q542.png */; };
+		6E08DC4D7559D3785D812612 /* ExamCountdownCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 76B76A2AD4554289571E918E /* ExamCountdownCard.swift */; };
 		6E7F984E40B1CB2D80A2E570 /* q363n.png in Resources */ = {isa = PBXBuildFile; fileRef = 35D1DF584A072624EB3CA31D /* q363n.png */; };
 		6F04E9848D936B2C78C82CCE /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D19122BB4CBD830A2A251C31 /* HomeView.swift */; };
 		6F7A9406D4E93DA8E775061B /* q322.png in Resources */ = {isa = PBXBuildFile; fileRef = C9E15E4BF680CF77D4A36ACA /* q322.png */; };
@@ -419,6 +420,7 @@
 		F2C9F7DCEB11AD481576FFDD /* ExplanationBox.swift in Sources */ = {isa = PBXBuildFile; fileRef = D68356444A0B9AC0E1B808BD /* ExplanationBox.swift */; };
 		F356C87AC4C56F17FB7BB859 /* q467.png in Resources */ = {isa = PBXBuildFile; fileRef = 1A99225F9846F0C32326910A /* q467.png */; };
 		F3AC1AF3A3080F02A2D7349F /* q592.png in Resources */ = {isa = PBXBuildFile; fileRef = 9F76792C4C6823322E00BC1D /* q592.png */; };
+		F3C45E630321872A3BD2C1B4 /* ProgressStore+ExamDate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C9D9CE87E1416B39797D2DA /* ProgressStore+ExamDate.swift */; };
 		F3D780142662369F21CB45A6 /* P115.png in Resources */ = {isa = PBXBuildFile; fileRef = 49FC1410E3CB461118065F9D /* P115.png */; };
 		F3DD092A6AB472B151CE1C15 /* q598.png in Resources */ = {isa = PBXBuildFile; fileRef = 418CBDBC9ED4324243EE352F /* q598.png */; };
 		F4824E7CB13E5F99C8EB9C25 /* q527.png in Resources */ = {isa = PBXBuildFile; fileRef = 7AA7DCAA57B5EFF4D474EB0B /* q527.png */; };
@@ -577,6 +579,7 @@
 		4BCFC243540D46DF3CF3E365 /* q579.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = q579.png; sourceTree = "<group>"; };
 		4C520DBD09EF387241FDC65B /* SimulationResultView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimulationResultView.swift; sourceTree = "<group>"; };
 		4C972DB058F18211CA648500 /* ExamCTACard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExamCTACard.swift; sourceTree = "<group>"; };
+		4C9D9CE87E1416B39797D2DA /* ProgressStore+ExamDate.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "ProgressStore+ExamDate.swift"; sourceTree = "<group>"; };
 		4CAFA47184A3AA6E0A91CA9B /* q402.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = q402.png; sourceTree = "<group>"; };
 		4D2A969657369A7DA1F6A949 /* q497.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = q497.png; sourceTree = "<group>"; };
 		4D45D7E817A7ABA1A568B82D /* q542.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = q542.png; sourceTree = "<group>"; };
@@ -649,6 +652,7 @@
 		766CF494ABC153B2E1174CFB /* q377.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = q377.png; sourceTree = "<group>"; };
 		767068376E76875F7651F87B /* P128.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = P128.png; sourceTree = "<group>"; };
 		769AF58C2DFDFC5637E663A3 /* q476.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = q476.png; sourceTree = "<group>"; };
+		76B76A2AD4554289571E918E /* ExamCountdownCard.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ExamCountdownCard.swift; sourceTree = "<group>"; };
 		78E928A610B3C5C0ACFD7A07 /* q503.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = q503.png; sourceTree = "<group>"; };
 		790761293B9DA041E2AA6367 /* GPLX2026App.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GPLX2026App.swift; sourceTree = "<group>"; };
 		7966E018E36D3989302BA87E /* Badge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Badge.swift; sourceTree = "<group>"; };
@@ -1332,6 +1336,7 @@
 				7F93ECB6DE0C3591315F938C /* ResultHero.swift */,
 				854E4F9C9C0D43047A041004 /* StatusBadge.swift */,
 				C4D22E64BB994C7CECC8EC11 /* StudyHeatMap.swift */,
+				76B76A2AD4554289571E918E /* ExamCountdownCard.swift */,
 			);
 			path = Display;
 			sourceTree = "<group>";
@@ -1447,6 +1452,7 @@
 				2A33907E13AA0C7ABB32151E /* QuestionStore.swift */,
 				801BD16CC26084A4EA58F6BE /* ProgressStore+SmartNudge.swift */,
 				90F335ABA8DBF6F57311495F /* ProgressStore+Activity.swift */,
+				4C9D9CE87E1416B39797D2DA /* ProgressStore+ExamDate.swift */,
 			);
 			path = Storage;
 			sourceTree = "<group>";
@@ -2097,6 +2103,8 @@
 				AAD2A1EDCF0C9A4C45F946B3 /* HazardTab.swift in Sources */,
 				5BCEDA5D9A1237F38EA7DF7D /* ProgressStore+Activity.swift in Sources */,
 				0A2EC9C8C513DDB92E6239F8 /* StudyHeatMap.swift in Sources */,
+				F3C45E630321872A3BD2C1B4 /* ProgressStore+ExamDate.swift in Sources */,
+				6E08DC4D7559D3785D812612 /* ExamCountdownCard.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

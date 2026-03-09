@@ -92,6 +92,67 @@ struct SettingsView: View {
                 }
 
                 // ──────────────────────────────────────────────
+                // MARK: - Ngày thi (Exam Date)
+                // ──────────────────────────────────────────────
+
+                settingsSection("Ngày thi") {
+                    VStack(spacing: 12) {
+                        DatePicker(
+                            "Ngày thi dự kiến",
+                            selection: Binding(
+                                get: { progressStore.examDate ?? Calendar.current.date(byAdding: .day, value: 30, to: Date())! },
+                                set: { progressStore.setExamDate($0) }
+                            ),
+                            in: Date()...,
+                            displayedComponents: .date
+                        )
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(Color.appTextDark)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 14)
+                        .glassCard()
+
+                        if progressStore.examDate != nil {
+                            Button {
+                                progressStore.setExamDate(nil)
+                                Haptics.notification(.success)
+                                showToast("Đã xoá ngày thi")
+                            } label: {
+                                HStack(spacing: 12) {
+                                    Image(systemName: "calendar.badge.minus")
+                                        .font(.system(size: 16))
+                                        .foregroundStyle(Color.appError)
+                                        .frame(width: 22)
+                                    Text("Xoá ngày thi")
+                                        .font(.system(size: 15, weight: .semibold))
+                                        .foregroundStyle(Color.appError)
+                                    Spacer()
+                                }
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 14)
+                                .glassCard()
+                            }
+                            .buttonStyle(.plain)
+                        }
+
+                        Stepper(
+                            "Mục tiêu: \(progressStore.dailyGoal) câu/ngày",
+                            value: Binding(
+                                get: { progressStore.dailyGoal },
+                                set: { progressStore.setDailyGoal($0) }
+                            ),
+                            in: 10...100,
+                            step: 10
+                        )
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(Color.appTextDark)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 14)
+                        .glassCard()
+                    }
+                }
+
+                // ──────────────────────────────────────────────
                 // MARK: - Dữ liệu (Data)
                 // ──────────────────────────────────────────────
 

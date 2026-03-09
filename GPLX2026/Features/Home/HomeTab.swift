@@ -10,6 +10,7 @@ struct HomeTab: View {
         ScrollView {
             VStack(spacing: 24) {
                 ProgressHeroCard()
+                ExamCountdownCard()
                 SmartNudgeCard()
                 UtilityGrid()
                 TopicProgressSection()
