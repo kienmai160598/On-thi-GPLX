@@ -14,8 +14,8 @@ struct HomeTab: View {
                 SmartNudgeCard()
                 UtilityGrid()
                 TopicProgressSection()
-                StudyHeatMap()
                 RecentResultsCard()
+                StudyHeatMap()
                 ReferenceSection()
             }
             .padding(.horizontal, 20)
@@ -404,13 +404,13 @@ private struct TopicProgressSection: View {
                     .foregroundStyle(Color.appTextDark)
                 Spacer()
                 NavigationLink(destination: WeakTopicsView()) {
-                    Text("Phân tích")
+                    Text("Xem tất cả")
                         .font(.system(size: 14, weight: .semibold))
                         .foregroundStyle(Color.appPrimary)
                 }
             }
 
-            ForEach(topicStats, id: \.topic.id) { item in
+            ForEach(topicStats.prefix(3), id: \.topic.id) { item in
                 NavigationLink(destination: TopicDetailView(item: item)) {
                     topicRow(item: item)
                 }
