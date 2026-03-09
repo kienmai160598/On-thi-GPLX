@@ -395,6 +395,7 @@
 		E1B5A1913D76B0D328191EE1 /* q490.png in Resources */ = {isa = PBXBuildFile; fileRef = C10BA1A4377EF879EE22E679 /* q490.png */; };
 		E1F8C8E61EED9D48C03EAEC7 /* q491.png in Resources */ = {isa = PBXBuildFile; fileRef = 9289BABE5DC9234B48FE7633 /* q491.png */; };
 		E379B3AFA19A06A511048CCB /* W226.png in Resources */ = {isa = PBXBuildFile; fileRef = 4BA64360D96E17029D166DA1 /* W226.png */; };
+		E3D2491B121BC12609C71BF0 /* ProgressStore+SmartNudge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 801BD16CC26084A4EA58F6BE /* ProgressStore+SmartNudge.swift */; };
 		E3DCE73EB44AA3026F101404 /* q437.png in Resources */ = {isa = PBXBuildFile; fileRef = 6E493503E95FF91CBBEEBB2D /* q437.png */; };
 		E4B2FF4128B41DE74809C4C4 /* q348.png in Resources */ = {isa = PBXBuildFile; fileRef = 857F8E6F1CA8DE3F3A976921 /* q348.png */; };
 		E5B15902FBA7E4C0E63C296A /* q593.png in Resources */ = {isa = PBXBuildFile; fileRef = 13F64F17A0B339C4D266A695 /* q593.png */; };
@@ -663,6 +664,7 @@
 		7F93ECB6DE0C3591315F938C /* ResultHero.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResultHero.swift; sourceTree = "<group>"; };
 		7FA87EBC62DBF6CAB452D1E6 /* FilterChip.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FilterChip.swift; sourceTree = "<group>"; };
 		7FEB5FBC952F6E25C1C5A439 /* q477.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = q477.png; sourceTree = "<group>"; };
+		801BD16CC26084A4EA58F6BE /* ProgressStore+SmartNudge.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "ProgressStore+SmartNudge.swift"; sourceTree = "<group>"; };
 		817AAD616EBC1EC4D26C27E2 /* q317.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = q317.png; sourceTree = "<group>"; };
 		81F5D98055365AF2A077EE99 /* q475n.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = q475n.png; sourceTree = "<group>"; };
 		82379CA6F515F585E586A493 /* W205b.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = W205b.png; sourceTree = "<group>"; };
@@ -1437,6 +1439,7 @@
 				6D4176ECB3F855961DD500B2 /* ProgressStore+Analytics.swift */,
 				DF1247B4E4DDC0D9F96ED84E /* ProgressStore+ExamHistory.swift */,
 				2A33907E13AA0C7ABB32151E /* QuestionStore.swift */,
+				801BD16CC26084A4EA58F6BE /* ProgressStore+SmartNudge.swift */,
 			);
 			path = Storage;
 			sourceTree = "<group>";
@@ -1605,8 +1608,6 @@
 			dependencies = (
 			);
 			name = GPLX2026;
-			packageProductDependencies = (
-			);
 			productName = GPLX2026;
 			productReference = D567D0A349839D1669352310 /* GPLX2026.app */;
 			productType = "com.apple.product-type.application";
@@ -1636,6 +1637,7 @@
 			mainGroup = 114053934612AFA11A6DE760;
 			minimizedProjectReferenceProxies = 1;
 			preferredProjectObjectVersion = 77;
+			productRefGroup = 26B33B9118B42FD37C06FFB2 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
@@ -2086,6 +2088,7 @@
 				B5CC1F824936DF31F26C785A /* TrafficSignsReferenceView.swift in Sources */,
 				89E28AE8C49AC5AED5E3C0AC /* WeakTopicsView.swift in Sources */,
 				DF3D7FAF85ED8F54BD8496AD /* WrongAnswersView.swift in Sources */,
+				E3D2491B121BC12609C71BF0 /* ProgressStore+SmartNudge.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
