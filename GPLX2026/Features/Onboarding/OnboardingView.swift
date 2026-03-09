@@ -25,6 +25,12 @@ struct OnboardingView: View {
         ),
         OnboardingPage(
             id: 3,
+            icon: "paintpalette.fill",
+            title: "Tuỳ chỉnh giao diện",
+            subtitle: "Chọn màu sắc, cỡ chữ và chế độ sáng/tối\ntrong phần Cài đặt theo sở thích của bạn"
+        ),
+        OnboardingPage(
+            id: 4,
             icon: "flag.checkered",
             title: "Sẵn sàng rồi!",
             subtitle: "Bắt đầu hành trình chinh phục\nbằng lái xe B2 của bạn"

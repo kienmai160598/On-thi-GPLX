@@ -58,7 +58,7 @@ struct OnboardingPageView: View {
                 .fill(.ultraThinMaterial)
                 .frame(width: 200, height: 200)
 
-            if page.id == 3 {
+            if page.id == 4 {
                 Image(systemName: page.icon)
                     .font(.system(size: 88))
                     .foregroundStyle(Color.appPrimary)
