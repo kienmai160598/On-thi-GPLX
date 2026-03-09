@@ -10,9 +10,11 @@ struct HomeTab: View {
         ScrollView {
             VStack(spacing: 24) {
                 ProgressHeroCard()
-                QuickActionsGrid()
+                SmartNudgeCard()
+                UtilityGrid()
                 TopicProgressSection()
                 RecentResultsCard()
+                ReferenceSection()
             }
             .padding(.horizontal, 20)
             .padding(.bottom, 32)
@@ -27,10 +29,17 @@ struct HomeTab: View {
                 }
             }
             ToolbarItem(placement: .navigationBarTrailing) {
-                NavigationLink(destination: SettingsView()) {
-                    Image(systemName: "gearshape")
-                        .font(.system(size: 15, weight: .medium))
-                        .foregroundStyle(Color.appTextDark)
+                HStack(spacing: 16) {
+                    NavigationLink(destination: QuestionSearchView()) {
+                        Image(systemName: "magnifyingglass")
+                            .font(.system(size: 15, weight: .medium))
+                            .foregroundStyle(Color.appTextDark)
+                    }
+                    NavigationLink(destination: SettingsView()) {
+                        Image(systemName: "gearshape")
+                            .font(.system(size: 15, weight: .medium))
+                            .foregroundStyle(Color.appTextDark)
+                    }
                 }
             }
         }
@@ -180,9 +189,81 @@ private struct MiniStat: View {
     }
 }
 
-// MARK: - Quick Actions Grid
+// MARK: - Smart Nudge Card
 
-private struct QuickActionsGrid: View {
+private struct SmartNudgeCard: View {
+    @Environment(QuestionStore.self) private var questionStore
+    @Environment(ProgressStore.self) private var progressStore
+    @Environment(\.openExam) private var openExam
+
+    var body: some View {
+        let nudge = progressStore.smartNudge(
+            topics: questionStore.topics,
+            allQuestions: questionStore.allQuestions
+        )
+
+        Button { handleNudgeTap(nudge) } label: {
+            HStack(spacing: 14) {
+                Image(systemName: nudge.icon)
+                    .font(.system(size: 22))
+                    .foregroundStyle(nudgeColor(nudge))
+                    .frame(width: 44, height: 44)
+                    .background(nudgeColor(nudge).opacity(0.12))
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("Tiếp theo")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(Color.appTextLight)
+                        .textCase(.uppercase)
+                    Text(nudge.label)
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundStyle(Color.appTextDark)
+                        .lineLimit(1)
+                }
+
+                Spacer(minLength: 4)
+
+                Image(systemName: "arrow.right.circle.fill")
+                    .font(.system(size: 24))
+                    .foregroundStyle(nudgeColor(nudge))
+            }
+            .padding(16)
+            .glassCard()
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func nudgeColor(_ nudge: ProgressStore.SmartNudge) -> Color {
+        switch nudge {
+        case .masterDiemLiet: return .appError
+        case .weakTopic, .improveTopic: return .appWarning
+        case .takeExam, .startHazard, .testWeakestPart: return .appPrimary
+        case .startSimulation: return .topicSaHinh
+        case .examReady: return .appSuccess
+        }
+    }
+
+    private func handleNudgeTap(_ nudge: ProgressStore.SmartNudge) {
+        switch nudge {
+        case .masterDiemLiet:
+            openExam(.questionView(topicKey: AppConstants.TopicKey.diemLiet, startIndex: 0))
+        case .weakTopic(_, let key, _), .improveTopic(_, let key, _):
+            openExam(.questionView(topicKey: key, startIndex: 0))
+        case .takeExam, .testWeakestPart, .examReady:
+            openExam(.mockExam())
+        case .startSimulation:
+            let topic6Key = questionStore.topics.first { $0.topicIds.contains(6) }?.key ?? "6"
+            openExam(.questionView(topicKey: topic6Key, startIndex: 0))
+        case .startHazard:
+            openExam(.hazardTest(mode: .practice))
+        }
+    }
+}
+
+// MARK: - Utility Grid
+
+private struct UtilityGrid: View {
     @Environment(QuestionStore.self) private var questionStore
     @Environment(ProgressStore.self) private var progressStore
     @Environment(\.openExam) private var openExam
@@ -190,27 +271,18 @@ private struct QuickActionsGrid: View {
     private let columns = [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)]
 
     var body: some View {
-        let config = resolveAction()
         let dlMastery = progressStore.diemLietMastery(questions: questionStore.allQuestions)
         let wrongCount = progressStore.wrongAnswers.count
+        let bookmarkCount = progressStore.bookmarks.count
 
         LazyVGrid(columns: columns, spacing: 12) {
             QuickActionCard(
-                icon: config.icon,
-                title: config.title,
-                subtitle: config.subtitle,
-                color: .appPrimary
+                icon: "rectangle.on.rectangle.angled",
+                title: "Flashcard",
+                subtitle: "Lật thẻ ôn nhanh",
+                color: .topicSaHinh
             ) {
-                openExam(.questionView(topicKey: config.topicKey, startIndex: config.startIndex))
-            }
-
-            QuickActionCard(
-                icon: "doc.text.fill",
-                title: "Thi thử",
-                subtitle: "35 câu / 25 phút",
-                color: .topicQuyDinh
-            ) {
-                openExam(.mockExam())
+                openExam(.flashcard(topicKey: AppConstants.TopicKey.allQuestions))
             }
 
             QuickActionCard(
@@ -222,31 +294,26 @@ private struct QuickActionsGrid: View {
                 openExam(.questionView(topicKey: AppConstants.TopicKey.diemLiet, startIndex: 0))
             }
 
-            QuickActionCard(
-                icon: "arrow.counterclockwise",
-                title: "Ôn câu sai",
-                subtitle: wrongCount > 0 ? "\(wrongCount) câu" : "Chưa có",
-                color: wrongCount > 0 ? .appWarning : .appTextLight
-            ) {
-                if wrongCount > 0 {
-                    openExam(.questionView(topicKey: AppConstants.TopicKey.wrongAnswers, startIndex: 0))
-                }
+            NavigationLink(destination: WrongAnswersView()) {
+                QuickActionCardLabel(
+                    icon: "xmark.circle.fill",
+                    title: "Câu sai",
+                    subtitle: wrongCount > 0 ? "\(wrongCount) câu" : "Chưa có",
+                    color: wrongCount > 0 ? .appWarning : .appTextLight
+                )
             }
-        }
-    }
+            .buttonStyle(.plain)
 
-    private struct ActionConfig {
-        let icon: String; let title: String; let subtitle: String
-        let topicKey: String; let startIndex: Int
-    }
-
-    private func resolveAction() -> ActionConfig {
-        if let topicKey = progressStore.lastTopicKey {
-            let topicName = questionStore.topic(forKey: topicKey)?.name ?? "Ôn tập"
-            let index = progressStore.lastQuestionIndex
-            return ActionConfig(icon: "play.circle.fill", title: "Tiếp tục", subtitle: "Câu \(index + 1) · \(topicName)", topicKey: topicKey, startIndex: index)
+            NavigationLink(destination: BookmarksView()) {
+                QuickActionCardLabel(
+                    icon: "bookmark.fill",
+                    title: "Đã đánh dấu",
+                    subtitle: bookmarkCount > 0 ? "\(bookmarkCount) câu" : "Chưa có",
+                    color: bookmarkCount > 0 ? .topicCauTao : .appTextLight
+                )
+            }
+            .buttonStyle(.plain)
         }
-        return ActionConfig(icon: "text.book.closed.fill", title: "Bắt đầu học", subtitle: "\(questionStore.allQuestions.count) câu", topicKey: AppConstants.TopicKey.allQuestions, startIndex: 0)
     }
 }
 
@@ -281,6 +348,36 @@ private struct QuickActionCard: View {
             .glassCard()
         }
         .buttonStyle(.plain)
+    }
+}
+
+private struct QuickActionCardLabel: View {
+    let icon: String
+    let title: String
+    let subtitle: String
+    let color: Color
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Image(systemName: icon)
+                .font(.system(size: 24))
+                .foregroundStyle(color)
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text(title)
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundStyle(Color.appTextDark)
+                    .lineLimit(1)
+
+                Text(subtitle)
+                    .font(.system(size: 13))
+                    .foregroundStyle(Color.appTextMedium)
+                    .lineLimit(1)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(16)
+        .glassCard()
     }
 }
 
@@ -482,5 +579,52 @@ private struct RecentResultRow: View {
         .padding(.horizontal, 16)
         .padding(.vertical, 14)
         .contentShape(Rectangle())
+    }
+}
+
+// MARK: - Reference Section
+
+private struct ReferenceSection: View {
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text("Tra cứu")
+                .font(.system(size: 20, weight: .heavy))
+                .foregroundStyle(Color.appTextDark)
+
+            VStack(spacing: 0) {
+                NavigationLink(destination: TrafficSignsReferenceView()) {
+                    ListItemCard(
+                        icon: "diamond.fill",
+                        title: "Biển báo giao thông",
+                        subtitle: "47 biển báo phổ biến",
+                        iconSize: 40, iconCornerRadius: 10, iconFontSize: 18,
+                        iconColor: .topicBienBao,
+                        showCard: false
+                    ) {
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundStyle(Color.appTextLight)
+                    }
+                }
+
+                Divider().padding(.horizontal, 16)
+
+                NavigationLink(destination: SpeedDistanceReferenceView()) {
+                    ListItemCard(
+                        icon: "speedometer",
+                        title: "Tốc độ & Quy tắc",
+                        subtitle: "Tốc độ, khoảng cách, mức phạt",
+                        iconSize: 40, iconCornerRadius: 10, iconFontSize: 18,
+                        iconColor: .topicSaHinh,
+                        showCard: false
+                    ) {
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundStyle(Color.appTextLight)
+                    }
+                }
+            }
+            .glassCard()
+        }
     }
 }
