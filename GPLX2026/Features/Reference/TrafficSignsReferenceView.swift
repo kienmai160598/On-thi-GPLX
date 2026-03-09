@@ -82,12 +82,21 @@ private struct SignRow: View {
 
     var body: some View {
         HStack(spacing: 14) {
-            if let path = Bundle.main.path(forResource: sign.imageName, ofType: "png", inDirectory: "Images/Signs"),
+            if let path = Bundle.main.path(forResource: sign.imageName, ofType: "png"),
                let uiImage = UIImage(contentsOfFile: path) {
                 Image(uiImage: uiImage)
                     .resizable()
                     .aspectRatio(contentMode: .fit)
                     .frame(width: 48, height: 48)
+            } else {
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(Color.appDivider)
+                    .frame(width: 48, height: 48)
+                    .overlay {
+                        Image(systemName: "photo")
+                            .font(.system(size: 16))
+                            .foregroundStyle(Color.appTextLight)
+                    }
             }
 
             VStack(alignment: .leading, spacing: 4) {
