@@ -14,6 +14,7 @@ struct QuestionView: View {
     @State private var correctCount = 0
     @State private var answeredInSession: Set<Int> = []
     @State private var showResultSheet = false
+    @State private var canAdvance = true
 
     init(topicKey: String, startIndex: Int) {
         self.topicKey = topicKey
@@ -88,6 +89,11 @@ struct QuestionView: View {
         let isSpecial = topicKey == AppConstants.TopicKey.diemLiet || topicKey == AppConstants.TopicKey.bookmarks || topicKey == AppConstants.TopicKey.wrongAnswers || topicKey.hasPrefix(AppConstants.TopicKey.wrongAnswers + ":")
 
         VStack(spacing: 0) {
+            ProgressView(value: Double(currentIndex + 1) / Double(allQuestions.count))
+                .tint(Color.appPrimary)
+                .scaleEffect(y: 0.5)
+                .padding(.horizontal, 20)
+
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
                     QuestionCard(label: "Câu \(question.no):", question: question)
@@ -111,6 +117,8 @@ struct QuestionView: View {
                 .padding(.top, 16)
             }
             .id(currentIndex)
+            .transition(.opacity)
+            .animation(.easeInOut(duration: 0.3), value: currentIndex)
 
             let tipsTopicKey = Topic.keyForTopicId(question.topic)
             let hasTips = !questionStore.memoryTips(forTopicKey: tipsTopicKey).isEmpty
@@ -120,7 +128,7 @@ struct QuestionView: View {
                 totalCount: allQuestions.count,
                 answeredIndices: answeredIndices(for: allQuestions),
                 nextLabel: isConfirmed ? (isLast ? "Xem kết quả" : "Câu tiếp") : "Xác nhận",
-                isNextDisabled: !hasSelected,
+                isNextDisabled: isConfirmed ? !canAdvance : !hasSelected,
                 showPrev: false,
                 onPrev: {},
                 onNext: {
@@ -139,6 +147,7 @@ struct QuestionView: View {
                         currentIndex = index
                         selectedAnswerId = nil
                         isConfirmed = false
+                        canAdvance = true
                     }
                 },
                 leadingWidget: !isSpecial && hasTips ? AnyView(
@@ -265,6 +274,7 @@ struct QuestionView: View {
         let isCorrect = answer?.correct ?? false
         withAnimation(.easeOut(duration: 0.25)) {
             isConfirmed = true
+            canAdvance = false
         }
         // Only count toward session score if not already answered in this session
         if !answeredInSession.contains(question.no) {
@@ -275,6 +285,13 @@ struct QuestionView: View {
 
         let tKey = Topic.keyForTopicId(question.topic)
         progressStore.recordQuestionAnswer(topicKey: tKey, questionNo: question.no, correct: isCorrect)
+
+        Task { @MainActor in
+            try? await Task.sleep(for: .seconds(0.8))
+            withAnimation(.easeOut(duration: 0.25)) {
+                canAdvance = true
+            }
+        }
     }
 
     private func nextQuestion() {
@@ -282,6 +299,7 @@ struct QuestionView: View {
             currentIndex += 1
             selectedAnswerId = nil
             isConfirmed = false
+            canAdvance = true
         }
         progressStore.saveLastPosition(topicKey: topicKey, index: currentIndex)
     }
@@ -291,6 +309,7 @@ struct QuestionView: View {
         selectedAnswerId = nil
         isConfirmed = false
         correctCount = 0
+        canAdvance = true
         answeredInSession.removeAll()
     }
 
