@@ -68,12 +68,12 @@ private struct ProgressHeroCard: View {
         let statusColor: Color = switch status.level {
         case .ready: .appSuccess
         case .needsWork: .appWarning
-        case .notReady: .appError
+        case .notReady: .appTextMedium
         }
         let statusText: String = switch status.level {
         case .ready: "Sẵn sàng thi"
         case .needsWork: "Cần ôn thêm"
-        case .notReady: "Chưa sẵn sàng"
+        case .notReady: "Đang bắt đầu"
         }
 
         VStack(spacing: 20) {

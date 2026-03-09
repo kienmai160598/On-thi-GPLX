@@ -12,7 +12,7 @@ struct ExamCountdownCard: View {
                     VStack(spacing: 2) {
                         Text("\(daysLeft)")
                             .font(.system(size: 36, weight: .heavy).monospacedDigit())
-                            .foregroundStyle(daysLeft <= 7 ? Color.appError : Color.appPrimary)
+                            .foregroundStyle(daysLeft <= 7 ? Color.appWarning : Color.appPrimary)
                             .contentTransition(.numericText())
                         Text("ngày còn lại")
                             .font(.system(size: 12, weight: .medium))
