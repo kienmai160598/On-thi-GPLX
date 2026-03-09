@@ -23,9 +23,9 @@ struct TheoryTab: View {
                 ExamCTACard(
                     buttonLabel: "Bắt đầu thi thử",
                     rules: [
-                        (icon: "questionmark.circle", text: "35 câu"),
-                        (icon: "timer", text: "25 phút"),
-                        (icon: "checkmark.circle", text: "≥ 32 đạt"),
+                        (icon: "questionmark.circle", text: "30 câu"),
+                        (icon: "timer", text: "22 phút"),
+                        (icon: "checkmark.circle", text: "≥ 28 đạt"),
                     ],
                     tip: "Sai câu điểm liệt = Trượt. Làm câu điểm liệt trước, không bỏ trống câu nào.",
                     action: { openExam(.mockExam()) },
