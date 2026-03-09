@@ -296,6 +296,7 @@
 		AA09EEE1AABE6A0475B00B02 /* q456.png in Resources */ = {isa = PBXBuildFile; fileRef = 5CD3887618D6360A000070AA /* q456.png */; };
 		AAAA684036C6704F6584E88A /* MockExamView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58E2D3CC4437976763188085 /* MockExamView.swift */; };
 		AABC608FAE55609C25328099 /* q445.png in Resources */ = {isa = PBXBuildFile; fileRef = 0896F13174DC690394815BB2 /* q445.png */; };
+		AAD2A1EDCF0C9A4C45F946B3 /* HazardTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = 870F3D0F5F62B9C42D1755FB /* HazardTab.swift */; };
 		AB004A2AE00593E6AD21E5E2 /* HazardResultView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 83B18C4B116C0622DAC8F8B5 /* HazardResultView.swift */; };
 		AC1CC4DD1952B324D8DCC84B /* q328.png in Resources */ = {isa = PBXBuildFile; fileRef = 7D95C20161A05DA33669F217 /* q328.png */; };
 		AC9F78B4D24F72F1C31D4409 /* q238.png in Resources */ = {isa = PBXBuildFile; fileRef = 32DD1723792EFA1702AFA159 /* q238.png */; };
@@ -675,6 +676,7 @@
 		857F8E6F1CA8DE3F3A976921 /* q348.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = q348.png; sourceTree = "<group>"; };
 		8624F71926AEFE07FDC06C35 /* q442.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = q442.png; sourceTree = "<group>"; };
 		86E77C2C46C7288682583A78 /* q421.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = q421.png; sourceTree = "<group>"; };
+		870F3D0F5F62B9C42D1755FB /* HazardTab.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HazardTab.swift; sourceTree = "<group>"; };
 		872CA8ACA767A332958A246F /* q425.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = q425.png; sourceTree = "<group>"; };
 		8848FEE6527261AD792768BB /* QuestionGridButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuestionGridButton.swift; sourceTree = "<group>"; };
 		8920EF209091F8EB111055BB /* q453.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = q453.png; sourceTree = "<group>"; };
@@ -1310,6 +1312,7 @@
 				3C40111D27AE692E6AF8F059 /* TheoryTab.swift */,
 				CE1720A87A25357D483E5FA4 /* SimulationTab.swift */,
 				92A4AD9D64F77E4C701B555D /* TopicDetailView.swift */,
+				870F3D0F5F62B9C42D1755FB /* HazardTab.swift */,
 			);
 			path = Home;
 			sourceTree = "<group>";
@@ -2089,6 +2092,7 @@
 				89E28AE8C49AC5AED5E3C0AC /* WeakTopicsView.swift in Sources */,
 				DF3D7FAF85ED8F54BD8496AD /* WrongAnswersView.swift in Sources */,
 				E3D2491B121BC12609C71BF0 /* ProgressStore+SmartNudge.swift in Sources */,
+				AAD2A1EDCF0C9A4C45F946B3 /* HazardTab.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
