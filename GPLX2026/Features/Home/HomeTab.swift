@@ -185,7 +185,7 @@ private struct MiniStat: View {
                 .contentTransition(.numericText())
                 .animation(.snappy, value: value)
             Text(label)
-                .font(.system(size: 12, weight: .medium))
+                .font(.system(size: 13, weight: .medium))
                 .foregroundStyle(Color.appTextMedium)
         }
         .frame(maxWidth: .infinity)
@@ -217,13 +217,19 @@ private struct SmartNudgeCard: View {
 
                 VStack(alignment: .leading, spacing: 3) {
                     Text("Tiếp theo")
-                        .font(.system(size: 12, weight: .semibold))
+                        .font(.system(size: 13, weight: .semibold))
                         .foregroundStyle(Color.appTextLight)
                         .textCase(.uppercase)
                     Text(nudge.label)
                         .font(.system(size: 16, weight: .bold))
                         .foregroundStyle(Color.appTextDark)
                         .lineLimit(1)
+                    if let subtitle = nudge.subtitle {
+                        Text(subtitle)
+                            .font(.system(size: 13))
+                            .foregroundStyle(Color.appTextMedium)
+                            .lineLimit(1)
+                    }
                 }
 
                 Spacer(minLength: 4)
@@ -456,7 +462,7 @@ private struct TopicProgressSection: View {
 
             Spacer(minLength: 4)
 
-            StatusBadge(text: statusInfo.label, color: statusInfo.color, fontSize: 11)
+            StatusBadge(text: statusInfo.label, color: statusInfo.color, fontSize: 12)
 
             Image(systemName: "chevron.right")
                 .font(.system(size: 12, weight: .semibold))
@@ -580,7 +586,7 @@ private struct RecentResultRow: View {
             StatusBadge(
                 text: passed ? "Đạt" : "Trượt",
                 color: passed ? .appSuccess : .appError,
-                fontSize: 11
+                fontSize: 12
             )
         }
         .padding(.horizontal, 16)
