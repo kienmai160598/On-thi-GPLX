@@ -31,6 +31,7 @@
 		091730045D8E4AF88241B0D8 /* q365.png in Resources */ = {isa = PBXBuildFile; fileRef = 13C90F38CECE5F535BB8598D /* q365.png */; };
 		09DC73BB37B679B7392DA51E /* W210.png in Resources */ = {isa = PBXBuildFile; fileRef = AF45E586C0EAB607DB06E1C7 /* W210.png */; };
 		0A2DF88569E9F85B5BDE0266 /* SectionHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 07867B3FD8413E18D5C2C990 /* SectionHeader.swift */; };
+		0A2EC9C8C513DDB92E6239F8 /* StudyHeatMap.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4D22E64BB994C7CECC8EC11 /* StudyHeatMap.swift */; };
 		0B90E388EF9C959CE17F628F /* q524.png in Resources */ = {isa = PBXBuildFile; fileRef = 9BA69D51682B081B9D546F55 /* q524.png */; };
 		0CD88A6EE880B202E2CAC7AC /* q539.png in Resources */ = {isa = PBXBuildFile; fileRef = 763C51B1ABF39C043092AAD1 /* q539.png */; };
 		0CF65CBA9757CE691CD5C0F0 /* q420.png in Resources */ = {isa = PBXBuildFile; fileRef = 96DFDEA02B8F73660EDF4F86 /* q420.png */; };
@@ -150,6 +151,7 @@
 		5AB7A90F563ACCFA7C4B2741 /* P103b.png in Resources */ = {isa = PBXBuildFile; fileRef = F75D16339EE4CD8C51A64CE1 /* P103b.png */; };
 		5B6EA0FEEA388F0E75705546 /* q434.png in Resources */ = {isa = PBXBuildFile; fileRef = 001BE7404913354D67AC1B8D /* q434.png */; };
 		5B7DB4756E009AC408F24951 /* q468.png in Resources */ = {isa = PBXBuildFile; fileRef = E1B9934F11B37D1A6518210D /* q468.png */; };
+		5BCEDA5D9A1237F38EA7DF7D /* ProgressStore+Activity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 90F335ABA8DBF6F57311495F /* ProgressStore+Activity.swift */; };
 		5BF45BFC1AB979DB1FBD0D79 /* SimulationTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE1720A87A25357D483E5FA4 /* SimulationTab.swift */; };
 		5C2E558BE3DE253B52C592B6 /* q370.png in Resources */ = {isa = PBXBuildFile; fileRef = 150C91A56C8FF5D699A13CC7 /* q370.png */; };
 		5D781CF857F405B1D7AC7BEF /* q488.png in Resources */ = {isa = PBXBuildFile; fileRef = DCB0D73E6FBE0568EA4E9644 /* q488.png */; };
@@ -687,6 +689,7 @@
 		8EFF2B6F9413821D074C2E93 /* q417.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = q417.png; sourceTree = "<group>"; };
 		90285B3547879822953B2C44 /* q463.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = q463.png; sourceTree = "<group>"; };
 		902DD586CD5B78E0A3E473D8 /* I435.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = I435.png; sourceTree = "<group>"; };
+		90F335ABA8DBF6F57311495F /* ProgressStore+Activity.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "ProgressStore+Activity.swift"; sourceTree = "<group>"; };
 		90F545986DA3AD5F59C4EA7B /* q589.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = q589.png; sourceTree = "<group>"; };
 		9169B95F0E78E2F073B815B7 /* q547.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = q547.png; sourceTree = "<group>"; };
 		9194A31E0E165FC50E7F8CA8 /* HomeTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeTab.swift; sourceTree = "<group>"; };
@@ -770,6 +773,7 @@
 		C40E877878A334AC373AC16A /* StatItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatItem.swift; sourceTree = "<group>"; };
 		C4740D997C8D3EB376CBDB95 /* q584.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = q584.png; sourceTree = "<group>"; };
 		C48CFBB48B41CA2AC56A99B6 /* QuestionReviewRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuestionReviewRow.swift; sourceTree = "<group>"; };
+		C4D22E64BB994C7CECC8EC11 /* StudyHeatMap.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = StudyHeatMap.swift; sourceTree = "<group>"; };
 		C4F5D372F53F8D511C18571F /* Topic.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Topic.swift; sourceTree = "<group>"; };
 		C704176F8A8846D93361089C /* q356.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = q356.png; sourceTree = "<group>"; };
 		C71A476C54A074838D52A648 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -1327,6 +1331,7 @@
 				28F3D39498079BC31B3AE22E /* ProgressRing.swift */,
 				7F93ECB6DE0C3591315F938C /* ResultHero.swift */,
 				854E4F9C9C0D43047A041004 /* StatusBadge.swift */,
+				C4D22E64BB994C7CECC8EC11 /* StudyHeatMap.swift */,
 			);
 			path = Display;
 			sourceTree = "<group>";
@@ -1441,6 +1446,7 @@
 				DF1247B4E4DDC0D9F96ED84E /* ProgressStore+ExamHistory.swift */,
 				2A33907E13AA0C7ABB32151E /* QuestionStore.swift */,
 				801BD16CC26084A4EA58F6BE /* ProgressStore+SmartNudge.swift */,
+				90F335ABA8DBF6F57311495F /* ProgressStore+Activity.swift */,
 			);
 			path = Storage;
 			sourceTree = "<group>";
@@ -2089,6 +2095,8 @@
 				DF3D7FAF85ED8F54BD8496AD /* WrongAnswersView.swift in Sources */,
 				E3D2491B121BC12609C71BF0 /* ProgressStore+SmartNudge.swift in Sources */,
 				AAD2A1EDCF0C9A4C45F946B3 /* HazardTab.swift in Sources */,
+				5BCEDA5D9A1237F38EA7DF7D /* ProgressStore+Activity.swift in Sources */,
+				0A2EC9C8C513DDB92E6239F8 /* StudyHeatMap.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
