@@ -86,34 +86,80 @@ struct FlashcardView: View {
             Spacer()
         }
         .safeAreaInset(edge: .bottom) {
-            VStack(spacing: 6) {
-                if !isFlipped {
-                    Text("Lật thẻ để trả lời")
-                        .font(.system(size: 13, weight: .medium))
+            VStack(spacing: 8) {
+                // Progress
+                HStack(spacing: 6) {
+                    Text("\(currentIndex + 1)")
+                        .font(.system(size: 14, weight: .bold).monospacedDigit())
+                        .foregroundStyle(Color.appTextDark)
+                    Text("/")
+                        .font(.system(size: 13))
                         .foregroundStyle(Color.appTextLight)
-                        .transition(.opacity)
-                }
+                    Text("\(totalQuestions)")
+                        .font(.system(size: 14, weight: .bold).monospacedDigit())
+                        .foregroundStyle(Color.appTextDark)
 
-                ExamBottomBar(
-                    currentIndex: currentIndex,
-                    totalCount: totalQuestions,
-                    answeredIndices: Set(0..<currentIndex),
-                    nextLabel: "Đã biết",
-                    prevLabel: "Chưa biết",
-                    prevIcon: "xmark",
-                    isNextDisabled: !isFlipped,
-                    isPrevDisabled: !isFlipped,
-                    showPrev: true,
-                    onPrev: { markUnknown() },
-                    onNext: { markKnown() },
-                    onSelectIndex: { index in
-                        withAnimation(.easeInOut(duration: 0.25)) {
-                            isFlipped = false
-                            currentIndex = index
+                    GeometryReader { geo in
+                        ZStack(alignment: .leading) {
+                            Capsule()
+                                .fill(Color.appDivider.opacity(0.4))
+                            Capsule()
+                                .fill(Color.appPrimary)
+                                .frame(width: geo.size.width * CGFloat(currentIndex) / CGFloat(max(totalQuestions, 1)))
+                                .animation(.easeOut(duration: 0.3), value: currentIndex)
                         }
                     }
-                )
+                    .frame(height: 4)
+                }
+                .padding(.horizontal, 20)
+
+                if !isFlipped {
+                    HStack(spacing: 6) {
+                        Image(systemName: "hand.tap")
+                            .font(.system(size: 12))
+                        Text("Lật thẻ để trả lời")
+                            .font(.system(size: 13, weight: .medium))
+                    }
+                    .foregroundStyle(Color.appTextLight)
+                    .transition(.opacity)
+                }
+
+                // Action buttons
+                HStack(spacing: 12) {
+                    Button { markUnknown() } label: {
+                        HStack(spacing: 8) {
+                            Image(systemName: "xmark")
+                                .font(.system(size: 15, weight: .bold))
+                            Text("Chưa biết")
+                                .font(.system(size: 16, weight: .semibold))
+                        }
+                        .foregroundStyle(isFlipped ? Color.appError : Color.appTextLight)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 52)
+                        .background(isFlipped ? Color.appError.opacity(0.1) : Color.appDivider.opacity(0.3))
+                        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    }
+                    .disabled(!isFlipped)
+
+                    Button { markKnown() } label: {
+                        HStack(spacing: 8) {
+                            Image(systemName: "checkmark")
+                                .font(.system(size: 15, weight: .bold))
+                            Text("Đã biết")
+                                .font(.system(size: 16, weight: .semibold))
+                        }
+                        .foregroundStyle(isFlipped ? Color.appSuccess : Color.appTextLight)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 52)
+                        .background(isFlipped ? Color.appSuccess.opacity(0.1) : Color.appDivider.opacity(0.3))
+                        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    }
+                    .disabled(!isFlipped)
+                }
+                .padding(.horizontal, 16)
+                .animation(.easeOut(duration: 0.2), value: isFlipped)
             }
+            .padding(.bottom, 8)
         }
     }
 

@@ -63,7 +63,12 @@ private struct TipCard: View {
                     .foregroundStyle(Color.appTextDark)
             }
 
-            Text(tip.content)
+            Text(tip.content
+                .replacingOccurrences(of: "<br/>", with: "\n")
+                .replacingOccurrences(of: "<br>", with: "\n")
+                .replacingOccurrences(of: "<br />", with: "\n")
+                .replacingOccurrences(of: "; ", with: ";\n")
+            )
                 .font(.system(size: 14))
                 .foregroundStyle(Color.appTextMedium)
                 .lineSpacing(4)

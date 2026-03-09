@@ -6,6 +6,14 @@ struct ExplanationBox: View {
     var labelFontSize: CGFloat = 13
     var contentFontSize: CGFloat = 14
 
+    private var formattedContent: String {
+        content
+            .replacingOccurrences(of: "<br/>", with: "\n")
+            .replacingOccurrences(of: "<br>", with: "\n")
+            .replacingOccurrences(of: "<br />", with: "\n")
+            .replacingOccurrences(of: "; ", with: ";\n")
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 6) {
@@ -16,7 +24,7 @@ struct ExplanationBox: View {
                     .font(.system(size: labelFontSize, weight: .bold))
                     .foregroundStyle(Color.appTextDark)
             }
-            Text(content)
+            Text(formattedContent)
                 .font(.system(size: contentFontSize))
                 .foregroundStyle(Color.appTextMedium)
                 .lineSpacing(4)

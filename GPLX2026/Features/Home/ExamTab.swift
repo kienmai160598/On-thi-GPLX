@@ -27,6 +27,7 @@ struct ExamTab: View {
                 }
             }
         }
+        .onChange(of: selectedSegment) { _, _ in showNavPlay = false }
         .glassContainer()
         .screenHeader("Thi thử")
         .toolbar {

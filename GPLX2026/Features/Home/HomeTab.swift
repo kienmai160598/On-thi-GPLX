@@ -204,7 +204,15 @@ private struct ContinueLearningCard: View {
         if let topicKey = progressStore.lastTopicKey,
            !topicKey.isEmpty {
             let index = progressStore.lastQuestionIndex
-            let topicName = questionStore.topic(forKey: topicKey)?.name ?? topicKey
+            let topicName: String = {
+                switch topicKey {
+                case AppConstants.TopicKey.diemLiet: return "Câu điểm liệt"
+                case AppConstants.TopicKey.allQuestions: return "Tất cả câu hỏi"
+                case AppConstants.TopicKey.bookmarks: return "Đánh dấu"
+                case AppConstants.TopicKey.wrongAnswers: return "Câu sai"
+                default: return questionStore.topic(forKey: topicKey)?.name ?? topicKey
+                }
+            }()
 
             Button {
                 openExam(.questionView(topicKey: topicKey, startIndex: index))

@@ -226,11 +226,8 @@ struct QuestionView: View {
                         if wrongCount > 0 {
                             Button {
                                 showResultSheet = false
-                                dismiss()
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                                    let scopedKey = topicKey.hasPrefix(AppConstants.TopicKey.wrongAnswers) ? topicKey : AppConstants.TopicKey.wrongAnswers + ":" + topicKey
-                                    openExam(.questionView(topicKey: scopedKey, startIndex: 0))
-                                }
+                                let scopedKey = topicKey.hasPrefix(AppConstants.TopicKey.wrongAnswers) ? topicKey : AppConstants.TopicKey.wrongAnswers + ":" + topicKey
+                                openExam(.questionView(topicKey: scopedKey, startIndex: 0))
                             } label: {
                                 Text("Luyện \(wrongCount) câu sai")
                                     .font(.system(size: 16, weight: .semibold))

@@ -86,10 +86,7 @@ struct HazardResultView: View {
                     if let retryMode {
                         HStack(spacing: 10) {
                             Button {
-                                popToRoot()
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                                    openExam(.hazardTest(mode: retryMode))
-                                }
+                                openExam(.hazardTest(mode: retryMode))
                             } label: {
                                 AppButton(icon: "arrow.counterclockwise", label: "Làm lại", style: .secondary, height: 48, cornerRadius: 24)
                             }
