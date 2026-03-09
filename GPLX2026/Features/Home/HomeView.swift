@@ -24,14 +24,14 @@ struct HomeView: View {
                 .tint(accentColor)
             }
 
-            Tab("Mô phỏng", systemImage: "map") {
+            Tab("Sa hình", systemImage: "map") {
                 NavigationStack {
                     SimulationTab()
                 }
                 .tint(accentColor)
             }
 
-            Tab("Tình huống", systemImage: "play.circle") {
+            Tab("Video TH", systemImage: "play.circle") {
                 NavigationStack {
                     HazardTab()
                 }
