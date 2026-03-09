@@ -13,6 +13,7 @@ struct HomeTab: View {
                 SmartNudgeCard()
                 UtilityGrid()
                 TopicProgressSection()
+                StudyHeatMap()
                 RecentResultsCard()
                 ReferenceSection()
             }
