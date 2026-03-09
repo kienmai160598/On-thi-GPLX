@@ -11,23 +11,26 @@ struct WrongAnswersView: View {
 
         ScrollView {
             if wrongByTopic.isEmpty {
-                EmptyState(icon: "checkmark.circle", message: "Không có câu sai nào!", iconColor: .appSuccess)
+                EmptyState(icon: "checkmark.circle.fill", message: "Không có câu sai nào!", iconColor: .appSuccess)
             } else {
                 VStack(alignment: .leading, spacing: 12) {
-                    if totalWrong > 1 {
-                        Button { openExam(.questionView(topicKey: AppConstants.TopicKey.wrongAnswers, startIndex: 0)) } label: {
-                            AppButton(label: "Luyện tất cả (\(totalWrong) câu)")
-                        }
-                        .buttonStyle(.plain)
-                        .padding(.bottom, 8)
-                    }
-
                     ForEach(wrongByTopic, id: \.topic.key) { group in
                         WrongTopicCard(topic: group.topic, questions: group.questions)
                     }
                 }
                 .padding(.horizontal, 20)
                 .padding(.bottom, 24)
+            }
+        }
+        .safeAreaInset(edge: .bottom) {
+            if totalWrong > 1 {
+                Button { openExam(.questionView(topicKey: AppConstants.TopicKey.wrongAnswers, startIndex: 0)) } label: {
+                    AppButton(label: "Luyện tất cả (\(totalWrong) câu)")
+                }
+                .buttonStyle(.plain)
+                .padding(.horizontal, 20)
+                .padding(.vertical, 12)
+                .background(.ultraThinMaterial)
             }
         }
         .screenHeader("Câu sai theo chủ đề")

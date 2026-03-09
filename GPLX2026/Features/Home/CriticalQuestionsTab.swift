@@ -4,8 +4,6 @@ struct CriticalQuestionsTab: View {
     @Environment(QuestionStore.self) private var questionStore
     @Environment(ProgressStore.self) private var progressStore
     @Environment(\.openExam) private var openExam
-    @AppStorage("appPrimaryColor") private var primaryColorKey = "default"
-
     @State private var selectedTopicKey: String? = nil
     @State private var showNavPlay = false
     @State private var searchText = ""
@@ -134,7 +132,7 @@ struct CriticalQuestionsTab: View {
                     Button { openExam(.questionView(topicKey: AppConstants.TopicKey.diemLiet, startIndex: 0)) } label: {
                         Image(systemName: "play.fill")
                             .font(.system(size: 13, weight: .semibold))
-                            .foregroundStyle(Color.primaryColor(for: primaryColorKey))
+                            .foregroundStyle(Color.appPrimary)
                     }
                 }
             }

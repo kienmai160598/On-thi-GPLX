@@ -2,6 +2,7 @@ import SwiftUI
 
 struct SimulationResultView: View {
     @Environment(\.popToRoot) private var popToRoot
+    @Environment(\.openExam) private var openExam
 
     let questions: [Question]
     let answers: [Int: Int]
@@ -77,6 +78,27 @@ struct SimulationResultView: View {
             }
             .padding(.horizontal, 20)
             .padding(.bottom, 32)
+        }
+        .safeAreaInset(edge: .bottom) {
+            if !isFromHistory {
+                HStack(spacing: 10) {
+                    Button {
+                        popToRoot()
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                            openExam(.simulationExam(mode: .random))
+                        }
+                    } label: {
+                        AppButton(icon: "arrow.counterclockwise", label: "Thi lại", style: .secondary, height: 48, cornerRadius: 24)
+                    }
+
+                    Button { popToRoot() } label: {
+                        AppButton(icon: "checkmark", label: "Hoàn thành", height: 48, cornerRadius: 24)
+                    }
+                }
+                .padding(.horizontal, 20)
+                .padding(.vertical, 12)
+                .background(.ultraThinMaterial)
+            }
         }
         .navigationBarBackButtonHidden(!isFromHistory)
         .screenHeader(isFromHistory ? "Chi tiết mô phỏng" : "Kết quả mô phỏng")

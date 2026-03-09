@@ -9,7 +9,7 @@ struct FilterChip: View {
         Button(action: action) {
             Text(label)
                 .font(.system(size: 13, weight: isSelected ? .bold : .medium))
-                .foregroundStyle(isSelected ? Color.white : Color.appTextMedium)
+                .foregroundStyle(isSelected ? Color.appOnPrimary : Color.appTextMedium)
                 .padding(.horizontal, 14)
                 .padding(.vertical, 8)
                 .background(isSelected ? Color.appPrimary : Color.appDivider)

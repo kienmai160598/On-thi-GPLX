@@ -12,21 +12,26 @@ struct BookmarksView: View {
 
         ScrollView {
             if bookmarked.isEmpty {
-                EmptyState(icon: "bookmark", message: "Chưa có câu hỏi nào được đánh dấu")
+                EmptyState(icon: "bookmark.slash", message: "Chưa có câu hỏi nào được đánh dấu")
             } else {
                 VStack(alignment: .leading, spacing: 10) {
                     ForEach(bookmarked, id: \.no) { question in
                         BookmarkQuestionCard(question: question, topicKey: AppConstants.TopicKey.bookmarks)
                     }
-
-                    Button { openExam(.questionView(topicKey: AppConstants.TopicKey.bookmarks, startIndex: 0)) } label: {
-                        AppButton(label: "Luyện tập \(bookmarked.count) câu")
-                    }
-                    .buttonStyle(.plain)
-                    .padding(.top, 8)
                 }
                 .padding(.horizontal, 20)
                 .padding(.bottom, 24)
+            }
+        }
+        .safeAreaInset(edge: .bottom) {
+            if !bookmarked.isEmpty {
+                Button { openExam(.questionView(topicKey: AppConstants.TopicKey.bookmarks, startIndex: 0)) } label: {
+                    AppButton(label: "Luyện tập \(bookmarked.count) câu")
+                }
+                .buttonStyle(.plain)
+                .padding(.horizontal, 20)
+                .padding(.vertical, 12)
+                .background(.ultraThinMaterial)
             }
         }
         .screenHeader("Đánh dấu")

@@ -114,7 +114,12 @@ struct FlashcardView: View {
                     showPrev: true,
                     onPrev: { markUnknown() },
                     onNext: { markKnown() },
-                    onSelectIndex: { _ in }
+                    onSelectIndex: { index in
+                        withAnimation(.easeInOut(duration: 0.25)) {
+                            isFlipped = false
+                            currentIndex = index
+                        }
+                    }
                 )
             }
         }
@@ -262,14 +267,18 @@ struct FlashcardView: View {
     }
 
     private func advanceCard() {
-        isFlipped = false
+        withAnimation(.easeInOut(duration: 0.2)) {
+            isFlipped = false
+        }
 
-        if currentIndex + 1 >= totalQuestions {
-            withAnimation {
-                isFinished = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+            withAnimation(.easeInOut(duration: 0.25)) {
+                if currentIndex + 1 >= totalQuestions {
+                    isFinished = true
+                } else {
+                    currentIndex += 1
+                }
             }
-        } else {
-            currentIndex += 1
         }
     }
 

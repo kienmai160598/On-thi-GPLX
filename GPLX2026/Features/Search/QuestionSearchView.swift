@@ -65,20 +65,11 @@ struct QuestionSearchView: View {
                         ContentUnavailableView.search(text: searchText)
                             .padding(.top, 40)
                     } else {
-                        VStack(spacing: 12) {
-                            Image(systemName: "tray")
-                                .font(.system(size: 36))
-                                .foregroundStyle(Color.appTextLight)
-                            Text("Không có câu hỏi")
-                                .font(.system(size: 15, weight: .medium))
-                                .foregroundStyle(Color.appTextMedium)
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding(.top, 60)
+                        EmptyState(icon: "tray", message: "Không có câu hỏi")
                     }
                 } else {
-                    LazyVStack(spacing: 0) {
-                        ForEach(Array(filteredQuestions.enumerated()), id: \.element.no) { index, question in
+                    LazyVStack(spacing: 8) {
+                        ForEach(filteredQuestions, id: \.no) { question in
                             let topicKey = Topic.keyForTopicId(question.topic)
                             let status = progressStore.answerStatus(topicKey: topicKey, questionNo: question.no)
 
@@ -92,10 +83,7 @@ struct QuestionSearchView: View {
                                     openExam(.questionView(topicKey: topicKey, startIndex: idx))
                                 }
                             )
-
-                            if index < filteredQuestions.count - 1 {
-                                Divider().padding(.leading, 16)
-                            }
+                            .glassCard()
                         }
                     }
                     .padding(.horizontal, 20)

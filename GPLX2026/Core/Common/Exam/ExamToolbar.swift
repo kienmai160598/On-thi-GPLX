@@ -12,7 +12,12 @@ struct ExamToolbar: ViewModifier {
 
     func body(content: Content) -> some View {
         content
-            .background(Color.scaffoldBg.ignoresSafeArea())
+            .background {
+                ZStack {
+                    Color.scaffoldBg.ignoresSafeArea()
+                    AnimatedBackground()
+                }
+            }
             .navigationBarBackButtonHidden(true)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

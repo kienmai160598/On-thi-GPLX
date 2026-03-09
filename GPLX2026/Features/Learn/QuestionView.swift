@@ -13,7 +13,7 @@ struct QuestionView: View {
     @State private var isConfirmed = false
     @State private var correctCount = 0
     @State private var answeredInSession: Set<Int> = []
-    @State private var showResultDialog = false
+    @State private var showResultSheet = false
 
     init(topicKey: String, startIndex: Int) {
         self.topicKey = topicKey
@@ -64,6 +64,17 @@ struct QuestionView: View {
     private var emptyState: some View {
         EmptyState(icon: "text.page.slash", message: "Không có câu hỏi")
             .navigationBarTitleDisplayMode(.inline)
+            .navigationBarBackButtonHidden(true)
+            .background(Color.scaffoldBg.ignoresSafeArea())
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button { dismiss() } label: {
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundStyle(Color.appTextDark)
+                    }
+                }
+            }
     }
 
     // MARK: - Question Content
@@ -115,7 +126,7 @@ struct QuestionView: View {
                 onNext: {
                     if isConfirmed {
                         if isLast {
-                            showResultDialog = true
+                            showResultSheet = true
                         } else {
                             nextQuestion()
                         }
@@ -159,20 +170,78 @@ struct QuestionView: View {
                 }
             }
         }
-        .alert("Kết quả", isPresented: $showResultDialog) {
-            Button("Xem lại") {
-                currentIndex = 0
-                selectedAnswerId = nil
-                isConfirmed = false
-            }
-            Button("Làm lại") { resetQuiz() }
-            Button("Hoàn thành") { dismiss() }
-        } message: {
-            let pct = allQuestions.count > 0 ? correctCount * 100 / allQuestions.count : 0
-            Text("\(correctCount)/\(allQuestions.count) câu đúng (\(pct)%)")
+        .sheet(isPresented: $showResultSheet) {
+            studyResultSheet(totalCount: allQuestions.count)
         }
         .onDisappear {
             progressStore.saveLastPosition(topicKey: topicKey, index: currentIndex)
+        }
+    }
+
+    // MARK: - Study Result Sheet
+
+    @ViewBuilder
+    private func studyResultSheet(totalCount: Int) -> some View {
+        let wrongCount = totalCount - correctCount
+        let pct = totalCount > 0 ? correctCount * 100 / totalCount : 0
+
+        NavigationStack {
+            ScrollView {
+                VStack(spacing: 24) {
+                    Spacer().frame(height: 8)
+
+                    ResultHero(
+                        isPassed: true,
+                        score: correctCount,
+                        total: totalCount,
+                        subtitle: "Bạn đã hoàn thành \(pct)% câu hỏi"
+                    )
+
+                    VStack(spacing: 0) {
+                        ScoreRow(label: "Câu đúng", value: "\(correctCount)/\(totalCount)", color: Color.appSuccess)
+                        Divider().padding(.horizontal, 16)
+                        ScoreRow(label: "Câu sai", value: "\(wrongCount)/\(totalCount)", color: Color.appError)
+                    }
+                    .padding(.vertical, 4)
+                    .glassCard()
+
+                    VStack(spacing: 12) {
+                        Button {
+                            showResultSheet = false
+                            resetQuiz()
+                        } label: {
+                            Text("Làm lại")
+                                .font(.system(size: 16, weight: .semibold))
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 14)
+                                .background(Color.appPrimary)
+                                .foregroundStyle(Color.appOnPrimary)
+                                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                        }
+
+                        Button {
+                            showResultSheet = false
+                            dismiss()
+                        } label: {
+                            Text("Hoàn thành")
+                                .font(.system(size: 16, weight: .semibold))
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 14)
+                                .background(Color.scaffoldBg)
+                                .foregroundStyle(Color.appTextDark)
+                                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                        .stroke(Color.appDivider, lineWidth: 1)
+                                )
+                        }
+                    }
+                    .padding(.top, 8)
+                }
+                .padding(.horizontal, 20)
+                .padding(.bottom, 32)
+            }
+            .screenHeader("Kết quả ôn tập")
         }
     }
 

@@ -51,16 +51,21 @@ struct TopicsView: View {
                     Button {
                         withAnimation { selectedTopicKey = nil }
                     } label: {
-                        Label("Tất cả (\(questionStore.allQuestions.count))", systemImage: selectedTopicKey == nil ? "checkmark" : "")
+                        Label {
+                            Text("Tất cả (\(questionStore.allQuestions.count))")
+                        } icon: {
+                            if selectedTopicKey == nil { Image(systemName: "checkmark") }
+                        }
                     }
                     ForEach(questionStore.topics, id: \.id) { topic in
                         Button {
                             withAnimation { selectedTopicKey = topic.key }
                         } label: {
-                            Label(
-                                "\(topic.shortName) (\(topic.questionCount))",
-                                systemImage: selectedTopicKey == topic.key ? "checkmark" : ""
-                            )
+                            Label {
+                                Text("\(topic.shortName) (\(topic.questionCount))")
+                            } icon: {
+                                if selectedTopicKey == topic.key { Image(systemName: "checkmark") }
+                            }
                         }
                     }
                 } label: {

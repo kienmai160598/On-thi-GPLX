@@ -12,5 +12,6 @@ struct ExamLoadingView: View {
                 .foregroundStyle(Color.appTextMedium)
                 .padding(.top, 8)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }

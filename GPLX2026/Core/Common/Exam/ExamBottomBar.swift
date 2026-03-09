@@ -53,6 +53,6 @@ struct ExamBottomBar: View {
         }
         .padding(.horizontal, 16)
         .padding(.top, 10)
-        .padding(.bottom, 0)
+        .padding(.bottom, 8)
     }
 }

@@ -19,6 +19,7 @@ struct BaseExamView: View {
     @State private var answers: [Int: Int] = [:]
     @State private var timePerScenario: [Int: Int] = [:]
     @State private var remainingSeconds = 0
+    @State private var deadline: Date?
     @State private var showSubmitDialog = false
     @State private var showExitDialog = false
     @State private var navigateToResult = false
@@ -69,7 +70,7 @@ struct BaseExamView: View {
             onDismiss: { dismiss() }
         )
         .task { startExam() }
-        .onDisappear { timer?.invalidate() }
+        .onDisappear { timer?.invalidate(); deadline = nil }
         .alert("Nộp bài?", isPresented: $showSubmitDialog) {
             Button("Quay lại", role: .cancel) {}
             Button("Nộp bài") { submitMockExam() }
@@ -231,13 +232,15 @@ struct BaseExamView: View {
 
     private func startGlobalTimer() {
         timer?.invalidate()
+        deadline = Date().addingTimeInterval(TimeInterval(remainingSeconds))
         timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { _ in
             Task { @MainActor in
-                if remainingSeconds <= 1 {
+                guard let deadline else { return }
+                let remaining = max(0, Int(deadline.timeIntervalSinceNow))
+                remainingSeconds = remaining
+                if remaining <= 0 {
                     timer?.invalidate()
                     submitMockExam()
-                } else {
-                    remainingSeconds -= 1
                 }
             }
         }
@@ -276,13 +279,15 @@ struct BaseExamView: View {
 
     private func startScenarioTimer() {
         remainingSeconds = AppConstants.Simulation.scenarioTimeSeconds
+        deadline = Date().addingTimeInterval(TimeInterval(remainingSeconds))
         timer?.invalidate()
         timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { _ in
             Task { @MainActor in
-                if remainingSeconds <= 1 {
+                guard let deadline else { return }
+                let remaining = max(0, Int(deadline.timeIntervalSinceNow))
+                remainingSeconds = remaining
+                if remaining <= 0 {
                     handleSimulationTimeout()
-                } else {
-                    remainingSeconds -= 1
                 }
             }
         }

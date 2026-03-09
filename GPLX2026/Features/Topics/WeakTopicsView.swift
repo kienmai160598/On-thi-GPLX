@@ -27,9 +27,8 @@ struct WeakTopicsView: View {
                             TopicAccuracyRow(item: item)
                         }
                         .buttonStyle(.plain)
-                        .padding(.bottom, 10)
                     }
-                    .padding(.bottom, 14)
+                    .padding(.bottom, 10)
                 }
 
                 if !strongList.isEmpty {
@@ -46,9 +45,8 @@ struct WeakTopicsView: View {
                             TopicAccuracyRow(item: item)
                         }
                         .buttonStyle(.plain)
-                        .padding(.bottom, 10)
                     }
-                    .padding(.bottom, 14)
+                    .padding(.bottom, 10)
                 }
 
                 if !notStarted.isEmpty {
@@ -59,14 +57,9 @@ struct WeakTopicsView: View {
                         Button {
                             openExam(.questionView(topicKey: item.topic.key, startIndex: 0))
                         } label: {
-                            ListItemCard(
-                                icon: item.topic.sfSymbol,
-                                title: item.topic.name,
-                                subtitle: "0/\(item.total) câu"
-                            )
+                            TopicAccuracyRow(item: item)
                         }
                         .buttonStyle(.plain)
-                        .padding(.bottom, 10)
                     }
                 }
 
@@ -114,7 +107,9 @@ private struct TopicAccuracyRow: View {
                     .font(.system(size: 15, weight: .semibold))
                     .foregroundStyle(Color.appTextDark)
 
-                Text("\(item.correct)/\(item.attempted) đúng · \(Int(item.accuracy * 100))%")
+                Text(item.attempted > 0
+                    ? "\(item.correct)/\(item.attempted) đúng · \(Int(item.accuracy * 100))%"
+                    : "0/\(item.total) câu · Chưa bắt đầu")
                     .font(.system(size: 13))
                     .foregroundStyle(Color.appTextMedium)
             }

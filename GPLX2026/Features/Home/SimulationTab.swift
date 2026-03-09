@@ -93,12 +93,6 @@ struct SimulationTab: View {
             ])
         }
 
-        // Full practice
-        Button { openExam(.simulationExam(mode: .fullPractice)) } label: {
-            AppButton(label: "Luyện tập tất cả (\(questionStore.simulationQuestions.count) câu)", style: .secondary)
-        }
-        .buttonStyle(.plain)
-
         // History
         if !progressStore.simulationHistory.isEmpty {
             SectionTitle(title: "Lịch sử mô phỏng")
