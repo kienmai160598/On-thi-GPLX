@@ -10,33 +10,21 @@ struct MockExamTab: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
                 // MARK: - CTA + Rules
-                VStack(spacing: 16) {
-                    Button { openExam(.mockExam()) } label: {
-                        AppButton(icon: "play.fill", label: "Bắt đầu thi thử")
-                    }
-                    .buttonStyle(.plain)
-                    .onGeometryChange(for: Bool.self) { proxy in
-                        proxy.frame(in: .scrollView(axis: .vertical)).minY < 0
-                    } action: { hidden in
+                ExamCTACard(
+                    buttonLabel: "Bắt đầu thi thử",
+                    rules: [
+                        (icon: "questionmark.circle", text: "35 câu"),
+                        (icon: "timer", text: "25 phút"),
+                        (icon: "checkmark.circle", text: "≥ 32 đạt"),
+                    ],
+                    tip: "Sai câu điểm liệt = Trượt. Làm câu điểm liệt trước, không bỏ trống câu nào.",
+                    action: { openExam(.mockExam()) },
+                    onButtonHidden: { hidden in
                         withAnimation(.easeInOut(duration: 0.2)) {
                             showNavPlay = hidden
                         }
                     }
-
-                    // Rules summary
-                    HStack(spacing: 16) {
-                        RulePill(icon: "questionmark.circle", text: "35 câu")
-                        RulePill(icon: "timer", text: "25 phút")
-                        RulePill(icon: "checkmark.circle", text: "≥ 32 đạt")
-                    }
-
-                    Text("Sai câu điểm liệt = Trượt. Làm câu điểm liệt trước, không bỏ trống câu nào.")
-                        .font(.system(size: 13))
-                        .foregroundStyle(Color.appTextMedium)
-                        .lineSpacing(3)
-                }
-                .padding(20)
-                .glassCard()
+                )
 
                 // MARK: - Stats
                 if !progressStore.examHistory.isEmpty {
@@ -65,6 +53,7 @@ struct MockExamTab: View {
                                 }
 
                                 let isCompleted = completedSets.contains(setId)
+                                let latestResult = isCompleted ? progressStore.latestResult(forExamSet: setId) : nil
 
                                 Button { openExam(.mockExam(examSetId: setId)) } label: {
                                     HStack(spacing: 10) {
@@ -75,6 +64,11 @@ struct MockExamTab: View {
                                         Spacer()
 
                                         if isCompleted {
+                                            if let result = latestResult {
+                                                Text("\(result.score)/\(result.totalQuestions)")
+                                                    .font(.system(size: 13, weight: .medium).monospacedDigit())
+                                                    .foregroundStyle(result.passed ? Color.appSuccess : Color.appError)
+                                            }
                                             Image(systemName: "checkmark.circle.fill")
                                                 .font(.system(size: 16))
                                                 .foregroundStyle(Color.appSuccess)
@@ -100,23 +94,13 @@ struct MockExamTab: View {
                 if !progressStore.examHistory.isEmpty {
                     SectionTitle(title: "Lịch sử")
 
-                    VStack(spacing: 0) {
-                        ForEach(Array(progressStore.examHistory.prefix(10).enumerated()), id: \.element.id) { index, result in
-                            NavigationLink(destination: ExamHistoryDetailView(result: result)) {
-                                HistoryRow(
-                                    passed: result.passed,
-                                    scoreText: "\(result.score)/\(result.totalQuestions) đúng",
-                                    date: result.date
-                                )
-                            }
-                            .buttonStyle(.plain)
-
-                            if index < min(progressStore.examHistory.count, 10) - 1 {
-                                Divider().padding(.leading, 60)
-                            }
-                        }
-                    }
-                    .glassCard()
+                    HistoryList(
+                        results: progressStore.examHistory,
+                        scoreText: { "\($0.score)/\($0.totalQuestions) đúng" },
+                        passed: \.passed,
+                        date: \.date,
+                        destination: { ExamHistoryDetailView(result: $0) }
+                    )
                 }
             }
             .padding(.horizontal, 20)

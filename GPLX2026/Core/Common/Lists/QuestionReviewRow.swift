@@ -4,6 +4,9 @@ struct QuestionReviewRow: View {
     let question: Question
     let status: AnswerStatus
     var showStatusIcon: Bool = true
+    var selectedAnswerId: Int? = nil
+    var timeUsedBadge: String? = nil
+    var onNavigate: (() -> Void)? = nil
 
     @State private var isExpanded = false
 
@@ -53,6 +56,10 @@ struct QuestionReviewRow: View {
                             if question.isDiemLiet {
                                 StatusBadge(text: "Điểm liệt", color: .appError, fontSize: 9, hPadding: 5, vPadding: 2)
                             }
+
+                            if let badge = timeUsedBadge {
+                                StatusBadge(text: badge, color: .appWarning, fontSize: 9, hPadding: 5, vPadding: 2)
+                            }
                         }
 
                         Text(question.text)
@@ -83,13 +90,13 @@ struct QuestionReviewRow: View {
                     VStack(alignment: .leading, spacing: 6) {
                         ForEach(question.answers, id: \.id) { answer in
                             HStack(alignment: .top, spacing: 8) {
-                                Image(systemName: answer.correct ? "checkmark.circle.fill" : "circle")
+                                Image(systemName: answerIcon(answer))
                                     .font(.system(size: 14))
-                                    .foregroundStyle(answer.correct ? Color.appSuccess : Color.appTextLight)
+                                    .foregroundStyle(answerColor(answer))
 
                                 Text(answer.text)
                                     .font(.system(size: 13, weight: answer.correct ? .semibold : .regular))
-                                    .foregroundStyle(answer.correct ? Color.appSuccess : Color.appTextDark)
+                                    .foregroundStyle(answerColor(answer))
                                     .lineSpacing(2)
                                     .multilineTextAlignment(.leading)
                             }
@@ -98,6 +105,19 @@ struct QuestionReviewRow: View {
                         if !question.tip.isEmpty {
                             ExplanationBox(content: question.tip, labelFontSize: 12, contentFontSize: 13)
                                 .padding(.top, 8)
+                        }
+
+                        if let onNavigate {
+                            Button(action: onNavigate) {
+                                HStack(spacing: 6) {
+                                    Image(systemName: "pencil.line")
+                                        .font(.system(size: 12))
+                                    Text("Luyện câu này")
+                                        .font(.system(size: 13, weight: .semibold))
+                                }
+                                .foregroundStyle(Color.appPrimary)
+                                .padding(.top, 4)
+                            }
                         }
                     }
                     .padding(.leading, showStatusIcon ? 40 : 0)
@@ -109,5 +129,25 @@ struct QuestionReviewRow: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+    }
+
+    // MARK: - Answer styling
+
+    private func answerIcon(_ answer: Answer) -> String {
+        if answer.correct {
+            return "checkmark.circle.fill"
+        } else if selectedAnswerId == answer.id {
+            return "xmark.circle.fill"
+        }
+        return "circle"
+    }
+
+    private func answerColor(_ answer: Answer) -> Color {
+        if answer.correct {
+            return .appSuccess
+        } else if selectedAnswerId == answer.id {
+            return .appError
+        }
+        return .appTextLight
     }
 }

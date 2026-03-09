@@ -25,6 +25,7 @@ struct QuestionView: View {
         switch topicKey {
         case AppConstants.TopicKey.bookmarks: return progressStore.bookmarks
         case AppConstants.TopicKey.wrongAnswers: return progressStore.wrongAnswers
+        case let key where key.hasPrefix(AppConstants.TopicKey.wrongAnswers + ":"): return progressStore.wrongAnswers
         default: return nil
         }
     }
@@ -39,6 +40,9 @@ struct QuestionView: View {
         case AppConstants.TopicKey.diemLiet: return "Câu điểm liệt"
         case AppConstants.TopicKey.bookmarks: return "Đánh dấu"
         case AppConstants.TopicKey.wrongAnswers: return "Câu sai"
+        case let key where key.hasPrefix(AppConstants.TopicKey.wrongAnswers + ":"):
+            let scopedKey = String(key.dropFirst(AppConstants.TopicKey.wrongAnswers.count + 1))
+            return "Câu sai — \(questionStore.topic(forKey: scopedKey)?.name ?? scopedKey)"
         default: return questionStore.topic(forKey: topicKey)?.name ?? topicKey
         }
     }
@@ -70,7 +74,7 @@ struct QuestionView: View {
         let shuffledAnswers = question.shuffledAnswers
         let isBookmarked = progressStore.isBookmarked(questionNo: question.no)
         let isLast = currentIndex + 1 >= allQuestions.count
-        let isSpecial = topicKey == AppConstants.TopicKey.diemLiet || topicKey == AppConstants.TopicKey.bookmarks || topicKey == AppConstants.TopicKey.wrongAnswers
+        let isSpecial = topicKey == AppConstants.TopicKey.diemLiet || topicKey == AppConstants.TopicKey.bookmarks || topicKey == AppConstants.TopicKey.wrongAnswers || topicKey.hasPrefix(AppConstants.TopicKey.wrongAnswers + ":")
 
         VStack(spacing: 0) {
             ScrollView {
@@ -156,10 +160,16 @@ struct QuestionView: View {
             }
         }
         .alert("Kết quả", isPresented: $showResultDialog) {
-            Button("Quay lại") { dismiss() }
+            Button("Xem lại") {
+                currentIndex = 0
+                selectedAnswerId = nil
+                isConfirmed = false
+            }
             Button("Làm lại") { resetQuiz() }
+            Button("Hoàn thành") { dismiss() }
         } message: {
-            Text("\(correctCount) / \(allQuestions.count) câu đúng")
+            let pct = allQuestions.count > 0 ? correctCount * 100 / allQuestions.count : 0
+            Text("\(correctCount)/\(allQuestions.count) câu đúng (\(pct)%)")
         }
         .onDisappear {
             progressStore.saveLastPosition(topicKey: topicKey, index: currentIndex)

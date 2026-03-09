@@ -31,8 +31,6 @@ struct HazardResult: Codable, Identifiable {
 
     // MARK: Coding
 
-    private nonisolated(unsafe) static let isoFormatter = ISO8601DateFormatter()
-
     enum CodingKeys: String, CodingKey {
         case date, totalScore, maxScore, situationCount, details
     }
@@ -54,7 +52,7 @@ struct HazardResult: Codable, Identifiable {
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         let dateString = try c.decode(String.self, forKey: .date)
-        date = Self.isoFormatter.date(from: dateString) ?? Date()
+        date = DateFormatters.iso8601.date(from: dateString) ?? Date()
         totalScore = try c.decode(Int.self, forKey: .totalScore)
         maxScore = try c.decode(Int.self, forKey: .maxScore)
         situationCount = try c.decode(Int.self, forKey: .situationCount)
@@ -63,7 +61,7 @@ struct HazardResult: Codable, Identifiable {
 
     func encode(to encoder: Encoder) throws {
         var c = encoder.container(keyedBy: CodingKeys.self)
-        try c.encode(Self.isoFormatter.string(from: date), forKey: .date)
+        try c.encode(DateFormatters.iso8601.string(from: date), forKey: .date)
         try c.encode(totalScore, forKey: .totalScore)
         try c.encode(maxScore, forKey: .maxScore)
         try c.encode(situationCount, forKey: .situationCount)

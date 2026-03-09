@@ -18,48 +18,72 @@ struct StudyMenuView: View {
 
                 VStack(spacing: 0) {
                     Button { openExam(.questionView(topicKey: AppConstants.TopicKey.allQuestions, startIndex: 0)) } label: {
-                        StudyRow(
+                        ListItemCard(
                             icon: "text.book.closed.fill",
                             title: "Tất cả câu hỏi",
                             subtitle: "\(totalQuestions) câu hỏi theo thứ tự",
-                            iconColor: .appPrimary
-                        )
+                            iconSize: 40, iconCornerRadius: 10, iconFontSize: 18,
+                            iconColor: .appPrimary,
+                            showCard: false
+                        ) {
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 12, weight: .semibold))
+                                .foregroundStyle(Color.appTextLight)
+                        }
                     }
 
                     Divider().padding(.horizontal, 16)
 
                     NavigationLink(destination: TopicsView()) {
-                        StudyRow(
+                        ListItemCard(
                             icon: "books.vertical.fill",
                             title: "Học theo chủ đề",
-                            subtitle: "5 chủ đề chính",
-                            iconColor: .topicKyThuat
-                        )
+                            subtitle: "\(questionStore.topics.count) chủ đề chính",
+                            iconSize: 40, iconCornerRadius: 10, iconFontSize: 18,
+                            iconColor: .topicKyThuat,
+                            showCard: false
+                        ) {
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 12, weight: .semibold))
+                                .foregroundStyle(Color.appTextLight)
+                        }
                     }
 
                     Divider().padding(.horizontal, 16)
 
                     Button { openExam(.flashcard(topicKey: AppConstants.TopicKey.allQuestions)) } label: {
-                        StudyRow(
+                        ListItemCard(
                             icon: "rectangle.on.rectangle.angled",
                             title: "Flashcard",
                             subtitle: "Lật thẻ ôn nhanh",
-                            iconColor: .topicSaHinh
-                        )
+                            iconSize: 40, iconCornerRadius: 10, iconFontSize: 18,
+                            iconColor: .topicSaHinh,
+                            showCard: false
+                        ) {
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 12, weight: .semibold))
+                                .foregroundStyle(Color.appTextLight)
+                        }
                     }
 
                     Divider().padding(.horizontal, 16)
 
-                    NavigationLink(destination: DiemLietTab()) {
-                        StudyRow(
+                    NavigationLink(destination: CriticalQuestionsTab()) {
+                        ListItemCard(
                             icon: "exclamationmark.triangle.fill",
                             title: "Câu điểm liệt",
                             subtitle: "\(dlMastery.correct)/\(dlMastery.total) đã đúng",
+                            iconSize: 40, iconCornerRadius: 10, iconFontSize: 18,
                             iconColor: .appError,
-                            trailing: dlMastery.correct == dlMastery.total && dlMastery.total > 0
-                                ? AnyView(StatusBadge(text: "Done", color: .appSuccess, fontSize: 10))
-                                : nil
-                        )
+                            showCard: false
+                        ) {
+                            if dlMastery.correct == dlMastery.total && dlMastery.total > 0 {
+                                StatusBadge(text: "Done", color: .appSuccess, fontSize: 10)
+                            }
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 12, weight: .semibold))
+                                .foregroundStyle(Color.appTextLight)
+                        }
                     }
                 }
                 .glassCard()
@@ -69,23 +93,35 @@ struct StudyMenuView: View {
 
                 VStack(spacing: 0) {
                     NavigationLink(destination: WrongAnswersView()) {
-                        StudyRow(
+                        ListItemCard(
                             icon: "xmark.circle.fill",
                             title: "Câu trả lời sai",
                             subtitle: wrongCount > 0 ? "\(wrongCount) câu cần ôn lại" : "Chưa có câu sai",
-                            iconColor: wrongCount > 0 ? .appWarning : .appTextLight
-                        )
+                            iconSize: 40, iconCornerRadius: 10, iconFontSize: 18,
+                            iconColor: wrongCount > 0 ? .appWarning : .appTextLight,
+                            showCard: false
+                        ) {
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 12, weight: .semibold))
+                                .foregroundStyle(Color.appTextLight)
+                        }
                     }
 
                     Divider().padding(.horizontal, 16)
 
                     NavigationLink(destination: BookmarksView()) {
-                        StudyRow(
+                        ListItemCard(
                             icon: "bookmark.fill",
                             title: "Đã đánh dấu",
                             subtitle: bookmarkCount > 0 ? "\(bookmarkCount) câu đã lưu" : "Chưa đánh dấu câu nào",
-                            iconColor: bookmarkCount > 0 ? .topicCauTao : .appTextLight
-                        )
+                            iconSize: 40, iconCornerRadius: 10, iconFontSize: 18,
+                            iconColor: bookmarkCount > 0 ? .topicCauTao : .appTextLight,
+                            showCard: false
+                        ) {
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 12, weight: .semibold))
+                                .foregroundStyle(Color.appTextLight)
+                        }
                     }
                 }
                 .glassCard()
@@ -95,23 +131,35 @@ struct StudyMenuView: View {
 
                 VStack(spacing: 0) {
                     NavigationLink(destination: TrafficSignsReferenceView()) {
-                        StudyRow(
+                        ListItemCard(
                             icon: "diamond.fill",
                             title: "Biển báo giao thông",
                             subtitle: "47 biển báo phổ biến",
-                            iconColor: .topicBienBao
-                        )
+                            iconSize: 40, iconCornerRadius: 10, iconFontSize: 18,
+                            iconColor: .topicBienBao,
+                            showCard: false
+                        ) {
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 12, weight: .semibold))
+                                .foregroundStyle(Color.appTextLight)
+                        }
                     }
 
                     Divider().padding(.horizontal, 16)
 
                     NavigationLink(destination: SpeedDistanceReferenceView()) {
-                        StudyRow(
+                        ListItemCard(
                             icon: "speedometer",
                             title: "Tốc độ & Quy tắc",
                             subtitle: "Tốc độ, khoảng cách, mức phạt",
-                            iconColor: .topicSaHinh
-                        )
+                            iconSize: 40, iconCornerRadius: 10, iconFontSize: 18,
+                            iconColor: .topicSaHinh,
+                            showCard: false
+                        ) {
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 12, weight: .semibold))
+                                .foregroundStyle(Color.appTextLight)
+                        }
                     }
                 }
                 .glassCard()
@@ -120,43 +168,5 @@ struct StudyMenuView: View {
             .padding(.bottom, 24)
         }
         .screenHeader("Ôn tập")
-    }
-}
-
-// MARK: - Study Row
-
-private struct StudyRow: View {
-    let icon: String
-    let title: String
-    let subtitle: String
-    var iconColor: Color = .appPrimary
-    var trailing: AnyView? = nil
-
-    var body: some View {
-        HStack(spacing: 14) {
-            IconBox(icon: icon, color: iconColor, size: 40, cornerRadius: 10, iconFontSize: 18)
-
-            VStack(alignment: .leading, spacing: 3) {
-                Text(title)
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundStyle(Color.appTextDark)
-                Text(subtitle)
-                    .font(.system(size: 13))
-                    .foregroundStyle(Color.appTextMedium)
-            }
-
-            Spacer(minLength: 4)
-
-            if let trailing {
-                trailing
-            }
-
-            Image(systemName: "chevron.right")
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundStyle(Color.appTextLight)
-        }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 14)
-        .contentShape(Rectangle())
     }
 }

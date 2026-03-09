@@ -96,7 +96,7 @@ private struct TopicCard: View {
         progress.total > 0 ? Double(progress.correct) / Double(progress.total) : 0
     }
 
-    private let columns = Array(repeating: GridItem(.flexible(), spacing: 6), count: 8)
+    private let columns = Array(repeating: GridItem(.flexible(), spacing: 6), count: 7)
 
     var body: some View {
         VStack(spacing: 0) {
@@ -191,7 +191,7 @@ private struct QuestionNumberCell: View {
             .font(.system(size: 13, weight: status == .unanswered ? .medium : .bold).monospacedDigit())
             .foregroundStyle(fgColor)
             .frame(maxWidth: .infinity)
-            .frame(height: 36)
+            .frame(height: 40)
             .background(bgColor.opacity(status == .unanswered ? 0.4 : 0.85))
             .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
             .overlay {

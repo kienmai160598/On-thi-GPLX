@@ -771,7 +771,7 @@ struct HazardVideoPlayer: UIViewControllerRepresentable {
 
     func makeUIViewController(context: Context) -> AVPlayerViewController {
         let vc = AVPlayerViewController()
-        vc.showsPlaybackControls = true
+        vc.showsPlaybackControls = false
         vc.videoGravity = .resizeAspectFill
         vc.allowsVideoFrameAnalysis = false
 

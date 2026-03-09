@@ -28,7 +28,7 @@ struct SettingsView: View {
                     PrimaryColorPicker(selected: $primaryColorKey)
 
                     // Font Size
-                    settingsLabel("Cỡ chữ")
+                    settingsLabel("Cỡ chữ câu hỏi")
                     FontSizeSlider(selected: $fontSize, primaryColorKey: primaryColorKey)
                     FontSizePreview(fontSize: fontSize)
 
@@ -448,7 +448,7 @@ struct FontSizeSlider: View {
                 step: 1
             )
             .tint(Color.primaryColor(for: primaryColorKey))
-            .accessibilityLabel("Cỡ chữ")
+            .accessibilityLabel("Cỡ chữ câu hỏi")
             .accessibilityValue(sizeLabel)
 
             Text("A")

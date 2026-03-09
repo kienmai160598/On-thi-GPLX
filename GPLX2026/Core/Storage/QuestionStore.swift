@@ -120,6 +120,10 @@ final class QuestionStore {
         case AppConstants.TopicKey.bookmarks, AppConstants.TopicKey.wrongAnswers:
             guard let ids = filterIds else { return [] }
             return allQuestions.filter { ids.contains($0.no) }
+        case let key where key.hasPrefix(AppConstants.TopicKey.wrongAnswers + ":"):
+            guard let ids = filterIds else { return [] }
+            let scopedTopicKey = String(key.dropFirst(AppConstants.TopicKey.wrongAnswers.count + 1))
+            return questionsForTopic(key: scopedTopicKey).filter { ids.contains($0.no) }
         default:
             return questionsForTopic(key: key)
         }

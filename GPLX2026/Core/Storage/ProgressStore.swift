@@ -309,6 +309,11 @@ final class ProgressStore {
         dataVersion += 1
     }
 
+    /// Returns the most recent exam result for a given fixed exam set, if any.
+    func latestResult(forExamSet setId: Int) -> ExamResult? {
+        examHistory.first { $0.examSetId == setId }
+    }
+
     // MARK: - Streak
 
     var streakCount: Int {

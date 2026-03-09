@@ -68,32 +68,21 @@ struct SimulationTab: View {
     @ViewBuilder
     private var simulationContent: some View {
         // CTA + Rules
-        VStack(spacing: 16) {
-            Button { openExam(.simulationExam(mode: .random)) } label: {
-                AppButton(icon: "play.fill", label: "Thi mô phỏng (20 câu)")
-            }
-            .buttonStyle(.plain)
-            .onGeometryChange(for: Bool.self) { proxy in
-                proxy.frame(in: .scrollView(axis: .vertical)).minY < 0
-            } action: { hidden in
+        ExamCTACard(
+            buttonLabel: "Thi mô phỏng (20 câu)",
+            rules: [
+                (icon: "photo.on.rectangle", text: "20 câu"),
+                (icon: "timer", text: "60s/câu"),
+                (icon: "checkmark.circle", text: "≥ 70%"),
+            ],
+            tip: "Quan sát kỹ hình ảnh, chú ý biển báo và vạch kẻ đường.",
+            action: { openExam(.simulationExam(mode: .random)) },
+            onButtonHidden: { hidden in
                 withAnimation(.easeInOut(duration: 0.2)) {
                     showNavPlay = hidden
                 }
             }
-
-            HStack(spacing: 16) {
-                RulePill(icon: "photo.on.rectangle", text: "20 câu")
-                RulePill(icon: "timer", text: "60s/câu")
-                RulePill(icon: "checkmark.circle", text: "≥ 70%")
-            }
-
-            Text("Quan sát kỹ hình ảnh, chú ý biển báo và vạch kẻ đường.")
-                .font(.system(size: 13))
-                .foregroundStyle(Color.appTextMedium)
-                .lineSpacing(3)
-        }
-        .padding(20)
-        .glassCard()
+        )
 
         // Stats
         if !progressStore.simulationHistory.isEmpty {
@@ -114,23 +103,13 @@ struct SimulationTab: View {
         if !progressStore.simulationHistory.isEmpty {
             SectionTitle(title: "Lịch sử mô phỏng")
 
-            VStack(spacing: 0) {
-                ForEach(Array(progressStore.simulationHistory.prefix(10).enumerated()), id: \.element.id) { index, result in
-                    NavigationLink(destination: SimulationHistoryDetailView(result: result)) {
-                        HistoryRow(
-                            passed: result.passed,
-                            scoreText: "\(result.score)/\(result.totalScenarios) đúng",
-                            date: result.date
-                        )
-                    }
-                    .buttonStyle(.plain)
-
-                    if index < min(progressStore.simulationHistory.count, 10) - 1 {
-                        Divider().padding(.leading, 60)
-                    }
-                }
-            }
-            .glassCard()
+            HistoryList(
+                results: progressStore.simulationHistory,
+                scoreText: { "\($0.score)/\($0.totalScenarios) đúng" },
+                passed: \.passed,
+                date: \.date,
+                destination: { SimulationHistoryDetailView(result: $0) }
+            )
         }
     }
 
@@ -139,25 +118,16 @@ struct SimulationTab: View {
     @ViewBuilder
     private var hazardContent: some View {
         // CTA + Rules
-        VStack(spacing: 16) {
-            Button { openExam(.hazardTest(mode: .exam)) } label: {
-                AppButton(icon: "play.fill", label: "Thi tình huống (10 video)")
-            }
-            .buttonStyle(.plain)
-
-            HStack(spacing: 16) {
-                RulePill(icon: "play.rectangle", text: "10 video")
-                RulePill(icon: "hand.tap", text: "Nhấn nhanh")
-                RulePill(icon: "star", text: "≥ 35/50")
-            }
-
-            Text("Nhấn sớm khi vừa thấy nguy hiểm để đạt điểm cao nhất.")
-                .font(.system(size: 13))
-                .foregroundStyle(Color.appTextMedium)
-                .lineSpacing(3)
-        }
-        .padding(20)
-        .glassCard()
+        ExamCTACard(
+            buttonLabel: "Thi tình huống (10 video)",
+            rules: [
+                (icon: "play.rectangle", text: "10 video"),
+                (icon: "hand.tap", text: "Nhấn nhanh"),
+                (icon: "star", text: "≥ 35/50"),
+            ],
+            tip: "Nhấn sớm khi vừa thấy nguy hiểm để đạt điểm cao nhất.",
+            action: { openExam(.hazardTest(mode: .exam)) }
+        )
 
         // Download
         HazardDownloadCard(videoCache: videoCache, showClearAlert: $showClearCacheAlert)
@@ -224,23 +194,13 @@ struct SimulationTab: View {
         if !progressStore.hazardHistory.isEmpty {
             SectionTitle(title: "Lịch sử tình huống")
 
-            VStack(spacing: 0) {
-                ForEach(Array(progressStore.hazardHistory.prefix(10).enumerated()), id: \.element.id) { index, result in
-                    NavigationLink(destination: HazardHistoryDetailView(result: result)) {
-                        HistoryRow(
-                            passed: result.passed,
-                            scoreText: "\(result.totalScore)/\(result.maxScore) điểm",
-                            date: result.date
-                        )
-                    }
-                    .buttonStyle(.plain)
-
-                    if index < min(progressStore.hazardHistory.count, 10) - 1 {
-                        Divider().padding(.leading, 60)
-                    }
-                }
-            }
-            .glassCard()
+            HistoryList(
+                results: progressStore.hazardHistory,
+                scoreText: { "\($0.totalScore)/\($0.maxScore) điểm" },
+                passed: \.passed,
+                date: \.date,
+                destination: { HazardHistoryDetailView(result: $0) }
+            )
         }
     }
 

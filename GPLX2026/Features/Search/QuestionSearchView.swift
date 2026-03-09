@@ -3,6 +3,7 @@ import SwiftUI
 struct QuestionSearchView: View {
     @Environment(QuestionStore.self) private var questionStore
     @Environment(ProgressStore.self) private var progressStore
+    @Environment(\.openExam) private var openExam
 
     @State private var searchText = ""
     @State private var selectedFilter: FilterOption = .all
@@ -81,7 +82,16 @@ struct QuestionSearchView: View {
                             let topicKey = Topic.keyForTopicId(question.topic)
                             let status = progressStore.answerStatus(topicKey: topicKey, questionNo: question.no)
 
-                            QuestionReviewRow(question: question, status: status, showStatusIcon: false)
+                            QuestionReviewRow(
+                                question: question,
+                                status: status,
+                                showStatusIcon: false,
+                                onNavigate: {
+                                    let topicQuestions = questionStore.questionsForTopic(key: topicKey)
+                                    let idx = topicQuestions.firstIndex(where: { $0.no == question.no }) ?? 0
+                                    openExam(.questionView(topicKey: topicKey, startIndex: idx))
+                                }
+                            )
 
                             if index < filteredQuestions.count - 1 {
                                 Divider().padding(.leading, 16)

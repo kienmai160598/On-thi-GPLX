@@ -3,7 +3,6 @@ import SwiftUI
 struct BadgesView: View {
     @Environment(QuestionStore.self) private var questionStore
     @Environment(ProgressStore.self) private var progressStore
-    @Environment(\.dismiss) private var dismiss
 
     private let columns = Array(repeating: GridItem(.flexible(), spacing: 12), count: 2)
 
@@ -14,29 +13,12 @@ struct BadgesView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
                 // Hero
-                VStack(spacing: 16) {
-                    ZStack {
-                        Circle()
-                            .fill(Color.appPrimary.opacity(0.1))
-                            .frame(width: 96, height: 96)
-                        Image(systemName: "trophy.fill")
-                            .font(.system(size: 44))
-                            .foregroundStyle(Color.appPrimary)
-                    }
-
-                    VStack(spacing: 6) {
-                        Text("\(unlocked)/\(badges.count)")
-                            .font(.system(size: 36, weight: .heavy).monospacedDigit())
-                            .foregroundStyle(Color.appTextDark)
-                            .contentTransition(.numericText())
-                        Text("thành tích đã mở khoá")
-                            .font(.system(size: 15))
-                            .foregroundStyle(Color.appTextMedium)
-                    }
-                }
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 28)
-                .glassCard()
+                DetailHero(
+                    icon: "trophy.fill",
+                    iconColor: .appPrimary,
+                    title: "\(unlocked)/\(badges.count)",
+                    subtitle: "thành tích đã mở khoá"
+                )
 
                 // Badge grid
                 LazyVGrid(columns: columns, spacing: 12) {
@@ -49,12 +31,6 @@ struct BadgesView: View {
             .padding(.bottom, 24)
         }
         .screenHeader("Thành tích")
-        .navigationBarBackButtonHidden(true)
-        .toolbar {
-            ToolbarItem(placement: .navigationBarTrailing) {
-                CloseButton { dismiss() }
-            }
-        }
     }
 }
 

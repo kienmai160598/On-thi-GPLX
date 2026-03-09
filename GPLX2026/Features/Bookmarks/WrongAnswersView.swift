@@ -57,7 +57,7 @@ private struct WrongTopicCard: View {
 
             Spacer()
 
-            Button { openExam(.questionView(topicKey: AppConstants.TopicKey.wrongAnswers, startIndex: 0)) } label: {
+            Button { openExam(.questionView(topicKey: "\(AppConstants.TopicKey.wrongAnswers):\(topic.key)", startIndex: 0)) } label: {
                 Text("Luyện")
                     .font(.system(size: 13, weight: .bold))
                     .foregroundStyle(Color.appOnPrimary)

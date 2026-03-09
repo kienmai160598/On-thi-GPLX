@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct DiemLietTab: View {
+struct CriticalQuestionsTab: View {
     @Environment(QuestionStore.self) private var questionStore
     @Environment(ProgressStore.self) private var progressStore
     @Environment(\.openExam) private var openExam
@@ -121,7 +121,12 @@ struct DiemLietTab: View {
                 Spacer().frame(height: 20)
             }
         }
-        .searchable(text: $searchText, prompt: "Tìm câu hỏi...")
+        .searchable(
+            text: $searchText,
+            prompt: selectedTopicKey != nil
+                ? "Tìm trong \(byTopic.first(where: { $0.topic.key == selectedTopicKey })?.topic.shortName ?? "chủ đề")..."
+                : "Tìm câu hỏi..."
+        )
         .screenHeader("Điểm liệt")
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
@@ -134,26 +139,5 @@ struct DiemLietTab: View {
                 }
             }
         }
-    }
-}
-
-// MARK: - Filter Chip
-
-private struct FilterChip: View {
-    let label: String
-    let isSelected: Bool
-    let action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            Text(label)
-                .font(.system(size: 13, weight: isSelected ? .bold : .medium))
-                .foregroundStyle(isSelected ? Color.white : Color.appTextMedium)
-                .padding(.horizontal, 14)
-                .padding(.vertical, 8)
-                .background(isSelected ? Color.appPrimary : Color.appDivider)
-                .clipShape(Capsule())
-        }
-        .buttonStyle(.plain)
     }
 }

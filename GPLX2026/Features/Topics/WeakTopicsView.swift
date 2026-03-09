@@ -18,7 +18,12 @@ struct WeakTopicsView: View {
                         .padding(.bottom, 10)
 
                     ForEach(Array(weakList.enumerated()), id: \.element.topic.id) { _, item in
-                        Button { openExam(.questionView(topicKey: item.topic.key, startIndex: 0)) } label: {
+                        Button {
+                            let progress = progressStore.topicProgress(for: item.topic.key)
+                            let topicQs = questionStore.questionsForTopic(key: item.topic.key)
+                            let idx = topicQs.firstIndex(where: { progress[$0.no] == nil }) ?? 0
+                            openExam(.questionView(topicKey: item.topic.key, startIndex: idx))
+                        } label: {
                             TopicAccuracyRow(item: item)
                         }
                         .buttonStyle(.plain)
@@ -32,7 +37,12 @@ struct WeakTopicsView: View {
                         .padding(.bottom, 10)
 
                     ForEach(Array(strongList.enumerated()), id: \.element.topic.id) { _, item in
-                        Button { openExam(.questionView(topicKey: item.topic.key, startIndex: 0)) } label: {
+                        Button {
+                            let progress = progressStore.topicProgress(for: item.topic.key)
+                            let topicQs = questionStore.questionsForTopic(key: item.topic.key)
+                            let idx = topicQs.firstIndex(where: { progress[$0.no] == nil }) ?? 0
+                            openExam(.questionView(topicKey: item.topic.key, startIndex: idx))
+                        } label: {
                             TopicAccuracyRow(item: item)
                         }
                         .buttonStyle(.plain)
@@ -46,7 +56,9 @@ struct WeakTopicsView: View {
                         .padding(.bottom, 10)
 
                     ForEach(Array(notStarted.enumerated()), id: \.element.topic.id) { _, item in
-                        Button { openExam(.questionView(topicKey: item.topic.key, startIndex: 0)) } label: {
+                        Button {
+                            openExam(.questionView(topicKey: item.topic.key, startIndex: 0))
+                        } label: {
                             ListItemCard(
                                 icon: item.topic.sfSymbol,
                                 title: item.topic.name,

@@ -94,20 +94,29 @@ struct FlashcardView: View {
             Spacer()
         }
         .safeAreaInset(edge: .bottom) {
-            ExamBottomBar(
-                currentIndex: currentIndex,
-                totalCount: totalQuestions,
-                answeredIndices: Set(0..<currentIndex),
-                nextLabel: "Đã biết",
-                prevLabel: "Chưa biết",
-                prevIcon: "xmark",
-                isNextDisabled: !isFlipped,
-                isPrevDisabled: !isFlipped,
-                showPrev: true,
-                onPrev: { markUnknown() },
-                onNext: { markKnown() },
-                onSelectIndex: { _ in }
-            )
+            VStack(spacing: 6) {
+                if !isFlipped {
+                    Text("Lật thẻ để trả lời")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(Color.appTextLight)
+                        .transition(.opacity)
+                }
+
+                ExamBottomBar(
+                    currentIndex: currentIndex,
+                    totalCount: totalQuestions,
+                    answeredIndices: Set(0..<currentIndex),
+                    nextLabel: "Đã biết",
+                    prevLabel: "Chưa biết",
+                    prevIcon: "xmark",
+                    isNextDisabled: !isFlipped,
+                    isPrevDisabled: !isFlipped,
+                    showPrev: true,
+                    onPrev: { markUnknown() },
+                    onNext: { markKnown() },
+                    onSelectIndex: { _ in }
+                )
+            }
         }
     }
 

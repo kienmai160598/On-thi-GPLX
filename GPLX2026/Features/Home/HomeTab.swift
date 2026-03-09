@@ -50,7 +50,7 @@ private struct ProgressHeroCard: View {
         )
         let totalCorrect = status.totalCorrect
         let totalQuestions = status.totalQuestions
-        let mastery = totalQuestions > 0 ? Double(totalCorrect) / Double(totalQuestions) : 0
+        let mastery = Double(status.percentage) / 100.0
         let streak = progressStore.streakCount
 
         let statusColor: Color = switch status.level {
@@ -110,7 +110,7 @@ private struct ProgressHeroCard: View {
                         .font(.system(size: 44, weight: .heavy).monospacedDigit())
                         .foregroundStyle(Color.appTextDark)
                         .contentTransition(.numericText())
-                    Text("phần trăm")
+                    Text("% sẵn sàng")
                         .font(.system(size: 13, weight: .medium))
                         .foregroundStyle(Color.appTextMedium)
                 }

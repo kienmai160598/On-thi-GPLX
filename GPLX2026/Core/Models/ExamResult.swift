@@ -14,6 +14,7 @@ struct ExamResult: Codable, Identifiable {
     let timeUsedSeconds: Int
     let wrongDiemLiet: Int
     let questionDetails: [QuestionDetail]
+    let examSetId: Int?
 
     /// Accuracy as a fraction (0.0 ... 1.0).
     var accuracy: Double {
@@ -31,10 +32,8 @@ struct ExamResult: Codable, Identifiable {
 
     // MARK: Coding
 
-    private nonisolated(unsafe) static let isoFormatter = ISO8601DateFormatter()
-
     enum CodingKeys: String, CodingKey {
-        case date, score, totalQuestions, passed, timeUsedSeconds, wrongDiemLiet, questionDetails
+        case date, score, totalQuestions, passed, timeUsedSeconds, wrongDiemLiet, questionDetails, examSetId
     }
 
     init(
@@ -44,7 +43,8 @@ struct ExamResult: Codable, Identifiable {
         passed: Bool,
         timeUsedSeconds: Int,
         wrongDiemLiet: Int,
-        questionDetails: [QuestionDetail] = []
+        questionDetails: [QuestionDetail] = [],
+        examSetId: Int? = nil
     ) {
         self.date = date
         self.score = score
@@ -53,29 +53,32 @@ struct ExamResult: Codable, Identifiable {
         self.timeUsedSeconds = timeUsedSeconds
         self.wrongDiemLiet = wrongDiemLiet
         self.questionDetails = questionDetails
+        self.examSetId = examSetId
     }
 
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         let dateString = try c.decode(String.self, forKey: .date)
-        date = Self.isoFormatter.date(from: dateString) ?? Date()
+        date = DateFormatters.iso8601.date(from: dateString) ?? Date()
         score = try c.decode(Int.self, forKey: .score)
         totalQuestions = try c.decode(Int.self, forKey: .totalQuestions)
         passed = try c.decode(Bool.self, forKey: .passed)
         timeUsedSeconds = try c.decode(Int.self, forKey: .timeUsedSeconds)
         wrongDiemLiet = try c.decode(Int.self, forKey: .wrongDiemLiet)
         questionDetails = (try? c.decode([QuestionDetail].self, forKey: .questionDetails)) ?? []
+        examSetId = try? c.decode(Int.self, forKey: .examSetId)
     }
 
     func encode(to encoder: Encoder) throws {
         var c = encoder.container(keyedBy: CodingKeys.self)
-        try c.encode(Self.isoFormatter.string(from: date), forKey: .date)
+        try c.encode(DateFormatters.iso8601.string(from: date), forKey: .date)
         try c.encode(score, forKey: .score)
         try c.encode(totalQuestions, forKey: .totalQuestions)
         try c.encode(passed, forKey: .passed)
         try c.encode(timeUsedSeconds, forKey: .timeUsedSeconds)
         try c.encode(wrongDiemLiet, forKey: .wrongDiemLiet)
         try c.encode(questionDetails, forKey: .questionDetails)
+        try c.encodeIfPresent(examSetId, forKey: .examSetId)
     }
 
     // MARK: - Factory
@@ -84,7 +87,8 @@ struct ExamResult: Codable, Identifiable {
     static func calculate(
         questions: [Question],
         answers: [Int: Int],
-        timeUsedSeconds: Int
+        timeUsedSeconds: Int,
+        examSetId: Int? = nil
     ) -> ExamResult {
         var correctCount = 0
         var wrongDiemLietCount = 0
@@ -112,7 +116,8 @@ struct ExamResult: Codable, Identifiable {
             passed: passed,
             timeUsedSeconds: timeUsedSeconds,
             wrongDiemLiet: wrongDiemLietCount,
-            questionDetails: details
+            questionDetails: details,
+            examSetId: examSetId
         )
     }
 }
