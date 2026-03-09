@@ -24,6 +24,7 @@ struct HazardTestView: View {
     @State private var hazardResult: HazardResult?
     @State private var playerState = PlayerState()
     @State private var scoreRevealed = false
+    @State private var restartToken = 0
 
     private var isLast: Bool { currentIndex + 1 >= situations.count }
     private var isPractice: Bool {
@@ -225,7 +226,7 @@ struct HazardTestView: View {
                 .animation(.spring(duration: 0.4, bounce: 0.1), value: playerState.isFinished && scoreRevealed)
                 .animation(.easeOut(duration: 0.15), value: currentIndex)
             }
-            .id(currentIndex)
+            .id("\(currentIndex)-\(restartToken)")
 
             // MARK: Bottom Navigation
             HStack(spacing: 10) {
@@ -321,6 +322,7 @@ struct HazardTestView: View {
         tapTimes.removeValue(forKey: currentIndex)
         playerState = PlayerState()
         scoreRevealed = false
+        restartToken += 1
     }
 
     private func goToPrevious() {

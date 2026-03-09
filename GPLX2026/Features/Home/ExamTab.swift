@@ -7,6 +7,7 @@ struct ExamTab: View {
     @AppStorage("appPrimaryColor") private var primaryColorKey = "default"
     @State private var selectedSegment = 0
     @State private var showNavPlay = false
+    @State private var showAllExamSets = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -82,10 +83,11 @@ struct ExamTab: View {
                 }
 
                 fixedExamSets
+                    .padding(.top, 4)
 
                 if !progressStore.examHistory.isEmpty {
                     SectionTitle(title: "Lịch sử")
-                        .padding(.top, 10)
+                        .padding(.top, 6)
 
                     HistoryList(
                         results: progressStore.examHistory,
@@ -106,57 +108,113 @@ struct ExamTab: View {
 
     @ViewBuilder
     private var fixedExamSets: some View {
-        SectionTitle(title: "Đề thi cố định")
-            .padding(.top, 10)
+        let completedSets = progressStore.completedExamSets
+        let completedCount = completedSets.count
+        let visibleSets = showAllExamSets ? 20 : 6
 
         VStack(spacing: 0) {
-            let completedSets = progressStore.completedExamSets
-
-            ForEach(Array(stride(from: 1, through: 20, by: 2)), id: \.self) { rowStart in
-                if rowStart > 1 {
-                    Divider().padding(.horizontal, 16)
+            // Header (tappable to expand/collapse)
+            Button {
+                withAnimation(.easeOut(duration: 0.25)) {
+                    showAllExamSets.toggle()
                 }
+            } label: {
+                HStack(spacing: 8) {
+                    Text("ĐỀ THI CỐ ĐỊNH")
+                        .font(.system(size: 13, weight: .bold))
+                        .foregroundStyle(Color.appTextMedium)
+                        .tracking(0.5)
 
-                HStack(spacing: 0) {
-                    ForEach([rowStart, rowStart + 1], id: \.self) { setId in
-                        if setId > rowStart {
-                            Divider().frame(height: 56)
-                        }
+                    if completedCount > 0 {
+                        Text("\(completedCount)/20")
+                            .font(.system(size: 12, weight: .semibold).monospacedDigit())
+                            .foregroundStyle(Color.appSuccess)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 2)
+                            .background(Color.appSuccess.opacity(0.1))
+                            .clipShape(Capsule())
+                    }
 
-                        let isCompleted = completedSets.contains(setId)
-                        let latestResult = isCompleted ? progressStore.latestResult(forExamSet: setId) : nil
+                    Spacer()
 
-                        Button { openExam(.mockExam(examSetId: setId)) } label: {
-                            HStack(spacing: 10) {
-                                Text("Đề \(setId)")
-                                    .font(.system(size: 15, weight: .semibold).monospacedDigit())
-                                    .foregroundStyle(Color.appTextDark)
+                    Image(systemName: showAllExamSets ? "chevron.up" : "chevron.down")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(Color.appTextLight)
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
 
-                                Spacer()
+            Divider().padding(.horizontal, 16)
 
-                                if isCompleted {
-                                    if let result = latestResult {
-                                        Text("\(result.score)/\(result.totalQuestions)")
-                                            .font(.system(size: 13, weight: .medium).monospacedDigit())
-                                            .foregroundStyle(result.passed ? Color.appSuccess : Color.appError)
-                                    }
-                                    Image(systemName: "checkmark.circle.fill")
-                                        .font(.system(size: 16))
-                                        .foregroundStyle(Color.appSuccess)
-                                } else {
-                                    Image(systemName: "chevron.right")
-                                        .font(.system(size: 11, weight: .semibold))
-                                        .foregroundStyle(Color.appTextLight)
+            // Grid of exam sets
+            LazyVGrid(columns: [
+                GridItem(.flexible(), spacing: 0),
+                GridItem(.flexible(), spacing: 0),
+            ], spacing: 0) {
+                ForEach(1...visibleSets, id: \.self) { setId in
+                    let isCompleted = completedSets.contains(setId)
+                    let latestResult = isCompleted ? progressStore.latestResult(forExamSet: setId) : nil
+
+                    Button { openExam(.mockExam(examSetId: setId)) } label: {
+                        HStack(spacing: 8) {
+                            Text("Đề \(setId)")
+                                .font(.system(size: 15, weight: .semibold).monospacedDigit())
+                                .foregroundStyle(Color.appTextDark)
+
+                            Spacer()
+
+                            if isCompleted {
+                                if let result = latestResult {
+                                    Text("\(result.score)/\(result.totalQuestions)")
+                                        .font(.system(size: 12, weight: .medium).monospacedDigit())
+                                        .foregroundStyle(result.passed ? Color.appSuccess : Color.appError)
                                 }
+                                Image(systemName: "checkmark.circle.fill")
+                                    .font(.system(size: 14))
+                                    .foregroundStyle(Color.appSuccess)
+                            } else {
+                                Image(systemName: "chevron.right")
+                                    .font(.system(size: 10, weight: .semibold))
+                                    .foregroundStyle(Color.appTextLight)
                             }
-                            .padding(.horizontal, 16)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .frame(height: 56)
-                            .contentShape(Rectangle())
                         }
-                        .buttonStyle(.plain)
+                        .padding(.horizontal, 14)
+                        .frame(height: 48)
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .overlay {
+                // Grid dividers
+                VStack(spacing: 0) {
+                    ForEach(0..<(visibleSets / 2), id: \.self) { row in
+                        if row > 0 {
+                            Divider().padding(.horizontal, 16)
+                        }
+                        Spacer().frame(height: 48)
                     }
                 }
+            }
+
+            if !showAllExamSets {
+                Divider().padding(.horizontal, 16)
+                Button {
+                    withAnimation(.easeOut(duration: 0.25)) {
+                        showAllExamSets = true
+                    }
+                } label: {
+                    Text("Xem tất cả 20 đề")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(Color.appPrimary)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 40)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
             }
         }
         .glassCard()

@@ -37,7 +37,9 @@ struct HomeView: View {
         .fullScreenCover(item: $activeExam, onDismiss: {
             if let next = pendingExam {
                 pendingExam = nil
-                activeExam = next
+                DispatchQueue.main.async {
+                    activeExam = next
+                }
             }
         }) { exam in
             NavigationStack {

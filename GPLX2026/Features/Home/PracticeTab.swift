@@ -53,36 +53,68 @@ struct PracticeTab: View {
         let topicStats = progressStore.weakTopics(topics: theoryTopics)
             .sorted { $0.topic.topicIds.first ?? 0 < $1.topic.topicIds.first ?? 0 }
         let theoryCount = theoryTopics.reduce(0) { $0 + $1.questionCount }
+        let totalCorrect = topicStats.reduce(0) { $0 + $1.correct }
+        let overallPct = theoryCount > 0 ? Int(Double(totalCorrect) / Double(theoryCount) * 100) : 0
 
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
+                // Quick actions
+                HStack(spacing: 10) {
+                    Button {
+                        openExam(.questionView(topicKey: AppConstants.TopicKey.allQuestions, startIndex: 0))
+                    } label: {
+                        HStack(spacing: 8) {
+                            Image(systemName: "text.book.closed.fill")
+                                .font(.system(size: 14))
+                            Text("Tất cả (\(theoryCount))")
+                                .font(.system(size: 14, weight: .semibold))
+                        }
+                        .foregroundStyle(Color.appPrimary)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 44)
+                        .glassCard(cornerRadius: 22)
+                    }
+
+                    Button {
+                        openExam(.flashcard(topicKey: AppConstants.TopicKey.allQuestions))
+                    } label: {
+                        HStack(spacing: 8) {
+                            Image(systemName: "rectangle.on.rectangle.angled")
+                                .font(.system(size: 14))
+                            Text("Lật thẻ")
+                                .font(.system(size: 14, weight: .semibold))
+                        }
+                        .foregroundStyle(Color.appPrimary)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 44)
+                        .glassCard(cornerRadius: 22)
+                    }
+
+                    // Overall progress mini
+                    VStack(spacing: 2) {
+                        Text("\(overallPct)%")
+                            .font(.system(size: 16, weight: .heavy).monospacedDigit())
+                            .foregroundStyle(overallPct >= 80 ? Color.appSuccess : overallPct >= 50 ? Color.appWarning : Color.appTextMedium)
+                        Text("tổng")
+                            .font(.system(size: 10, weight: .medium))
+                            .foregroundStyle(Color.appTextLight)
+                    }
+                    .frame(width: 56, height: 44)
+                    .glassCard(cornerRadius: 12)
+                }
+
+                // Topic list
                 VStack(spacing: 0) {
                     ForEach(Array(topicStats.enumerated()), id: \.element.topic.id) { index, item in
-                        NavigationLink(destination: TopicDetailView(item: item)) {
-                            PracticeTopicRow(item: item)
-                        }
-                        .buttonStyle(.plain)
+                        PracticeTopicRow(item: item, onFlashcard: {
+                            openExam(.flashcard(topicKey: item.topic.key))
+                        }, onStudy: {
+                            openExam(.questionView(topicKey: item.topic.key, startIndex: 0))
+                        })
 
                         if index < topicStats.count - 1 {
                             Divider().padding(.horizontal, 16)
                         }
-                    }
-                }
-                .glassCard()
-
-                Button {
-                    openExam(.questionView(topicKey: AppConstants.TopicKey.allQuestions, startIndex: 0))
-                } label: {
-                    ListItemCard(
-                        icon: "text.book.closed.fill",
-                        title: "Tất cả câu hỏi",
-                        subtitle: "\(theoryCount) câu lý thuyết",
-                        iconSize: 40, iconCornerRadius: 10, iconFontSize: 18,
-                        iconColor: .appPrimary
-                    ) {
-                        Image(systemName: "chevron.right")
-                            .font(.system(size: 12, weight: .semibold))
-                            .foregroundStyle(Color.appTextLight)
                     }
                 }
                 .glassCard()
@@ -165,6 +197,7 @@ struct PracticeTab: View {
                         }
                     }
                     .buttonStyle(.plain)
+                    .glassCard()
                 }
             }
             .padding(.horizontal, 20)
@@ -251,6 +284,8 @@ struct PracticeTab: View {
 
 private struct PracticeTopicRow: View {
     let item: (topic: Topic, accuracy: Double, correct: Int, attempted: Int, total: Int)
+    var onFlashcard: (() -> Void)? = nil
+    var onStudy: (() -> Void)? = nil
 
     private var statusInfo: (label: String, color: Color) {
         if item.attempted == 0 {
@@ -267,7 +302,7 @@ private struct PracticeTopicRow: View {
     var body: some View {
         let fraction = item.total > 0 ? Double(item.correct) / Double(item.total) : 0
 
-        HStack(spacing: 14) {
+        HStack(spacing: 12) {
             ZStack {
                 Circle()
                     .stroke(Color.appDivider, lineWidth: 4)
@@ -276,38 +311,61 @@ private struct PracticeTopicRow: View {
                     .stroke(statusInfo.color, style: StrokeStyle(lineWidth: 4, lineCap: .round))
                     .rotationEffect(.degrees(-90))
                 Image(systemName: item.topic.sfSymbol)
-                    .font(.system(size: 18))
+                    .font(.system(size: 17))
                     .foregroundStyle(statusInfo.color)
                     .symbolRenderingMode(.hierarchical)
             }
-            .frame(width: 48, height: 48)
+            .frame(width: 44, height: 44)
 
-            VStack(alignment: .leading, spacing: 5) {
-                Text(item.topic.name)
-                    .font(.system(size: 16, weight: .bold))
-                    .foregroundStyle(Color.appTextDark)
-                    .lineLimit(1)
-
+            VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 6) {
+                    Text(item.topic.name)
+                        .font(.system(size: 15, weight: .bold))
+                        .foregroundStyle(Color.appTextDark)
+                        .lineLimit(1)
+                    StatusBadge(text: statusInfo.label, color: statusInfo.color, fontSize: 10)
+                }
+
+                HStack(spacing: 4) {
                     Text("\(item.correct)/\(item.total)")
                         .font(.system(size: 13, weight: .semibold).monospacedDigit())
                         .foregroundStyle(statusInfo.color)
                     Text("câu đúng")
-                        .font(.system(size: 13))
+                        .font(.system(size: 12))
                         .foregroundStyle(Color.appTextLight)
                 }
             }
 
             Spacer(minLength: 4)
 
-            StatusBadge(text: statusInfo.label, color: statusInfo.color, fontSize: 11)
+            if let onFlashcard {
+                Button {
+                    Haptics.impact(.light)
+                    onFlashcard()
+                } label: {
+                    Image(systemName: "rectangle.on.rectangle.angled")
+                        .font(.system(size: 14))
+                        .foregroundStyle(Color.appPrimary)
+                        .frame(width: 36, height: 36)
+                        .background(Color.appPrimary.opacity(0.08))
+                        .clipShape(RoundedRectangle(cornerRadius: 10))
+                }
+            }
 
-            Image(systemName: "chevron.right")
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundStyle(Color.appTextLight)
+            Button {
+                Haptics.impact(.light)
+                onStudy?()
+            } label: {
+                Image(systemName: "play.fill")
+                    .font(.system(size: 12))
+                    .foregroundStyle(Color.appPrimary)
+                    .frame(width: 36, height: 36)
+                    .background(Color.appPrimary.opacity(0.08))
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
+            }
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 14)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
         .contentShape(Rectangle())
     }
 }
