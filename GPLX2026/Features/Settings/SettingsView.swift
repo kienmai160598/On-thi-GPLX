@@ -12,6 +12,7 @@ struct SettingsView: View {
     @State private var showResetSheet = false
     @State private var resetToast: String?
     @State private var showAppearanceSheet = false
+    @State private var resetConfirmation: ResetAction?
 
     var body: some View {
         ScrollView {
@@ -158,29 +159,17 @@ struct SettingsView: View {
 
                 settingsSection("Dữ liệu") {
                     VStack(spacing: 0) {
-                        resetRow(icon: "book.closed", title: "Tiến độ học", subtitle: "Xoá tiến độ tất cả chủ đề") {
-                            progressStore.clearTopicProgress()
-                        }
+                        resetRow(icon: "book.closed", title: "Tiến độ học", subtitle: "Xoá tiến độ tất cả chủ đề", action: .topicProgress)
                         Divider().padding(.horizontal, 16)
-                        resetRow(icon: "doc.text", title: "Lịch sử thi thử", subtitle: "Xoá kết quả thi thử") {
-                            progressStore.clearExamHistory()
-                        }
+                        resetRow(icon: "doc.text", title: "Lịch sử thi thử", subtitle: "Xoá kết quả thi thử", action: .examHistory)
                         Divider().padding(.horizontal, 16)
-                        resetRow(icon: "photo.on.rectangle", title: "Lịch sử mô phỏng", subtitle: "Xoá kết quả mô phỏng") {
-                            progressStore.clearSimulationHistory()
-                        }
+                        resetRow(icon: "photo.on.rectangle", title: "Lịch sử mô phỏng", subtitle: "Xoá kết quả mô phỏng", action: .simulationHistory)
                         Divider().padding(.horizontal, 16)
-                        resetRow(icon: "play.rectangle", title: "Lịch sử tình huống", subtitle: "Xoá kết quả tình huống") {
-                            progressStore.clearHazardHistory()
-                        }
+                        resetRow(icon: "play.rectangle", title: "Lịch sử tình huống", subtitle: "Xoá kết quả tình huống", action: .hazardHistory)
                         Divider().padding(.horizontal, 16)
-                        resetRow(icon: "bookmark", title: "Đánh dấu", subtitle: "Xoá tất cả đánh dấu") {
-                            progressStore.clearBookmarks()
-                        }
+                        resetRow(icon: "bookmark", title: "Đánh dấu", subtitle: "Xoá tất cả đánh dấu", action: .bookmarks)
                         Divider().padding(.horizontal, 16)
-                        resetRow(icon: "xmark.circle", title: "Câu sai", subtitle: "Xoá danh sách câu sai") {
-                            progressStore.clearWrongAnswers()
-                        }
+                        resetRow(icon: "xmark.circle", title: "Câu sai", subtitle: "Xoá danh sách câu sai", action: .wrongAnswers)
                     }
                     .glassCard()
 
@@ -280,6 +269,23 @@ struct SettingsView: View {
         } message: {
             Text("Toàn bộ tiến độ học, lịch sử thi, đánh dấu và câu sai sẽ bị xoá vĩnh viễn.")
         }
+        .alert(
+            resetConfirmation?.title ?? "",
+            isPresented: Binding(
+                get: { resetConfirmation != nil },
+                set: { if !$0 { resetConfirmation = nil } }
+            )
+        ) {
+            Button("Huỷ", role: .cancel) { resetConfirmation = nil }
+            Button("Xoá", role: .destructive) {
+                if let action = resetConfirmation {
+                    performReset(action)
+                }
+                resetConfirmation = nil
+            }
+        } message: {
+            Text(resetConfirmation?.message ?? "")
+        }
         .sheet(isPresented: $showAppearanceSheet) {
             BackgroundAnimationSheet(
                 selected: $backgroundAnimation,
@@ -330,6 +336,30 @@ struct SettingsView: View {
         }
     }
 
+    private func performReset(_ action: ResetAction) {
+        switch action {
+        case .topicProgress:
+            progressStore.clearTopicProgress()
+            showToast("Đã xoá tiến độ học")
+        case .examHistory:
+            progressStore.clearExamHistory()
+            showToast("Đã xoá lịch sử thi thử")
+        case .simulationHistory:
+            progressStore.clearSimulationHistory()
+            showToast("Đã xoá lịch sử mô phỏng")
+        case .hazardHistory:
+            progressStore.clearHazardHistory()
+            showToast("Đã xoá lịch sử tình huống")
+        case .bookmarks:
+            progressStore.clearBookmarks()
+            showToast("Đã xoá đánh dấu")
+        case .wrongAnswers:
+            progressStore.clearWrongAnswers()
+            showToast("Đã xoá câu sai")
+        }
+        Haptics.notification(.success)
+    }
+
     // MARK: - Section Builder
 
     @ViewBuilder
@@ -355,11 +385,9 @@ struct SettingsView: View {
     // MARK: - Reset Row
 
     @ViewBuilder
-    private func resetRow(icon: String, title: String, subtitle: String, action: @escaping () -> Void) -> some View {
+    private func resetRow(icon: String, title: String, subtitle: String, action: ResetAction) -> some View {
         Button {
-            action()
-            Haptics.notification(.success)
-            showToast("Đã xoá \(title.lowercased())")
+            resetConfirmation = action
         } label: {
             HStack(spacing: 12) {
                 Image(systemName: icon)
@@ -439,6 +467,50 @@ struct SettingsView: View {
         .buttonStyle(.plain)
         .accessibilityLabel("\(label): \(value)")
         .accessibilityHint("Nhấn để sao chép")
+    }
+}
+
+// MARK: - Reset Action
+
+enum ResetAction: Identifiable {
+    case topicProgress
+    case examHistory
+    case simulationHistory
+    case hazardHistory
+    case bookmarks
+    case wrongAnswers
+
+    var id: String {
+        switch self {
+        case .topicProgress: return "topicProgress"
+        case .examHistory: return "examHistory"
+        case .simulationHistory: return "simulationHistory"
+        case .hazardHistory: return "hazardHistory"
+        case .bookmarks: return "bookmarks"
+        case .wrongAnswers: return "wrongAnswers"
+        }
+    }
+
+    var title: String {
+        switch self {
+        case .topicProgress: return "Xoá tiến độ học?"
+        case .examHistory: return "Xoá lịch sử thi thử?"
+        case .simulationHistory: return "Xoá lịch sử mô phỏng?"
+        case .hazardHistory: return "Xoá lịch sử tình huống?"
+        case .bookmarks: return "Xoá tất cả đánh dấu?"
+        case .wrongAnswers: return "Xoá danh sách câu sai?"
+        }
+    }
+
+    var message: String {
+        switch self {
+        case .topicProgress: return "Tiến độ tất cả chủ đề sẽ bị xoá vĩnh viễn."
+        case .examHistory: return "Toàn bộ kết quả thi thử sẽ bị xoá vĩnh viễn."
+        case .simulationHistory: return "Toàn bộ kết quả mô phỏng sẽ bị xoá vĩnh viễn."
+        case .hazardHistory: return "Toàn bộ kết quả tình huống sẽ bị xoá vĩnh viễn."
+        case .bookmarks: return "Tất cả câu hỏi đã đánh dấu sẽ bị xoá."
+        case .wrongAnswers: return "Danh sách câu sai sẽ bị xoá."
+        }
     }
 }
 
