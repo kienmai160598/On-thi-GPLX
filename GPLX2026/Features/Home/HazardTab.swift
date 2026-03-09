@@ -110,6 +110,7 @@ struct HazardTab: View {
             .padding(.top, 16)
             .padding(.bottom, 32)
         }
+        .glassContainer()
         .screenHeader("Tình huống")
         .alert("Xoá cache video?", isPresented: $showClearCacheAlert) {
             Button("Huỷ", role: .cancel) {}
@@ -167,6 +168,7 @@ private struct HazardDownloadCard: View {
                     Image(systemName: allComplete ? "checkmark.icloud.fill" : "icloud.and.arrow.down")
                         .font(.system(size: 16))
                         .foregroundStyle(allComplete ? Color.appSuccess : Color.appPrimary)
+                        .symbolRenderingMode(.hierarchical)
                     Text("Video offline")
                         .font(.system(size: 15, weight: .bold))
                         .foregroundStyle(Color.appTextDark)

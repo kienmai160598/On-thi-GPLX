@@ -152,6 +152,15 @@ extension View {
     func glassCard(cornerRadius: CGFloat = 16, interactive: Bool = true) -> some View {
         modifier(GlassCard(cornerRadius: cornerRadius, interactive: interactive))
     }
+
+    @ViewBuilder
+    func glassContainer() -> some View {
+        if #available(iOS 26.0, *) {
+            GlassEffectContainer { self }
+        } else {
+            self
+        }
+    }
 }
 
 // MARK: - Exam Screen Routing

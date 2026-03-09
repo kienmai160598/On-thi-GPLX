@@ -62,6 +62,7 @@ struct TheoryTab: View {
             .padding(.top, 16)
             .padding(.bottom, 32)
         }
+        .glassContainer()
         .screenHeader("Lý thuyết")
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
@@ -215,6 +216,7 @@ private struct TheoryTopicRow: View {
                 Image(systemName: item.topic.sfSymbol)
                     .font(.system(size: 18))
                     .foregroundStyle(statusInfo.color)
+                    .symbolRenderingMode(.hierarchical)
             }
             .frame(width: 48, height: 48)
 

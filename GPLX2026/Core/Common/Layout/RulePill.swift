@@ -9,6 +9,7 @@ struct RulePill: View {
             Image(systemName: icon)
                 .font(.system(size: 12, weight: .medium))
                 .foregroundStyle(Color.appPrimary)
+                .symbolRenderingMode(.hierarchical)
             Text(text)
                 .font(.system(size: 13, weight: .semibold))
                 .foregroundStyle(Color.appTextDark)

@@ -16,6 +16,7 @@ struct IconBox: View {
             Image(systemName: icon)
                 .font(.system(size: iconFontSize, weight: iconWeight))
                 .foregroundStyle(color)
+                .symbolRenderingMode(.hierarchical)
         }
     }
 }

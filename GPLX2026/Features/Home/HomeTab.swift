@@ -21,6 +21,7 @@ struct HomeTab: View {
             .padding(.horizontal, 20)
             .padding(.bottom, 32)
         }
+        .glassContainer()
         .screenHeader("Trang chủ")
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
@@ -209,6 +210,7 @@ private struct SmartNudgeCard: View {
                 Image(systemName: nudge.icon)
                     .font(.system(size: 22))
                     .foregroundStyle(nudgeColor(nudge))
+                    .symbolRenderingMode(.hierarchical)
                     .frame(width: 44, height: 44)
                     .background(nudgeColor(nudge).opacity(0.12))
                     .clipShape(RoundedRectangle(cornerRadius: 12))
@@ -332,6 +334,7 @@ private struct QuickActionCard: View {
                 Image(systemName: icon)
                     .font(.system(size: 24))
                     .foregroundStyle(color)
+                    .symbolRenderingMode(.hierarchical)
 
                 VStack(alignment: .leading, spacing: 3) {
                     Text(title)
@@ -364,6 +367,7 @@ private struct QuickActionCardLabel: View {
             Image(systemName: icon)
                 .font(.system(size: 24))
                 .foregroundStyle(color)
+                .symbolRenderingMode(.hierarchical)
 
             VStack(alignment: .leading, spacing: 3) {
                 Text(title)
@@ -430,6 +434,7 @@ private struct TopicProgressSection: View {
                 Image(systemName: item.topic.sfSymbol)
                     .font(.system(size: 18))
                     .foregroundStyle(statusInfo.color)
+                    .symbolRenderingMode(.hierarchical)
             }
             .frame(width: 48, height: 48)
 

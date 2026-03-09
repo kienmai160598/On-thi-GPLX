@@ -25,6 +25,7 @@ struct SimulationTab: View {
             .padding(.top, 16)
             .padding(.bottom, 32)
         }
+        .glassContainer()
         .screenHeader("Mô phỏng")
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
