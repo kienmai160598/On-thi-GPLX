@@ -45,7 +45,7 @@ struct FlashcardView: View {
             }
 
             ToolbarItem(placement: .principal) {
-                Text("Flashcard")
+                Text("Lật thẻ")
                     .font(.system(size: 17, weight: .semibold))
             }
         }
@@ -57,19 +57,8 @@ struct FlashcardView: View {
     private var flashcardContent: some View {
         let question = questions[currentIndex]
         let correctAnswer = question.answers.first(where: \.correct)
-        let progress = Double(currentIndex + 1) / Double(totalQuestions)
 
         VStack(spacing: 0) {
-            // Progress indicator
-            VStack(spacing: 6) {
-                ProgressBarView(fraction: progress, height: 4, cornerRadius: 2)
-                Text("\(currentIndex + 1) / \(totalQuestions)")
-                    .font(.system(size: 13, weight: .semibold).monospacedDigit())
-                    .foregroundStyle(Color.appTextMedium)
-            }
-            .padding(.horizontal, 20)
-            .padding(.top, 8)
-
             Spacer()
 
             // Card with simple flip transition

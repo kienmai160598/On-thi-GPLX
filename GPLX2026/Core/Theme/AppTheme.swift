@@ -220,7 +220,7 @@ extension View {
     func screenHeader(_ title: String) -> some View {
         self
             .navigationTitle(title)
-            .navigationBarTitleDisplayMode(.inline)
+            .navigationBarTitleDisplayMode(.large)
             .toolbarBackgroundVisibility(.hidden, for: .navigationBar)
             .background {
                 ZStack {

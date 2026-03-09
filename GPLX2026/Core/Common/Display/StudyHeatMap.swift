@@ -64,6 +64,12 @@ struct StudyHeatMap: View {
         let count: Int
     }
 
+    private static let heatMapDateFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "yyyy-MM-dd"
+        return f
+    }()
+
     private func generateDays() -> [DayData] {
         let calendar = Calendar.current
         let today = Date()
@@ -74,13 +80,16 @@ struct StudyHeatMap: View {
         guard let currentMonday = calendar.date(byAdding: .day, value: -daysFromMonday, to: today) else { return [] }
         guard let startDate = calendar.date(byAdding: .day, value: -(totalDays - 7), to: currentMonday) else { return [] }
 
+        let allActivity = progressStore.studyActivity
+
         var days: [DayData] = []
         let endDay = daysFromMonday // days into current week (0 = Monday)
         let totalCells = totalDays + endDay + 1 // fill current week up to today
 
         for i in 0..<totalCells {
             if let date = calendar.date(byAdding: .day, value: i, to: startDate) {
-                let count = date <= today ? progressStore.activityCount(for: date) : 0
+                let dateStr = Self.heatMapDateFormatter.string(from: date)
+                let count = date <= today ? (allActivity[dateStr] ?? 0) : 0
                 days.append(DayData(date: date, count: count))
             }
         }
