@@ -4,7 +4,36 @@ struct ExamCountdownCard: View {
     @Environment(ProgressStore.self) private var progressStore
 
     var body: some View {
-        if let daysLeft = progressStore.daysUntilExam {
+        if progressStore.daysUntilExam == nil {
+            NavigationLink(destination: SettingsView()) {
+                HStack(spacing: 14) {
+                    Image(systemName: "calendar.badge.plus")
+                        .font(.system(size: 22))
+                        .foregroundStyle(Color.appPrimary)
+                        .frame(width: 44, height: 44)
+                        .background(Color.appPrimary.opacity(0.12))
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text("Đặt ngày thi")
+                            .font(.system(size: 16, weight: .bold))
+                            .foregroundStyle(Color.appTextDark)
+                        Text("Theo dõi tiến độ ôn tập")
+                            .font(.system(size: 13))
+                            .foregroundStyle(Color.appTextMedium)
+                    }
+
+                    Spacer(minLength: 4)
+
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(Color.appTextLight)
+                }
+                .padding(16)
+                .glassCard()
+            }
+            .buttonStyle(.plain)
+        } else if let daysLeft = progressStore.daysUntilExam {
             let today = progressStore.todayProgress
 
             VStack(spacing: 16) {

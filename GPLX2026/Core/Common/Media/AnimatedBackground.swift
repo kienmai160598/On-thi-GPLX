@@ -16,7 +16,7 @@ struct AnimatedBackground: View {
 
     var body: some View {
         if animationStyle != "none" && !reduceMotion {
-            TimelineView(.animation(minimumInterval: 1.0 / 20)) { timeline in
+            TimelineView(.animation(minimumInterval: 1.0 / 8)) { timeline in
                 Canvas { context, size in
                     let t = timeline.date.timeIntervalSinceReferenceDate * speed
                     let color = Color.primaryColor(for: primaryColorKey)

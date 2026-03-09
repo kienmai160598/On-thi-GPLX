@@ -81,18 +81,31 @@ struct SimulationResultView: View {
         }
         .safeAreaInset(edge: .bottom) {
             if !isFromHistory {
-                HStack(spacing: 10) {
-                    Button {
-                        popToRoot()
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                            openExam(.simulationExam(mode: .random))
+                VStack(spacing: 8) {
+                    if questions.count - correctCount > 0 {
+                        Button {
+                            popToRoot()
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                                openExam(.questionView(topicKey: AppConstants.TopicKey.wrongAnswers, startIndex: 0))
+                            }
+                        } label: {
+                            AppButton(icon: "arrow.trianglehead.2.clockwise", label: "Luyện \(questions.count - correctCount) câu sai", style: .secondary, height: 48, cornerRadius: 24)
                         }
-                    } label: {
-                        AppButton(icon: "arrow.counterclockwise", label: "Thi lại", style: .secondary, height: 48, cornerRadius: 24)
                     }
 
-                    Button { popToRoot() } label: {
-                        AppButton(icon: "checkmark", label: "Hoàn thành", height: 48, cornerRadius: 24)
+                    HStack(spacing: 10) {
+                        Button {
+                            popToRoot()
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                                openExam(.simulationExam(mode: .random))
+                            }
+                        } label: {
+                            AppButton(icon: "arrow.counterclockwise", label: "Thi lại", style: .secondary, height: 48, cornerRadius: 24)
+                        }
+
+                        Button { popToRoot() } label: {
+                            AppButton(icon: "checkmark", label: "Hoàn thành", height: 48, cornerRadius: 24)
+                        }
                     }
                 }
                 .padding(.horizontal, 20)

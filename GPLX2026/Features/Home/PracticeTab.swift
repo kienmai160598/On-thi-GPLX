@@ -1,20 +1,184 @@
 import SwiftUI
 
-struct HazardTab: View {
+struct PracticeTab: View {
+    @Environment(QuestionStore.self) private var questionStore
     @Environment(ProgressStore.self) private var progressStore
-    @Environment(HazardVideoCache.self) private var videoCache
     @Environment(\.openExam) private var openExam
-    @AppStorage("appPrimaryColor") private var primaryColorKey = "default"
-    @State private var showNavPlay = false
+    @Environment(HazardVideoCache.self) private var videoCache
+    @State private var selectedSegment = 0
     @State private var showClearCacheAlert = false
 
+    /// Topic 6 (Sa hình)
+    private var saHinhTopic: Topic? {
+        questionStore.topics.first { $0.topicIds.contains(6) }
+    }
+
     var body: some View {
+        VStack(spacing: 0) {
+            Picker("", selection: $selectedSegment) {
+                Text("Câu hỏi").tag(0)
+                Text("Sa hình").tag(1)
+                Text("Tình huống").tag(2)
+            }
+            .pickerStyle(.segmented)
+            .padding(.horizontal, 20)
+            .padding(.vertical, 10)
+
+            Group {
+                switch selectedSegment {
+                case 1: simulationStudyContent
+                case 2: hazardStudyContent
+                default: questionStudyContent
+                }
+            }
+        }
+        .glassContainer()
+        .screenHeader("Luyện tập")
+        .alert("Xoá cache video?", isPresented: $showClearCacheAlert) {
+            Button("Huỷ", role: .cancel) {}
+            Button("Xoá", role: .destructive) {
+                videoCache.clearCache()
+                Haptics.impact(.medium)
+            }
+        } message: {
+            Text("Tất cả video đã tải sẽ bị xoá. Bạn có thể tải lại sau.")
+        }
+    }
+
+    // MARK: - Câu hỏi (Theory Topics 1-5)
+
+    @ViewBuilder
+    private var questionStudyContent: some View {
+        let theoryTopics = questionStore.topics.filter { !$0.topicIds.contains(6) }
+        let topicStats = progressStore.weakTopics(topics: theoryTopics)
+            .sorted { $0.topic.topicIds.first ?? 0 < $1.topic.topicIds.first ?? 0 }
+        let theoryCount = theoryTopics.reduce(0) { $0 + $1.questionCount }
+
         ScrollView {
-            VStack(alignment: .leading, spacing: 24) {
-                // MARK: - Study Section
+            VStack(alignment: .leading, spacing: 14) {
+                VStack(spacing: 0) {
+                    ForEach(Array(topicStats.enumerated()), id: \.element.topic.id) { index, item in
+                        NavigationLink(destination: TopicDetailView(item: item)) {
+                            PracticeTopicRow(item: item)
+                        }
+                        .buttonStyle(.plain)
 
-                SectionTitle(title: "Ôn tập")
+                        if index < topicStats.count - 1 {
+                            Divider().padding(.horizontal, 16)
+                        }
+                    }
+                }
+                .glassCard()
 
+                Button {
+                    openExam(.questionView(topicKey: AppConstants.TopicKey.allQuestions, startIndex: 0))
+                } label: {
+                    ListItemCard(
+                        icon: "text.book.closed.fill",
+                        title: "Tất cả câu hỏi",
+                        subtitle: "\(theoryCount) câu lý thuyết",
+                        iconSize: 40, iconCornerRadius: 10, iconFontSize: 18,
+                        iconColor: .appPrimary
+                    ) {
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundStyle(Color.appTextLight)
+                    }
+                }
+                .glassCard()
+            }
+            .padding(.horizontal, 20)
+            .padding(.top, 16)
+            .padding(.bottom, 32)
+        }
+    }
+
+    // MARK: - Sa hình (Topic 6 Scenarios)
+
+    @ViewBuilder
+    private var simulationStudyContent: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 14) {
+                if let topic = saHinhTopic {
+                    let progress = progressStore.topicProgress(for: topic.key)
+                    let correctCount = progress.values.filter { $0 }.count
+                    let totalCount = topic.questionCount
+                    let percentage = totalCount > 0 ? Int(Double(correctCount) / Double(totalCount) * 100) : 0
+
+                    NavigationLink(destination: TopicsView(initialTopicKey: topic.key)) {
+                        HStack(spacing: 14) {
+                            IconBox(
+                                icon: topic.icon,
+                                color: topic.color,
+                                size: 44,
+                                cornerRadius: 11,
+                                iconFontSize: 20
+                            )
+
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(topic.name)
+                                    .font(.system(size: 15, weight: .bold))
+                                    .foregroundStyle(Color.appTextDark)
+                                    .lineLimit(1)
+
+                                HStack(spacing: 6) {
+                                    Text("\(correctCount)/\(totalCount)")
+                                        .font(.system(size: 13, weight: .semibold).monospacedDigit())
+                                        .foregroundStyle(percentage >= 80 ? Color.appSuccess : Color.appTextMedium)
+                                    Text("đúng")
+                                        .font(.system(size: 13))
+                                        .foregroundStyle(Color.appTextLight)
+                                    Text("(\(percentage)%)")
+                                        .font(.system(size: 13, weight: .medium).monospacedDigit())
+                                        .foregroundStyle(Color.appTextMedium)
+                                }
+                            }
+
+                            Spacer(minLength: 4)
+
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 12, weight: .semibold))
+                                .foregroundStyle(Color.appTextLight)
+                        }
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 12)
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .glassCard()
+
+                    Button {
+                        openExam(.questionView(topicKey: topic.key, startIndex: 0))
+                    } label: {
+                        ListItemCard(
+                            icon: "photo.on.rectangle.angled",
+                            title: "Luyện tất cả sa hình",
+                            subtitle: "\(totalCount) câu hỏi",
+                            iconSize: 40,
+                            iconCornerRadius: 10,
+                            iconFontSize: 18,
+                            iconColor: .topicSaHinh
+                        ) {
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 12, weight: .semibold))
+                                .foregroundStyle(Color.appTextLight)
+                        }
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(.horizontal, 20)
+            .padding(.top, 16)
+            .padding(.bottom, 32)
+        }
+    }
+
+    // MARK: - Tình huống (Hazard Videos)
+
+    @ViewBuilder
+    private var hazardStudyContent: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 14) {
                 Button { openExam(.hazardTest(mode: .practice)) } label: {
                     AppButton(label: "Luyện tập tất cả (120 tình huống)", style: .secondary)
                 }
@@ -62,77 +226,11 @@ struct HazardTab: View {
                 }
                 .glassCard()
 
-                // Download management
                 HazardDownloadCard(videoCache: videoCache, showClearAlert: $showClearCacheAlert)
-
-                // MARK: - Exam Section
-
-                SectionTitle(title: "Thi thử")
-
-                ExamCTACard(
-                    buttonLabel: "Thi tình huống (10 video)",
-                    rules: [
-                        (icon: "play.rectangle", text: "10 video"),
-                        (icon: "hand.tap", text: "Nhấn nhanh"),
-                        (icon: "star", text: "≥ 35/50"),
-                    ],
-                    tip: "Nhấn sớm khi vừa thấy nguy hiểm để đạt điểm cao nhất.",
-                    action: { openExam(.hazardTest(mode: .exam)) },
-                    onButtonHidden: { hidden in
-                        withAnimation(.easeInOut(duration: 0.2)) {
-                            showNavPlay = hidden
-                        }
-                    }
-                )
-
-                if !progressStore.hazardHistory.isEmpty {
-                    ExamStatsRow(items: [
-                        (value: "\(progressStore.hazardExamCount)", label: "Đã thi"),
-                        (value: "\(Int(progressStore.averageHazardScore * 100))%", label: "TB điểm"),
-                        (value: "\(progressStore.bestHazardScore)", label: "Cao nhất"),
-                    ])
-                }
-
-                // History
-                if !progressStore.hazardHistory.isEmpty {
-                    SectionTitle(title: "Lịch sử")
-
-                    HistoryList(
-                        results: progressStore.hazardHistory,
-                        scoreText: { "\($0.totalScore)/\($0.maxScore) điểm" },
-                        passed: \.passed,
-                        date: \.date,
-                        destination: { HazardHistoryDetailView(result: $0) }
-                    )
-                }
             }
             .padding(.horizontal, 20)
             .padding(.top, 16)
             .padding(.bottom, 32)
-        }
-        .glassContainer()
-        .screenHeader("Tình huống")
-        .alert("Xoá cache video?", isPresented: $showClearCacheAlert) {
-            Button("Huỷ", role: .cancel) {}
-            Button("Xoá", role: .destructive) {
-                videoCache.clearCache()
-                Haptics.impact(.medium)
-            }
-        } message: {
-            Text("Tất cả video đã tải sẽ bị xoá. Bạn có thể tải lại sau.")
-        }
-        .toolbar {
-            ToolbarItem(placement: .navigationBarLeading) {
-                if showNavPlay {
-                    Button {
-                        openExam(.hazardTest(mode: .exam))
-                    } label: {
-                        Image(systemName: "play.fill")
-                            .font(.system(size: 13, weight: .semibold))
-                            .foregroundStyle(Color.primaryColor(for: primaryColorKey))
-                    }
-                }
-            }
         }
     }
 
@@ -146,6 +244,71 @@ struct HazardTab: View {
         case 6: return "exclamationmark.triangle.fill"
         default: return "play.rectangle.fill"
         }
+    }
+}
+
+// MARK: - Practice Topic Row
+
+private struct PracticeTopicRow: View {
+    let item: (topic: Topic, accuracy: Double, correct: Int, attempted: Int, total: Int)
+
+    private var statusInfo: (label: String, color: Color) {
+        if item.attempted == 0 {
+            return ("Chưa học", .appTextLight)
+        } else if item.accuracy >= 0.8 {
+            return ("Tốt", .appSuccess)
+        } else if item.accuracy >= 0.5 {
+            return ("Cần ôn", .appWarning)
+        } else {
+            return ("Yếu", .appError)
+        }
+    }
+
+    var body: some View {
+        let fraction = item.total > 0 ? Double(item.correct) / Double(item.total) : 0
+
+        HStack(spacing: 14) {
+            ZStack {
+                Circle()
+                    .stroke(Color.appDivider, lineWidth: 4)
+                Circle()
+                    .trim(from: 0, to: fraction)
+                    .stroke(statusInfo.color, style: StrokeStyle(lineWidth: 4, lineCap: .round))
+                    .rotationEffect(.degrees(-90))
+                Image(systemName: item.topic.sfSymbol)
+                    .font(.system(size: 18))
+                    .foregroundStyle(statusInfo.color)
+                    .symbolRenderingMode(.hierarchical)
+            }
+            .frame(width: 48, height: 48)
+
+            VStack(alignment: .leading, spacing: 5) {
+                Text(item.topic.name)
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundStyle(Color.appTextDark)
+                    .lineLimit(1)
+
+                HStack(spacing: 6) {
+                    Text("\(item.correct)/\(item.total)")
+                        .font(.system(size: 13, weight: .semibold).monospacedDigit())
+                        .foregroundStyle(statusInfo.color)
+                    Text("câu đúng")
+                        .font(.system(size: 13))
+                        .foregroundStyle(Color.appTextLight)
+                }
+            }
+
+            Spacer(minLength: 4)
+
+            StatusBadge(text: statusInfo.label, color: statusInfo.color, fontSize: 11)
+
+            Image(systemName: "chevron.right")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(Color.appTextLight)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 14)
+        .contentShape(Rectangle())
     }
 }
 

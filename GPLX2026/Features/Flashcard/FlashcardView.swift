@@ -2,6 +2,7 @@ import SwiftUI
 
 struct FlashcardView: View {
     @Environment(QuestionStore.self) private var questionStore
+    @Environment(ProgressStore.self) private var progressStore
     @Environment(\.dismiss) private var dismiss
 
     let topicKey: String
@@ -11,9 +12,11 @@ struct FlashcardView: View {
     @State private var knownCount = 0
     @State private var unknownCount = 0
     @State private var isFinished = false
+    @State private var unknownQuestionNos: Set<Int> = []
+    @State private var activeQuestions: [Question]?
 
     private var questions: [Question] {
-        questionStore.questions(forTopicKey: topicKey)
+        activeQuestions ?? questionStore.questions(forTopicKey: topicKey)
     }
 
     private var totalQuestions: Int { questions.count }
@@ -219,8 +222,13 @@ struct FlashcardView: View {
             Spacer().frame(height: 12)
 
             VStack(spacing: 12) {
+                if unknownCount > 0 {
+                    Button { retryUnknown() } label: {
+                        AppButton(label: "Luyện lại \(unknownCount) câu chưa biết")
+                    }
+                }
                 Button { resetFlashcards() } label: {
-                    AppButton(label: "Làm lại")
+                    AppButton(label: "Làm lại tất cả", style: unknownCount > 0 ? .secondary : .primary)
                 }
                 Button { dismiss() } label: {
                     AppButton(label: "Quay lại", style: .secondary)
@@ -245,6 +253,7 @@ struct FlashcardView: View {
         guard isFlipped else { return }
         Haptics.notification(.success)
         knownCount += 1
+        recordAnswer(correct: true)
         advanceCard()
     }
 
@@ -252,7 +261,15 @@ struct FlashcardView: View {
         guard isFlipped else { return }
         Haptics.selection()
         unknownCount += 1
+        unknownQuestionNos.insert(questions[currentIndex].no)
+        recordAnswer(correct: false)
         advanceCard()
+    }
+
+    private func recordAnswer(correct: Bool) {
+        let question = questions[currentIndex]
+        let topicKey = Topic.keyForTopicId(question.topic)
+        progressStore.recordQuestionAnswer(topicKey: topicKey, questionNo: question.no, correct: correct)
     }
 
     private func advanceCard() {
@@ -271,11 +288,24 @@ struct FlashcardView: View {
         }
     }
 
-    private func resetFlashcards() {
+    private func retryUnknown() {
+        let allQs = questionStore.questions(forTopicKey: topicKey)
+        activeQuestions = allQs.filter { unknownQuestionNos.contains($0.no) }
         currentIndex = 0
         isFlipped = false
         knownCount = 0
         unknownCount = 0
+        unknownQuestionNos.removeAll()
+        isFinished = false
+    }
+
+    private func resetFlashcards() {
+        activeQuestions = nil
+        currentIndex = 0
+        isFlipped = false
+        knownCount = 0
+        unknownCount = 0
+        unknownQuestionNos.removeAll()
         isFinished = false
     }
 }

@@ -39,7 +39,12 @@ struct HazardTestView: View {
                 testContent
             }
         }
-        .background(Color.scaffoldBg.ignoresSafeArea())
+        .background {
+            ZStack {
+                Color.scaffoldBg.ignoresSafeArea()
+                AnimatedBackground()
+            }
+        }
         .navigationBarBackButtonHidden(true)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -235,6 +240,15 @@ struct HazardTestView: View {
                 }
 
                 if playerState.isFinished {
+                    if isPractice {
+                        Button {
+                            Haptics.selection()
+                            retryCurrent()
+                        } label: {
+                            AppButton(icon: "arrow.counterclockwise", label: "Xem lại", style: .secondary, height: 48, cornerRadius: 24)
+                        }
+                    }
+
                     Button {
                         Haptics.selection()
                         advanceOrFinish()
@@ -301,6 +315,12 @@ struct HazardTestView: View {
             playerState = PlayerState()
             scoreRevealed = false
         }
+    }
+
+    private func retryCurrent() {
+        tapTimes.removeValue(forKey: currentIndex)
+        playerState = PlayerState()
+        scoreRevealed = false
     }
 
     private func goToPrevious() {

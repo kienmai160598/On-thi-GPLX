@@ -4,6 +4,7 @@ struct QuestionView: View {
     @Environment(QuestionStore.self) private var questionStore
     @Environment(ProgressStore.self) private var progressStore
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.openExam) private var openExam
 
     let topicKey: String
     let startIndex: Int
@@ -66,7 +67,12 @@ struct QuestionView: View {
         EmptyState(icon: "text.page.slash", message: "Không có câu hỏi")
             .navigationBarTitleDisplayMode(.inline)
             .navigationBarBackButtonHidden(true)
-            .background(Color.scaffoldBg.ignoresSafeArea())
+            .background {
+                ZStack {
+                    Color.scaffoldBg.ignoresSafeArea()
+                    AnimatedBackground()
+                }
+            }
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button { dismiss() } label: {
@@ -89,11 +95,6 @@ struct QuestionView: View {
         let isSpecial = topicKey == AppConstants.TopicKey.diemLiet || topicKey == AppConstants.TopicKey.bookmarks || topicKey == AppConstants.TopicKey.wrongAnswers || topicKey.hasPrefix(AppConstants.TopicKey.wrongAnswers + ":")
 
         VStack(spacing: 0) {
-            ProgressView(value: Double(currentIndex + 1) / Double(allQuestions.count))
-                .tint(Color.appPrimary)
-                .scaleEffect(y: 0.5)
-                .padding(.horizontal, 20)
-
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
                     QuestionCard(label: "Câu \(question.no):", question: question)
@@ -129,8 +130,8 @@ struct QuestionView: View {
                 answeredIndices: answeredIndices(for: allQuestions),
                 nextLabel: isConfirmed ? (isLast ? "Xem kết quả" : "Câu tiếp") : "Xác nhận",
                 isNextDisabled: isConfirmed ? !canAdvance : !hasSelected,
-                showPrev: false,
-                onPrev: {},
+                showPrev: currentIndex > 0,
+                onPrev: { prevQuestion() },
                 onNext: {
                     if isConfirmed {
                         if isLast {
@@ -157,7 +158,12 @@ struct QuestionView: View {
                 ) : nil
             )
         }
-        .background(Color.scaffoldBg.ignoresSafeArea())
+        .background {
+            ZStack {
+                Color.scaffoldBg.ignoresSafeArea()
+                AnimatedBackground()
+            }
+        }
         .navigationBarBackButtonHidden(true)
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
@@ -179,7 +185,7 @@ struct QuestionView: View {
                 }
             }
         }
-        .sheet(isPresented: $showResultSheet) {
+        .fullScreenCover(isPresented: $showResultSheet) {
             studyResultSheet(totalCount: allQuestions.count)
         }
         .onDisappear {
@@ -200,10 +206,12 @@ struct QuestionView: View {
                     Spacer().frame(height: 8)
 
                     ResultHero(
-                        isPassed: true,
+                        isPassed: pct >= 70,
                         score: correctCount,
                         total: totalCount,
-                        subtitle: "Bạn đã hoàn thành \(pct)% câu hỏi"
+                        subtitle: pct >= 70
+                            ? "Chúc mừng! Bạn đã hoàn thành \(pct)% câu hỏi"
+                            : "Bạn đã hoàn thành \(pct)% — hãy ôn thêm nhé"
                     )
 
                     VStack(spacing: 0) {
@@ -215,6 +223,25 @@ struct QuestionView: View {
                     .glassCard()
 
                     VStack(spacing: 12) {
+                        if wrongCount > 0 {
+                            Button {
+                                showResultSheet = false
+                                dismiss()
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                                    let scopedKey = topicKey.hasPrefix(AppConstants.TopicKey.wrongAnswers) ? topicKey : AppConstants.TopicKey.wrongAnswers + ":" + topicKey
+                                    openExam(.questionView(topicKey: scopedKey, startIndex: 0))
+                                }
+                            } label: {
+                                Text("Luyện \(wrongCount) câu sai")
+                                    .font(.system(size: 16, weight: .semibold))
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 14)
+                                    .background(Color.appWarning.opacity(0.15))
+                                    .foregroundStyle(Color.appWarning)
+                                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                            }
+                        }
+
                         Button {
                             showResultSheet = false
                             resetQuiz()
@@ -251,6 +278,19 @@ struct QuestionView: View {
                 .padding(.bottom, 32)
             }
             .screenHeader("Kết quả ôn tập")
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button {
+                        showResultSheet = false
+                        dismiss()
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.system(size: 20))
+                            .symbolRenderingMode(.hierarchical)
+                            .foregroundStyle(Color.appTextMedium)
+                    }
+                }
+            }
         }
     }
 
@@ -287,10 +327,20 @@ struct QuestionView: View {
         progressStore.recordQuestionAnswer(topicKey: tKey, questionNo: question.no, correct: isCorrect)
 
         Task { @MainActor in
-            try? await Task.sleep(for: .seconds(0.8))
+            try? await Task.sleep(for: .seconds(0.3))
             withAnimation(.easeOut(duration: 0.25)) {
                 canAdvance = true
             }
+        }
+    }
+
+    private func prevQuestion() {
+        guard currentIndex > 0 else { return }
+        withAnimation(.easeOut(duration: 0.25)) {
+            currentIndex -= 1
+            selectedAnswerId = nil
+            isConfirmed = false
+            canAdvance = true
         }
     }
 

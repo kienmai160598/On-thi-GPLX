@@ -9,9 +9,10 @@ struct HomeTab: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 24) {
+                SmartNudgeCard()
+                ContinueLearningCard()
                 ProgressHeroCard()
                 ExamCountdownCard()
-                SmartNudgeCard()
                 UtilityGrid()
                 TopicProgressSection()
                 RecentResultsCard()
@@ -119,15 +120,15 @@ private struct ProgressHeroCard: View {
 
                 VStack(spacing: 2) {
                     Text("\(Int(mastery * 100))")
-                        .font(.system(size: 44, weight: .heavy).monospacedDigit())
+                        .font(.system(size: 32, weight: .heavy).monospacedDigit())
                         .foregroundStyle(Color.appTextDark)
                         .contentTransition(.numericText())
                     Text("% sẵn sàng")
-                        .font(.system(size: 13, weight: .medium))
+                        .font(.system(size: 11, weight: .medium))
                         .foregroundStyle(Color.appTextMedium)
                 }
             }
-            .frame(width: 140, height: 140)
+            .frame(width: 100, height: 100)
 
             Text("\(totalCorrect)/\(totalQuestions) câu đã đúng")
                 .font(.system(size: 15, weight: .medium).monospacedDigit())
@@ -189,6 +190,58 @@ private struct MiniStat: View {
                 .foregroundStyle(Color.appTextMedium)
         }
         .frame(maxWidth: .infinity)
+    }
+}
+
+// MARK: - Continue Learning Card
+
+private struct ContinueLearningCard: View {
+    @Environment(QuestionStore.self) private var questionStore
+    @Environment(ProgressStore.self) private var progressStore
+    @Environment(\.openExam) private var openExam
+
+    var body: some View {
+        if let topicKey = progressStore.lastTopicKey,
+           !topicKey.isEmpty {
+            let index = progressStore.lastQuestionIndex
+            let topicName = questionStore.topic(forKey: topicKey)?.name ?? topicKey
+
+            Button {
+                openExam(.questionView(topicKey: topicKey, startIndex: index))
+            } label: {
+                HStack(spacing: 14) {
+                    Image(systemName: "book.fill")
+                        .font(.system(size: 20))
+                        .foregroundStyle(Color.appPrimary)
+                        .frame(width: 44, height: 44)
+                        .background(Color.appPrimary.opacity(0.12))
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text("Tiếp tục học")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundStyle(Color.appTextLight)
+                            .textCase(.uppercase)
+                        Text(topicName)
+                            .font(.system(size: 16, weight: .bold))
+                            .foregroundStyle(Color.appTextDark)
+                            .lineLimit(1)
+                        Text("Câu \(index + 1)")
+                            .font(.system(size: 13))
+                            .foregroundStyle(Color.appTextMedium)
+                    }
+
+                    Spacer(minLength: 4)
+
+                    Image(systemName: "arrow.right.circle.fill")
+                        .font(.system(size: 24))
+                        .foregroundStyle(Color.appPrimary)
+                }
+                .padding(16)
+                .glassCard()
+            }
+            .buttonStyle(.plain)
+        }
     }
 }
 

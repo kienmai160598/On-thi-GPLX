@@ -52,7 +52,7 @@ struct ExamResultView: View {
                     Divider().padding(.horizontal, 16)
                     ScoreRow(
                         label: "Yêu cầu đạt",
-                        value: "\u{2265} 32 & 0 ĐL sai",
+                        value: "≥ \(AppConstants.Exam.passThreshold) & 0 ĐL sai",
                         color: Color.appTextMedium
                     )
                 }
@@ -80,18 +80,31 @@ struct ExamResultView: View {
         }
         .safeAreaInset(edge: .bottom) {
             if !isFromHistory {
-                HStack(spacing: 10) {
-                    Button {
-                        popToRoot()
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                            openExam(.mockExam(examSetId: examResult.examSetId))
+                VStack(spacing: 8) {
+                    if questions.count - correctCount > 0 {
+                        Button {
+                            popToRoot()
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                                openExam(.questionView(topicKey: AppConstants.TopicKey.wrongAnswers, startIndex: 0))
+                            }
+                        } label: {
+                            AppButton(icon: "arrow.trianglehead.2.clockwise", label: "Luyện \(questions.count - correctCount) câu sai", style: .secondary, height: 48, cornerRadius: 24)
                         }
-                    } label: {
-                        AppButton(icon: "arrow.counterclockwise", label: "Thi lại", style: .secondary, height: 48, cornerRadius: 24)
                     }
 
-                    Button { popToRoot() } label: {
-                        AppButton(icon: "checkmark", label: "Hoàn thành", height: 48, cornerRadius: 24)
+                    HStack(spacing: 10) {
+                        Button {
+                            popToRoot()
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                                openExam(.mockExam(examSetId: examResult.examSetId))
+                            }
+                        } label: {
+                            AppButton(icon: "arrow.counterclockwise", label: "Thi lại", style: .secondary, height: 48, cornerRadius: 24)
+                        }
+
+                        Button { popToRoot() } label: {
+                            AppButton(icon: "checkmark", label: "Hoàn thành", height: 48, cornerRadius: 24)
+                        }
                     }
                 }
                 .padding(.horizontal, 20)

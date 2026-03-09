@@ -107,6 +107,9 @@ struct BaseExamView: View {
                             onSelect: { answer in
                                 Haptics.selection()
                                 answers[currentIndex] = answer.id
+                                let isCorrect = question.answers.contains(where: { $0.id == answer.id && $0.correct })
+                                let topicKey = Topic.keyForTopicId(question.topic)
+                                progressStore.recordQuestionAnswer(topicKey: topicKey, questionNo: question.no, correct: isCorrect)
                             }
                         )
                     } else {
@@ -317,6 +320,7 @@ struct BaseExamView: View {
 
     private func handleSimulationTimeout() {
         timer?.invalidate()
+        answers[currentIndex] = -1
         timePerScenario[currentIndex] = AppConstants.Simulation.scenarioTimeSeconds
         Haptics.notification(.warning)
 

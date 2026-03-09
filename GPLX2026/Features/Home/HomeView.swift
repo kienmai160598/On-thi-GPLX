@@ -17,23 +17,16 @@ struct HomeView: View {
                 .tint(accentColor)
             }
 
-            Tab("Lý thuyết", systemImage: "book") {
+            Tab("Luyện tập", systemImage: "book") {
                 NavigationStack {
-                    TheoryTab()
+                    PracticeTab()
                 }
                 .tint(accentColor)
             }
 
-            Tab("Sa hình", systemImage: "map") {
+            Tab("Thi thử", systemImage: "pencil.and.list.clipboard") {
                 NavigationStack {
-                    SimulationTab()
-                }
-                .tint(accentColor)
-            }
-
-            Tab("Video TH", systemImage: "play.circle") {
-                NavigationStack {
-                    HazardTab()
+                    ExamTab()
                 }
                 .tint(accentColor)
             }
