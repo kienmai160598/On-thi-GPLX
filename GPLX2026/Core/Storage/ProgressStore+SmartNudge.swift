@@ -55,6 +55,27 @@ extension ProgressStore {
                 return "star.fill"
             }
         }
+
+        var subtitle: String? {
+            switch self {
+            case .masterDiemLiet:
+                return "Sai 1 câu điểm liệt = Trượt ngay"
+            case .weakTopic:
+                return "Chủ đề cần ôn nhiều hơn"
+            case .takeExam:
+                return "Kiểm tra kiến thức tổng hợp"
+            case .improveTopic:
+                return "Nâng cao độ chính xác"
+            case .startSimulation:
+                return "Lý thuyết đã ổn, chuyển sang sa hình"
+            case .startHazard:
+                return "Sa hình đã ổn, chuyển sang video"
+            case .testWeakestPart:
+                return "Tìm điểm yếu còn lại"
+            case .examReady:
+                return "Tất cả phần đều ≥90%"
+            }
+        }
     }
 
     // MARK: - Smart nudge logic
