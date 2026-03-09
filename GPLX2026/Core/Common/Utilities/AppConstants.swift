@@ -7,9 +7,10 @@ enum AppConstants {
     // MARK: - Mock Exam
 
     enum Exam {
-        static let totalTimeSeconds = 25 * 60
-        static let questionsPerExam = 35
-        static let passThreshold = 32
+        static let totalTimeSeconds = 22 * 60
+        static let questionsPerExam = 30
+        static let passThreshold = 28
+        static let diemLietPerExam = 1
         static let urgencyThresholdSeconds = 300
     }
 
