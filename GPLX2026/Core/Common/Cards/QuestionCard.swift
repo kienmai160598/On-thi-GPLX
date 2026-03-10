@@ -28,7 +28,7 @@ struct QuestionCard: View {
                 QuestionImage(imageName: question.image)
             }
         }
-        .padding(20)
+        .padding(12)
         .glassCard()
     }
 }

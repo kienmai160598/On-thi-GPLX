@@ -30,7 +30,7 @@ struct ExamCTACard: View {
                 .foregroundStyle(Color.appTextMedium)
                 .lineSpacing(3)
         }
-        .padding(20)
+        .padding(12)
         .glassCard()
     }
 }

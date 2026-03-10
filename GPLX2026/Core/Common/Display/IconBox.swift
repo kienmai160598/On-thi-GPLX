@@ -4,7 +4,7 @@ struct IconBox: View {
     let icon: String
     let color: Color
     var size: CGFloat = 40
-    var cornerRadius: CGFloat = 10
+    var cornerRadius: CGFloat = 8
     var iconFontSize: CGFloat = 18
     var iconWeight: Font.Weight = .regular
 

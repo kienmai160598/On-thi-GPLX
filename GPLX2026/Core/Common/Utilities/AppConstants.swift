@@ -44,6 +44,20 @@ enum AppConstants {
 
     enum Storage {
         static let historyLimit = 50
+        static let totalExamSets = 20
+    }
+
+    // MARK: - AppStorage Keys
+
+    enum StorageKey {
+        static let themeMode = "appThemeMode"
+        static let fontSize = "appFontSize"
+        static let primaryColor = "appPrimaryColor"
+        static let hapticsEnabled = "hapticsEnabled"
+        static let backgroundAnimation = "backgroundAnimation"
+        static let backgroundSpeed = "backgroundSpeed"
+        static let dailyReminderEnabled = "dailyReminderEnabled"
+        static let dailyReminderHour = "dailyReminderHour"
     }
 
     // MARK: - Special Topic Keys

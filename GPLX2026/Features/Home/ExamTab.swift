@@ -1,106 +1,149 @@
 import SwiftUI
 
+private enum ExamFilter: String, CaseIterable {
+    case all = "Tất cả"
+    case questions = "Câu hỏi"
+    case simulation = "Sa hình"
+    case hazard = "Tình huống"
+}
+
 struct ExamTab: View {
     @Environment(QuestionStore.self) private var questionStore
     @Environment(ProgressStore.self) private var progressStore
     @Environment(\.openExam) private var openExam
-    @AppStorage("appPrimaryColor") private var primaryColorKey = "default"
-    @State private var selectedSegment = 0
-    @State private var showNavPlay = false
+    @State private var filter: ExamFilter = .all
     @State private var showAllExamSets = false
 
     var body: some View {
-        VStack(spacing: 0) {
-            Picker("", selection: $selectedSegment) {
-                Text("Câu hỏi").tag(0)
-                Text("Sa hình").tag(1)
-                Text("Tình huống").tag(2)
-            }
-            .pickerStyle(.segmented)
-            .padding(.horizontal, 20)
-            .padding(.vertical, 10)
-
-            Group {
-                switch selectedSegment {
-                case 1: simulationExamContent
-                case 2: hazardExamContent
-                default: questionExamContent
-                }
-            }
-        }
-        .onChange(of: selectedSegment) { _, _ in showNavPlay = false }
-        .glassContainer()
-        .screenHeader("Thi thử")
-        .toolbar {
-            ToolbarItem(placement: .navigationBarLeading) {
-                if showNavPlay {
-                    Button { startExamForCurrentSegment() } label: {
-                        Image(systemName: "play.fill")
-                            .font(.system(size: 13, weight: .semibold))
-                            .foregroundStyle(Color.primaryColor(for: primaryColorKey))
+        ScrollView {
+            VStack(alignment: .leading, spacing: 20) {
+                // Filter chips
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        ForEach(ExamFilter.allCases, id: \.self) { item in
+                            FilterChip(label: item.rawValue, isSelected: filter == item) {
+                                filter = item
+                            }
+                        }
                     }
                 }
+
+                if filter == .all || filter == .questions {
+                    questionExamContent
+                }
+                if filter == .all || filter == .simulation {
+                    simulationExamContent
+                }
+                if filter == .all || filter == .hazard {
+                    hazardExamContent
+                }
             }
+            .padding(.horizontal, 20)
+            .padding(.top, 8)
+            .padding(.bottom, 32)
         }
+        .glassContainer()
+        .screenHeader("Thi thử")
     }
 
-    private func startExamForCurrentSegment() {
-        switch selectedSegment {
-        case 1: openExam(.simulationExam(mode: .random))
-        case 2: openExam(.hazardTest(mode: .exam))
-        default: openExam(.mockExam())
-        }
-    }
-
-    // MARK: - Câu hỏi (Mock Exam)
+    // MARK: - Question Exam Content
 
     @ViewBuilder
     private var questionExamContent: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 14) {
-                ExamCTACard(
-                    buttonLabel: "Bắt đầu thi thử",
-                    rules: [
-                        (icon: "questionmark.circle", text: "30 câu"),
-                        (icon: "timer", text: "22 phút"),
-                        (icon: "checkmark.circle", text: "≥ 28 đạt"),
-                    ],
-                    tip: "Sai câu điểm liệt = Trượt. Làm câu điểm liệt trước, không bỏ trống câu nào.",
-                    action: { openExam(.mockExam()) },
-                    onButtonHidden: { hidden in
-                        withAnimation(.easeInOut(duration: 0.2)) {
-                            showNavPlay = hidden
-                        }
-                    }
+        ExamTypeCard(
+            icon: "doc.text.fill",
+            title: "Thi câu hỏi",
+            rules: "30 câu · 22 phút · ≥ 28 đạt",
+            tip: "Sai điểm liệt = Trượt",
+
+            stats: progressStore.examHistory.isEmpty ? nil : (
+                count: progressStore.examCount,
+                avg: Int(progressStore.averageExamScore * 100),
+                best: Int(progressStore.bestExamScore * 100)
+            )
+        ) {
+            openExam(.mockExam())
+        }
+
+        fixedExamSets
+
+        if !progressStore.examHistory.isEmpty {
+            VStack(alignment: .leading, spacing: 12) {
+                SectionTitle(title: "Lịch sử")
+                HistoryList(
+                    results: Array(progressStore.examHistory.prefix(5)),
+                    scoreText: { "\($0.score)/\($0.totalQuestions) đúng" },
+                    passed: \.passed,
+                    date: \.date,
+                    destination: { ExamHistoryDetailView(result: $0) }
                 )
-
-                if !progressStore.examHistory.isEmpty {
-                    ExamStatsRow(items: [
-                        (value: "\(progressStore.examCount)", label: "Đã thi"),
-                        (value: "\(Int(progressStore.averageExamScore * 100))%", label: "TB đúng"),
-                        (value: "\(Int(progressStore.bestExamScore * 100))%", label: "Cao nhất"),
-                    ])
-                }
-
-                fixedExamSets
-                    .padding(.top, 4)
-
-                if !progressStore.examHistory.isEmpty {
-                    SectionTitle(title: "Lịch sử")
-                        .padding(.top, 6)
-
-                    HistoryList(
-                        results: progressStore.examHistory,
-                        scoreText: { "\($0.score)/\($0.totalQuestions) đúng" },
-                        passed: \.passed,
-                        date: \.date,
-                        destination: { ExamHistoryDetailView(result: $0) }
-                    )
-                }
             }
-            .padding(.horizontal, 20)
-            .padding(.top, 16)
-            .padding(.bottom, 32)
+        }
+    }
+
+    // MARK: - Simulation Exam Content
+
+    @ViewBuilder
+    private var simulationExamContent: some View {
+        ExamTypeCard(
+            icon: "photo.on.rectangle.fill",
+            title: "Thi sa hình",
+            rules: "20 câu · 60s/câu · ≥ 70%",
+            tip: "Chú ý biển báo và vạch kẻ đường",
+
+            stats: progressStore.simulationHistory.isEmpty ? nil : (
+                count: progressStore.simulationExamCount,
+                avg: Int(progressStore.averageSimulationScore * 100),
+                best: Int(progressStore.bestSimulationScore * 100)
+            )
+        ) {
+            openExam(.simulationExam(mode: .random))
+        }
+
+        if !progressStore.simulationHistory.isEmpty {
+            VStack(alignment: .leading, spacing: 12) {
+                SectionTitle(title: "Lịch sử")
+                HistoryList(
+                    results: Array(progressStore.simulationHistory.prefix(5)),
+                    scoreText: { "\($0.score)/\($0.totalScenarios) đúng" },
+                    passed: \.passed,
+                    date: \.date,
+                    destination: { SimulationHistoryDetailView(result: $0) }
+                )
+            }
+        }
+    }
+
+    // MARK: - Hazard Exam Content
+
+    @ViewBuilder
+    private var hazardExamContent: some View {
+        ExamTypeCard(
+            icon: "play.rectangle.fill",
+            title: "Thi tình huống",
+            rules: "10 video · Nhấn nhanh · ≥ 35/50",
+            tip: "Nhấn sớm khi thấy nguy hiểm",
+
+            stats: progressStore.hazardHistory.isEmpty ? nil : (
+                count: progressStore.hazardExamCount,
+                avg: Int(progressStore.averageHazardScore * 100),
+                best: progressStore.bestHazardScore * 100 / 50
+            )
+        ) {
+            openExam(.hazardTest(mode: .exam))
+        }
+
+        if !progressStore.hazardHistory.isEmpty {
+            VStack(alignment: .leading, spacing: 12) {
+                SectionTitle(title: "Lịch sử")
+                HistoryList(
+                    results: Array(progressStore.hazardHistory.prefix(5)),
+                    scoreText: { "\($0.totalScore)/\($0.maxScore) điểm" },
+                    passed: \.passed,
+                    date: \.date,
+                    destination: { HazardHistoryDetailView(result: $0) }
+                )
+            }
         }
     }
 
@@ -110,10 +153,9 @@ struct ExamTab: View {
     private var fixedExamSets: some View {
         let completedSets = progressStore.completedExamSets
         let completedCount = completedSets.count
-        let visibleSets = showAllExamSets ? 20 : 6
+        let visibleSets = showAllExamSets ? AppConstants.Storage.totalExamSets : 6
 
         VStack(spacing: 0) {
-            // Header (tappable to expand/collapse)
             Button {
                 withAnimation(.easeOut(duration: 0.25)) {
                     showAllExamSets.toggle()
@@ -126,12 +168,12 @@ struct ExamTab: View {
                         .tracking(0.5)
 
                     if completedCount > 0 {
-                        Text("\(completedCount)/20")
+                        Text("\(completedCount)/\(AppConstants.Storage.totalExamSets)")
                             .font(.system(size: 12, weight: .semibold).monospacedDigit())
-                            .foregroundStyle(Color.appSuccess)
+                            .foregroundStyle(Color.appPrimary)
                             .padding(.horizontal, 8)
                             .padding(.vertical, 2)
-                            .background(Color.appSuccess.opacity(0.1))
+                            .background(Color.appPrimary.opacity(0.1))
                             .clipShape(Capsule())
                     }
 
@@ -149,54 +191,42 @@ struct ExamTab: View {
 
             Divider().padding(.horizontal, 16)
 
-            // Grid of exam sets
-            LazyVGrid(columns: [
-                GridItem(.flexible(), spacing: 0),
-                GridItem(.flexible(), spacing: 0),
-            ], spacing: 0) {
-                ForEach(1...visibleSets, id: \.self) { setId in
-                    let isCompleted = completedSets.contains(setId)
-                    let latestResult = isCompleted ? progressStore.latestResult(forExamSet: setId) : nil
+            ForEach(1...visibleSets, id: \.self) { setId in
+                let isCompleted = completedSets.contains(setId)
+                let latestResult = isCompleted ? progressStore.latestResult(forExamSet: setId) : nil
 
-                    Button { openExam(.mockExam(examSetId: setId)) } label: {
-                        HStack(spacing: 8) {
-                            Text("Đề \(setId)")
-                                .font(.system(size: 15, weight: .semibold).monospacedDigit())
-                                .foregroundStyle(Color.appTextDark)
+                Button { openExam(.mockExam(examSetId: setId)) } label: {
+                    HStack(spacing: 12) {
+                        Text("Đề \(setId)")
+                            .font(.system(size: 16, weight: .semibold).monospacedDigit())
+                            .foregroundStyle(Color.appTextDark)
 
-                            Spacer()
+                        Spacer()
 
-                            if isCompleted {
-                                if let result = latestResult {
-                                    Text("\(result.score)/\(result.totalQuestions)")
-                                        .font(.system(size: 12, weight: .medium).monospacedDigit())
-                                        .foregroundStyle(result.passed ? Color.appSuccess : Color.appError)
-                                }
-                                Image(systemName: "checkmark.circle.fill")
-                                    .font(.system(size: 14))
-                                    .foregroundStyle(Color.appSuccess)
-                            } else {
-                                Image(systemName: "chevron.right")
-                                    .font(.system(size: 10, weight: .semibold))
-                                    .foregroundStyle(Color.appTextLight)
-                            }
+                        if let result = latestResult {
+                            Text("\(result.score)/\(result.totalQuestions)")
+                                .font(.system(size: 14, weight: .medium).monospacedDigit())
+                                .foregroundStyle(Color.appPrimary)
                         }
-                        .padding(.horizontal, 14)
-                        .frame(height: 48)
-                        .contentShape(Rectangle())
+
+                        if isCompleted {
+                            Image(systemName: "checkmark.circle.fill")
+                                .font(.system(size: 16))
+                                .foregroundStyle(Color.appPrimary)
+                        } else {
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 12, weight: .semibold))
+                                .foregroundStyle(Color.appTextLight)
+                        }
                     }
-                    .buttonStyle(.plain)
+                    .padding(.horizontal, 16)
+                    .frame(height: 50)
+                    .contentShape(Rectangle())
                 }
-            }
-            .overlay {
-                // Grid dividers
-                VStack(spacing: 0) {
-                    ForEach(0..<(visibleSets / 2), id: \.self) { row in
-                        if row > 0 {
-                            Divider().padding(.horizontal, 16)
-                        }
-                        Spacer().frame(height: 48)
-                    }
+                .buttonStyle(.plain)
+
+                if setId < visibleSets {
+                    Divider().padding(.horizontal, 16)
                 }
             }
 
@@ -207,11 +237,11 @@ struct ExamTab: View {
                         showAllExamSets = true
                     }
                 } label: {
-                    Text("Xem tất cả 20 đề")
-                        .font(.system(size: 13, weight: .semibold))
+                    Text("Xem tất cả \(AppConstants.Storage.totalExamSets) đề")
+                        .font(.system(size: 14, weight: .semibold))
                         .foregroundStyle(Color.appPrimary)
                         .frame(maxWidth: .infinity)
-                        .frame(height: 40)
+                        .frame(height: 44)
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
@@ -219,102 +249,69 @@ struct ExamTab: View {
         }
         .glassCard()
     }
+}
 
-    // MARK: - Sa hình (Simulation Exam)
+// MARK: - Exam Type Card
 
-    @ViewBuilder
-    private var simulationExamContent: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 14) {
-                ExamCTACard(
-                    buttonLabel: "Thi mô phỏng (20 câu)",
-                    rules: [
-                        (icon: "photo.on.rectangle", text: "20 câu"),
-                        (icon: "timer", text: "60s/câu"),
-                        (icon: "checkmark.circle", text: "≥ 70%"),
-                    ],
-                    tip: "Quan sát kỹ hình ảnh, chú ý biển báo và vạch kẻ đường.",
-                    action: { openExam(.simulationExam(mode: .random)) },
-                    onButtonHidden: { hidden in
-                        withAnimation(.easeInOut(duration: 0.2)) {
-                            showNavPlay = hidden
-                        }
-                    }
-                )
+private struct ExamTypeCard: View {
+    let icon: String
+    let title: String
+    let rules: String
+    let tip: String
+    var stats: (count: Int, avg: Int, best: Int)?
+    let action: () -> Void
 
-                if !progressStore.simulationHistory.isEmpty {
-                    ExamStatsRow(items: [
-                        (value: "\(progressStore.simulationExamCount)", label: "Đã thi"),
-                        (value: "\(Int(progressStore.averageSimulationScore * 100))%", label: "TB đúng"),
-                        (value: "\(Int(progressStore.bestSimulationScore * 100))%", label: "Cao nhất"),
-                    ])
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            // Header
+            HStack(spacing: 12) {
+                Image(systemName: icon)
+                    .font(.system(size: 22))
+                    .foregroundStyle(Color.appPrimary)
+                    .frame(width: 44, height: 44)
+                    .background(Color.appPrimary.opacity(0.12))
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(title)
+                        .font(.system(size: 17, weight: .bold))
+                        .foregroundStyle(Color.appTextDark)
+
+                    Text(rules)
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(Color.appTextMedium)
                 }
 
-                if !progressStore.simulationHistory.isEmpty {
-                    SectionTitle(title: "Lịch sử")
-                        .padding(.top, 10)
+                Spacer(minLength: 4)
+            }
 
-                    HistoryList(
-                        results: progressStore.simulationHistory,
-                        scoreText: { "\($0.score)/\($0.totalScenarios) đúng" },
-                        passed: \.passed,
-                        date: \.date,
-                        destination: { SimulationHistoryDetailView(result: $0) }
-                    )
+            // Tip
+            HStack(spacing: 6) {
+                Image(systemName: "lightbulb.fill")
+                    .font(.system(size: 11))
+                    .foregroundStyle(Color.appPrimary)
+                Text(tip)
+                    .font(.system(size: 13))
+                    .foregroundStyle(Color.appTextLight)
+            }
+
+            // Stats (if any)
+            if let stats {
+                HStack(spacing: 0) {
+                    StatItem(value: "\(stats.count)", label: "Đã thi", valueFontSize: 15)
+                    Rectangle().fill(Color.appDivider).frame(width: 1, height: 24)
+                    StatItem(value: "\(stats.avg)%", label: "TB đúng", valueFontSize: 15)
+                    Rectangle().fill(Color.appDivider).frame(width: 1, height: 24)
+                    StatItem(value: "\(stats.best)%", label: "Cao nhất", valueFontSize: 15)
                 }
             }
-            .padding(.horizontal, 20)
-            .padding(.top, 16)
-            .padding(.bottom, 32)
-        }
-    }
 
-    // MARK: - Tình huống (Hazard Exam)
-
-    @ViewBuilder
-    private var hazardExamContent: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 14) {
-                ExamCTACard(
-                    buttonLabel: "Thi tình huống (10 video)",
-                    rules: [
-                        (icon: "play.rectangle", text: "10 video"),
-                        (icon: "hand.tap", text: "Nhấn nhanh"),
-                        (icon: "star", text: "≥ 35/50"),
-                    ],
-                    tip: "Nhấn sớm khi vừa thấy nguy hiểm để đạt điểm cao nhất.",
-                    action: { openExam(.hazardTest(mode: .exam)) },
-                    onButtonHidden: { hidden in
-                        withAnimation(.easeInOut(duration: 0.2)) {
-                            showNavPlay = hidden
-                        }
-                    }
-                )
-
-                if !progressStore.hazardHistory.isEmpty {
-                    ExamStatsRow(items: [
-                        (value: "\(progressStore.hazardExamCount)", label: "Đã thi"),
-                        (value: "\(Int(progressStore.averageHazardScore * 100))%", label: "TB điểm"),
-                        (value: "\(progressStore.bestHazardScore)", label: "Cao nhất"),
-                    ])
-                }
-
-                if !progressStore.hazardHistory.isEmpty {
-                    SectionTitle(title: "Lịch sử")
-                        .padding(.top, 10)
-
-                    HistoryList(
-                        results: progressStore.hazardHistory,
-                        scoreText: { "\($0.totalScore)/\($0.maxScore) điểm" },
-                        passed: \.passed,
-                        date: \.date,
-                        destination: { HazardHistoryDetailView(result: $0) }
-                    )
-                }
+            // Start button
+            Button(action: action) {
+                AppButton(icon: "play.fill", label: "Bắt đầu", height: 48, cornerRadius: 12)
             }
-            .padding(.horizontal, 20)
-            .padding(.top, 16)
-            .padding(.bottom, 32)
         }
+        .padding(12)
+        .glassCard()
     }
 }

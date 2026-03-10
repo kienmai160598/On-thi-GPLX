@@ -25,12 +25,7 @@ struct QuestionGridButton: View {
             }
             .presentationDetents([.medium, .large])
             .presentationDragIndicator(.visible)
-            .presentationBackground {
-                ZStack {
-                    Color.scaffoldBg
-                    AnimatedBackground()
-                }
-            }
+            .presentationBackground(Material.ultraThinMaterial)
         }
     }
 }

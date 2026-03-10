@@ -2,7 +2,7 @@ import UIKit
 
 enum Haptics {
     static var isEnabled: Bool {
-        UserDefaults.standard.object(forKey: "hapticsEnabled") as? Bool ?? true
+        UserDefaults.standard.object(forKey: AppConstants.StorageKey.hapticsEnabled) as? Bool ?? true
     }
 
     static func selection() {

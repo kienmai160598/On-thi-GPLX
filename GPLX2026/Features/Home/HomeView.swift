@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct HomeView: View {
-    @AppStorage("appPrimaryColor") private var primaryColorKey = "default"
+    @AppStorage(AppConstants.StorageKey.primaryColor) private var primaryColorKey = "default"
     @State private var activeExam: ExamScreen?
     @State private var pendingExam: ExamScreen?
 
@@ -25,7 +25,7 @@ struct HomeView: View {
                 .tint(accentColor)
             }
 
-            Tab("Thi thử", systemImage: "pencil.and.list.clipboard") {
+            Tab("Thi thử", systemImage: "list.clipboard.fill") {
                 NavigationStack {
                     ExamTab()
                 }

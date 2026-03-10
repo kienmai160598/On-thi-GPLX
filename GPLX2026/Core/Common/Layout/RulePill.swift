@@ -17,6 +17,6 @@ struct RulePill: View {
         .frame(maxWidth: .infinity)
         .padding(.vertical, 8)
         .background(Color.appPrimary.opacity(0.06))
-        .clipShape(RoundedRectangle(cornerRadius: 10))
+        .clipShape(RoundedRectangle(cornerRadius: 8))
     }
 }

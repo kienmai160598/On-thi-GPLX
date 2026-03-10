@@ -45,7 +45,7 @@ struct SpeedDistanceReferenceView: View {
 
                         Spacer(minLength: 0)
                     }
-                    .padding(16)
+                    .padding(12)
                     .glassCard()
 
                     // MARK: - Speed (Thông tư 38/2024, từ 01/01/2025)
@@ -260,7 +260,7 @@ private struct RuleCard: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(16)
+        .padding(12)
         .glassCard()
     }
 }

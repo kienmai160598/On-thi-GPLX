@@ -12,7 +12,7 @@ struct ExamCountdownCard: View {
                         .foregroundStyle(Color.appPrimary)
                         .frame(width: 44, height: 44)
                         .background(Color.appPrimary.opacity(0.12))
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                        .clipShape(RoundedRectangle(cornerRadius: 8))
 
                     VStack(alignment: .leading, spacing: 3) {
                         Text("Đặt ngày thi")
@@ -29,7 +29,7 @@ struct ExamCountdownCard: View {
                         .font(.system(size: 12, weight: .semibold))
                         .foregroundStyle(Color.appTextLight)
                 }
-                .padding(16)
+                .padding(12)
                 .glassCard()
             }
             .buttonStyle(.plain)
@@ -79,7 +79,7 @@ struct ExamCountdownCard: View {
                     }
                 }
             }
-            .padding(20)
+            .padding(12)
             .glassCard()
         }
     }

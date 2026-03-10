@@ -223,7 +223,7 @@ private struct ScoreDistributionChart: View {
             }
             .frame(height: 90)
         }
-        .padding(16)
+        .padding(12)
         .glassCard()
         .onAppear {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {

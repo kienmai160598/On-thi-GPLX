@@ -243,30 +243,14 @@ struct QuestionView: View {
                             showResultSheet = false
                             resetQuiz()
                         } label: {
-                            Text("Làm lại")
-                                .font(.system(size: 16, weight: .semibold))
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 14)
-                                .background(Color.appPrimary)
-                                .foregroundStyle(Color.appOnPrimary)
-                                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                            AppButton(label: "Làm lại", height: 48, cornerRadius: 12)
                         }
 
                         Button {
                             showResultSheet = false
                             dismiss()
                         } label: {
-                            Text("Hoàn thành")
-                                .font(.system(size: 16, weight: .semibold))
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 14)
-                                .background(Color.scaffoldBg)
-                                .foregroundStyle(Color.appTextDark)
-                                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                        .stroke(Color.appDivider, lineWidth: 1)
-                                )
+                            AppButton(label: "Hoàn thành", style: .secondary, height: 48, cornerRadius: 12)
                         }
                     }
                     .padding(.top, 8)

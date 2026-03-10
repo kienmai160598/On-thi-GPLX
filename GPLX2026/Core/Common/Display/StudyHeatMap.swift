@@ -55,7 +55,7 @@ struct StudyHeatMap: View {
                     .foregroundStyle(Color.appTextLight)
             }
         }
-        .padding(20)
+        .padding(12)
         .glassCard()
     }
 

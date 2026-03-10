@@ -108,7 +108,7 @@ private struct TopicCard: View {
             // Header
             HStack(spacing: 12) {
                 if let topic {
-                    IconBox(icon: topic.icon, color: topic.color, size: 40, cornerRadius: 10, iconFontSize: 18)
+                    IconBox(icon: topic.icon, color: topic.color, size: 40, cornerRadius: 8, iconFontSize: 18)
 
                     VStack(alignment: .leading, spacing: 3) {
                         Text(topic.name)
