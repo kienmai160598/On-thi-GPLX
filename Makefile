@@ -1,78 +1,55 @@
-# GPLX2026 - Build & Install to iPhone
+# GPLX2026 - Build & Install
 # Usage:
-#   make install   - Build + install to connected iPhone (default)
-#   make build     - Archive + export signed app
-#   make clean     - Clean build artifacts
-#   make device    - Show connected device info
+#   make          - Build + install + show info
+#   make build    - Build only (simulator, verifies compilation)
+#   make install  - Install last build to iPhone
+#   make info     - Show app & device info
+#   make clean    - Clean build artifacts
 
-SCHEME       = GPLX2026
-PROJECT      = GPLX2026.xcodeproj
-CONFIG       = Release
-BUILD_DIR    = $(CURDIR)/build
-ARCHIVE      = $(BUILD_DIR)/$(SCHEME).xcarchive
-EXPORT_DIR   = $(BUILD_DIR)/export
-EXPORT_PLIST = $(CURDIR)/ExportOptions.plist
+SCHEME    = GPLX2026
+PROJECT   = GPLX2026.xcodeproj
+DEVICE_ID = 00008120-0016116A1103C01E
+SIM_ID    = 720AD619-4FF4-43A9-B772-7EF4B9354A3F
 
-DEVICE_ID := $(shell xcrun xctrace list devices 2>/dev/null | grep -i iphone | grep -v Simulator | head -1 | sed 's/.*(\(.*\))/\1/')
+DERIVED   = $(HOME)/Library/Developer/Xcode/DerivedData
+APP_PATH  = $(shell find $(DERIVED)/GPLX2026-*/Build/Products/Debug-iphoneos -name "$(SCHEME).app" -maxdepth 1 2>/dev/null | head -1)
+PBXPROJ   = $(PROJECT)/project.pbxproj
+VERSION   = $(shell grep 'MARKETING_VERSION' $(PBXPROJ) | head -1 | sed 's/.*= *//;s/;.*//' | tr -d ' ')
+BUILD_NUM = $(shell grep 'CURRENT_PROJECT_VERSION' $(PBXPROJ) | head -1 | sed 's/.*= *//;s/;.*//' | tr -d ' ')
+BUNDLE_ID = $(shell grep 'PRODUCT_BUNDLE_IDENTIFIER' $(PBXPROJ) | head -1 | sed 's/.*= *//;s/;.*//' | tr -d ' "')
 
-SHELL := /bin/bash
-.SHELLFLAGS := -o pipefail -c
-.PHONY: all build install clean device generate
+.PHONY: all build install info clean
 
-all: install
+all: build install info
 
-generate:
-	@if command -v xcodegen >/dev/null 2>&1; then \
-		echo "🔧 Generating Xcode project..."; \
-		xcodegen generate; \
-	fi
+build:
+	@echo "Building $(SCHEME) v$(VERSION) ($(BUILD_NUM))..."
+	@xcodebuild -project $(PROJECT) -scheme $(SCHEME) \
+		-destination 'platform=iOS Simulator,id=$(SIM_ID)' \
+		build 2>&1 | tail -1
 
-build: generate
-	@mkdir -p $(BUILD_DIR)
-	@echo "📦 Archiving $(SCHEME)..."
-	@xcodebuild archive \
-		-project $(PROJECT) \
-		-scheme $(SCHEME) \
-		-configuration $(CONFIG) \
-		-destination "generic/platform=iOS" \
-		-archivePath $(ARCHIVE) \
-		-allowProvisioningUpdates \
-		CODE_SIGN_STYLE=Automatic \
-		| xcpretty || xcodebuild archive \
-		-project $(PROJECT) \
-		-scheme $(SCHEME) \
-		-configuration $(CONFIG) \
-		-destination "generic/platform=iOS" \
-		-archivePath $(ARCHIVE) \
-		-allowProvisioningUpdates \
-		CODE_SIGN_STYLE=Automatic 2>&1 | tail -5
-	@echo "📤 Exporting signed app..."
-	@xcodebuild -exportArchive \
-		-archivePath $(ARCHIVE) \
-		-exportOptionsPlist $(EXPORT_PLIST) \
-		-exportPath $(EXPORT_DIR) \
-		-allowProvisioningUpdates 2>&1 | tail -5
-	@echo "✅ Build complete"
-
-install: build
-	@if [ -z "$(DEVICE_ID)" ]; then \
-		echo "❌ No iPhone connected. Run 'make device' to check."; \
+install:
+	@if [ -z "$(APP_PATH)" ]; then \
+		echo "No .app found in DerivedData. Build from Xcode (Cmd+R) first."; \
 		exit 1; \
 	fi
-	@echo "📱 Installing to $(DEVICE_ID)..."
-	@BUNDLE=$$(find $(EXPORT_DIR) -name "*.ipa" -o -name "*.app" | head -1); \
-	if [ -z "$$BUNDLE" ]; then \
-		echo "❌ No .app/.ipa found in $(EXPORT_DIR)"; \
-		exit 1; \
-	fi; \
-	xcrun devicectl device install app --device $(DEVICE_ID) "$$BUNDLE"
-	@echo "✅ Installed on iPhone!"
+	@echo "Installing to iPhone..."
+	@xcrun devicectl device install app \
+		--device $(DEVICE_ID) "$(APP_PATH)" 2>&1 \
+		| grep -E "App installed|bundleID|error" || true
 
-device:
-	@echo "📱 Connected devices:"
-	@xcrun xctrace list devices 2>/dev/null | grep -i iphone | grep -v Simulator || echo "   No iPhone found"
+info:
+	@echo ""
+	@echo "=== $(SCHEME) ==="
+	@echo "  Version:   $(VERSION) ($(BUILD_NUM))"
+	@echo "  Bundle ID: $(BUNDLE_ID)"
+	@echo "  App size:  $$(du -sh "$(APP_PATH)" 2>/dev/null | cut -f1 || echo 'N/A')"
+	@echo "  Built:     $$(stat -f '%Sm' -t '%Y-%m-%d %H:%M' "$(APP_PATH)" 2>/dev/null || echo 'N/A')"
+	@echo "  Device:    $(DEVICE_ID)"
+	@echo ""
 
 clean:
-	@echo "🧹 Cleaning..."
-	@rm -rf $(BUILD_DIR)
-	@echo "✅ Clean"
+	@echo "Cleaning..."
+	@xcodebuild -project $(PROJECT) -scheme $(SCHEME) clean 2>&1 | tail -1
+	@rm -rf build
+	@echo "Done"

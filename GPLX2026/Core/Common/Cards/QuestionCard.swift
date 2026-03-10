@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct QuestionCard: View {
+    @Environment(ThemeStore.self) private var themeStore
     let label: String
     let question: Question
     var showDiemLietBadge: Bool = false
@@ -12,7 +13,7 @@ struct QuestionCard: View {
             HStack(spacing: 8) {
                 Text(label)
                     .font(.system(size: 14, weight: .bold))
-                    .foregroundStyle(Color.appPrimary)
+                    .foregroundStyle(themeStore.primaryColor)
 
                 if showDiemLietBadge && question.isDiemLiet {
                     StatusBadge(text: "Điểm liệt", color: .appError, fontSize: 11)

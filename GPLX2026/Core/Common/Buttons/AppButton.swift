@@ -5,12 +5,12 @@ struct AppButton: View {
     let label: String
     var style: Style = .primary
     var height: CGFloat = 52
-    var cornerRadius: CGFloat = 26
 
     @Environment(\.isEnabled) private var isEnabled
-    @AppStorage(AppConstants.StorageKey.primaryColor) private var primaryColorKey = "default"
+    @Environment(ThemeStore.self) private var themeStore
 
-    private var primary: Color { Color.primaryColor(for: primaryColorKey) }
+    private var primary: Color { themeStore.primaryColor }
+    private var cornerRadius: CGFloat { height / 2 }
 
     enum Style {
         case primary
@@ -21,10 +21,10 @@ struct AppButton: View {
         if #available(iOS 26.0, *) {
             if style == .primary {
                 buttonContent
-                    .foregroundStyle(isEnabled ? .white : Color.appTextLight)
+                    .foregroundStyle(isEnabled ? themeStore.onPrimaryColor : Color.appTextLight)
                     .background(
                         RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                            .fill(isEnabled ? primary : Color.appDivider)
+                            .fill((isEnabled ? primary : Color.appDivider).opacity(0.45))
                     )
                     .glassEffect(.regular.interactive(), in: .rect(cornerRadius: cornerRadius))
             } else {
@@ -34,7 +34,7 @@ struct AppButton: View {
             }
         } else if style == .primary {
             buttonContent
-                .foregroundStyle(isEnabled ? Color.appOnPrimary : Color.appTextLight)
+                .foregroundStyle(isEnabled ? themeStore.onPrimaryColor : Color.appTextLight)
                 .background(isEnabled ? primary : Color.appDivider)
                 .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
         } else {

@@ -31,6 +31,14 @@ struct AnswerOptionCard: View {
         .padding(.vertical, 12)
         .background(bgColor)
         .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .overlay(alignment: .leading) {
+            if let borderColor = leftBorderColor {
+                RoundedRectangle(cornerRadius: 2)
+                    .fill(borderColor)
+                    .frame(width: 4)
+                    .padding(.vertical, 8)
+            }
+        }
         .glassCard()
     }
 
@@ -51,9 +59,16 @@ struct AnswerOptionCard: View {
     private var bgColor: Color {
         if isSelected && !isConfirmed { return .appPrimary.opacity(0.06) }
         guard isConfirmed else { return .clear }
-        if isCorrect { return .appSuccess.opacity(0.06) }
-        if isSelected && !isCorrect { return .appError.opacity(0.06) }
+        if isCorrect { return .appSuccess.opacity(0.10) }
+        if isSelected && !isCorrect { return .appError.opacity(0.10) }
         return .clear
+    }
+
+    private var leftBorderColor: Color? {
+        guard isConfirmed else { return nil }
+        if isCorrect { return .appSuccess }
+        if isSelected && !isCorrect { return .appError }
+        return nil
     }
 
     @ViewBuilder

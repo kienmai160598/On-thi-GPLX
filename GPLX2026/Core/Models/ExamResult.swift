@@ -4,9 +4,7 @@ import Foundation
 
 struct ExamResult: Codable, Identifiable {
 
-    /// Use the date as a unique identity.
-    var id: Date { date }
-
+    let id: UUID
     let date: Date
     let score: Int
     let totalQuestions: Int
@@ -33,7 +31,7 @@ struct ExamResult: Codable, Identifiable {
     // MARK: Coding
 
     enum CodingKeys: String, CodingKey {
-        case date, score, totalQuestions, passed, timeUsedSeconds, wrongDiemLiet, questionDetails, examSetId
+        case id, date, score, totalQuestions, passed, timeUsedSeconds, wrongDiemLiet, questionDetails, examSetId
     }
 
     init(
@@ -46,6 +44,7 @@ struct ExamResult: Codable, Identifiable {
         questionDetails: [QuestionDetail] = [],
         examSetId: Int? = nil
     ) {
+        self.id = UUID()
         self.date = date
         self.score = score
         self.totalQuestions = totalQuestions
@@ -58,6 +57,7 @@ struct ExamResult: Codable, Identifiable {
 
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = (try? c.decode(UUID.self, forKey: .id)) ?? UUID()
         let dateString = try c.decode(String.self, forKey: .date)
         date = DateFormatters.iso8601.date(from: dateString) ?? Date()
         score = try c.decode(Int.self, forKey: .score)
@@ -71,6 +71,7 @@ struct ExamResult: Codable, Identifiable {
 
     func encode(to encoder: Encoder) throws {
         var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(id, forKey: .id)
         try c.encode(DateFormatters.iso8601.string(from: date), forKey: .date)
         try c.encode(score, forKey: .score)
         try c.encode(totalQuestions, forKey: .totalQuestions)
@@ -108,7 +109,7 @@ struct ExamResult: Codable, Identifiable {
                 correct: isCorrect
             ))
         }
-        let passed = correctCount >= AppConstants.Exam.passThreshold && wrongDiemLietCount == 0
+        let passed = correctCount >= LicenseType.current.passThreshold && wrongDiemLietCount == 0
         return ExamResult(
             date: Date(),
             score: correctCount,

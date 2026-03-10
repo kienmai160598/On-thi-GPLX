@@ -10,6 +10,7 @@ private enum ExamFilter: String, CaseIterable {
 struct ExamTab: View {
     @Environment(QuestionStore.self) private var questionStore
     @Environment(ProgressStore.self) private var progressStore
+    @Environment(ThemeStore.self) private var themeStore
     @Environment(\.openExam) private var openExam
     @State private var filter: ExamFilter = .all
     @State private var showAllExamSets = false
@@ -53,7 +54,7 @@ struct ExamTab: View {
         ExamTypeCard(
             icon: "doc.text.fill",
             title: "Thi câu hỏi",
-            rules: "30 câu · 22 phút · ≥ 28 đạt",
+            rules: "\(LicenseType.current.questionsPerExam) câu · \(LicenseType.current.totalTimeSeconds / 60) phút · ≥ \(LicenseType.current.passThreshold) đạt",
             tip: "Sai điểm liệt = Trượt",
 
             stats: progressStore.examHistory.isEmpty ? nil : (
@@ -153,7 +154,7 @@ struct ExamTab: View {
     private var fixedExamSets: some View {
         let completedSets = progressStore.completedExamSets
         let completedCount = completedSets.count
-        let visibleSets = showAllExamSets ? AppConstants.Storage.totalExamSets : 6
+        let visibleSets = showAllExamSets ? LicenseType.current.totalExamSets : 6
 
         VStack(spacing: 0) {
             Button {
@@ -168,12 +169,12 @@ struct ExamTab: View {
                         .tracking(0.5)
 
                     if completedCount > 0 {
-                        Text("\(completedCount)/\(AppConstants.Storage.totalExamSets)")
+                        Text("\(completedCount)/\(LicenseType.current.totalExamSets)")
                             .font(.system(size: 12, weight: .semibold).monospacedDigit())
-                            .foregroundStyle(Color.appPrimary)
+                            .foregroundStyle(themeStore.primaryColor)
                             .padding(.horizontal, 8)
                             .padding(.vertical, 2)
-                            .background(Color.appPrimary.opacity(0.1))
+                            .background(themeStore.primaryColor.opacity(0.1))
                             .clipShape(Capsule())
                     }
 
@@ -206,13 +207,13 @@ struct ExamTab: View {
                         if let result = latestResult {
                             Text("\(result.score)/\(result.totalQuestions)")
                                 .font(.system(size: 14, weight: .medium).monospacedDigit())
-                                .foregroundStyle(Color.appPrimary)
+                                .foregroundStyle(themeStore.primaryColor)
                         }
 
                         if isCompleted {
                             Image(systemName: "checkmark.circle.fill")
                                 .font(.system(size: 16))
-                                .foregroundStyle(Color.appPrimary)
+                                .foregroundStyle(themeStore.primaryColor)
                         } else {
                             Image(systemName: "chevron.right")
                                 .font(.system(size: 12, weight: .semibold))
@@ -237,9 +238,9 @@ struct ExamTab: View {
                         showAllExamSets = true
                     }
                 } label: {
-                    Text("Xem tất cả \(AppConstants.Storage.totalExamSets) đề")
+                    Text("Xem tất cả \(LicenseType.current.totalExamSets) đề")
                         .font(.system(size: 14, weight: .semibold))
-                        .foregroundStyle(Color.appPrimary)
+                        .foregroundStyle(themeStore.primaryColor)
                         .frame(maxWidth: .infinity)
                         .frame(height: 44)
                         .contentShape(Rectangle())
@@ -254,6 +255,7 @@ struct ExamTab: View {
 // MARK: - Exam Type Card
 
 private struct ExamTypeCard: View {
+    @Environment(ThemeStore.self) private var themeStore
     let icon: String
     let title: String
     let rules: String
@@ -267,9 +269,9 @@ private struct ExamTypeCard: View {
             HStack(spacing: 12) {
                 Image(systemName: icon)
                     .font(.system(size: 22))
-                    .foregroundStyle(Color.appPrimary)
+                    .foregroundStyle(themeStore.primaryColor)
                     .frame(width: 44, height: 44)
-                    .background(Color.appPrimary.opacity(0.12))
+                    .background(themeStore.primaryColor.opacity(0.12))
                     .clipShape(RoundedRectangle(cornerRadius: 8))
 
                 VStack(alignment: .leading, spacing: 3) {
@@ -289,7 +291,7 @@ private struct ExamTypeCard: View {
             HStack(spacing: 6) {
                 Image(systemName: "lightbulb.fill")
                     .font(.system(size: 11))
-                    .foregroundStyle(Color.appPrimary)
+                    .foregroundStyle(themeStore.primaryColor)
                 Text(tip)
                     .font(.system(size: 13))
                     .foregroundStyle(Color.appTextLight)
@@ -308,7 +310,7 @@ private struct ExamTypeCard: View {
 
             // Start button
             Button(action: action) {
-                AppButton(icon: "play.fill", label: "Bắt đầu", height: 48, cornerRadius: 12)
+                AppButton(icon: "play.fill", label: "Bắt đầu", height: 48)
             }
         }
         .padding(12)

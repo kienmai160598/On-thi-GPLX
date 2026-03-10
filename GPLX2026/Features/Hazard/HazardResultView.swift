@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct HazardResultView: View {
+    @Environment(ThemeStore.self) private var themeStore
     @Environment(\.popToRoot) private var popToRoot
     @Environment(\.openExam) private var openExam
 
@@ -22,7 +23,7 @@ struct HazardResultView: View {
 
                 // MARK: - Score details
                 VStack(spacing: 0) {
-                    ScoreRow(label: "Tổng điểm", value: "\(result.totalScore)/\(result.maxScore)", color: Color.appPrimary)
+                    ScoreRow(label: "Tổng điểm", value: "\(result.totalScore)/\(result.maxScore)", color: themeStore.primaryColor)
                     Divider().padding(.horizontal, 16)
 
                     let avg = result.situationCount > 0
@@ -88,16 +89,16 @@ struct HazardResultView: View {
                             Button {
                                 openExam(.hazardTest(mode: retryMode))
                             } label: {
-                                AppButton(icon: "arrow.counterclockwise", label: "Làm lại", style: .secondary, height: 48, cornerRadius: 24)
+                                AppButton(icon: "arrow.counterclockwise", label: "Làm lại", style: .secondary, height: 48)
                             }
 
                             Button { popToRoot() } label: {
-                                AppButton(icon: "checkmark", label: "Hoàn thành", height: 48, cornerRadius: 24)
+                                AppButton(icon: "checkmark", label: "Hoàn thành", height: 48)
                             }
                         }
                     } else {
                         Button { popToRoot() } label: {
-                            AppButton(icon: "checkmark", label: "Hoàn thành", height: 48, cornerRadius: 24)
+                            AppButton(icon: "checkmark", label: "Hoàn thành", height: 48)
                         }
                     }
                 }
@@ -108,6 +109,11 @@ struct HazardResultView: View {
         }
         .navigationBarBackButtonHidden(!isFromHistory)
         .screenHeader(isFromHistory ? "Chi tiết tình huống" : "Kết quả tình huống")
+        .onAppear {
+            if !isFromHistory {
+                ReviewHelper.requestIfFirstPass(passed: result.passed)
+            }
+        }
     }
 }
 
@@ -167,6 +173,7 @@ private struct HazardResultHero: View {
 // MARK: - Score Distribution Chart
 
 private struct ScoreDistributionChart: View {
+    @Environment(ThemeStore.self) private var themeStore
     let details: [HazardResult.SituationDetail]
     @State private var animate = false
 
@@ -182,7 +189,7 @@ private struct ScoreDistributionChart: View {
     private func barColor(_ score: Int) -> Color {
         switch score {
         case 5: return .appSuccess
-        case 3...4: return .appPrimary
+        case 3...4: return themeStore.primaryColor
         case 1...2: return .appWarning
         default: return .appError
         }
@@ -236,6 +243,7 @@ private struct ScoreDistributionChart: View {
 // MARK: - Review Row (Expandable)
 
 private struct HazardReviewRow: View {
+    @Environment(ThemeStore.self) private var themeStore
     let index: Int
     let situation: HazardSituation
     let score: Int
@@ -292,7 +300,7 @@ private struct HazardReviewRow: View {
                     HStack(spacing: 4) {
                         ForEach(0..<5, id: \.self) { i in
                             Circle()
-                                .fill(i < score ? Color.appPrimary : Color.appDivider)
+                                .fill(i < score ? themeStore.primaryColor : Color.appDivider)
                                 .frame(width: 8, height: 8)
                         }
                     }
@@ -355,6 +363,7 @@ private struct HazardReviewRow: View {
 // MARK: - Timing Bar Visualization
 
 private struct TimingBar: View {
+    @Environment(ThemeStore.self) private var themeStore
     let duration: Double
     let windowStart: Double
     let windowEnd: Double
@@ -382,7 +391,7 @@ private struct TimingBar: View {
                 if let tapTime {
                     let tapFrac = tapTime / duration
                     Circle()
-                        .fill(Color.appPrimary)
+                        .fill(themeStore.primaryColor)
                         .frame(width: 10, height: 10)
                         .offset(x: width * tapFrac - 5)
                 }

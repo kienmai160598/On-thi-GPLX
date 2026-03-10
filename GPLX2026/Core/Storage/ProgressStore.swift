@@ -27,12 +27,9 @@ final class ProgressStore {
 
     // MARK: - Private backing store
 
-    private let defaults: UserDefaults
+    let defaults: UserDefaults
 
-    /// Stored property so @Observable can track data changes.
-    internal(set) var dataVersion = 0
-
-    // MARK: - In-memory caches (invalidated on dataVersion change)
+    // MARK: - In-memory caches (lazy-loaded from UserDefaults)
 
     private var _topicProgressCache: [String: [Int: Bool]] = [:]
     private var _examHistoryCache: [ExamResult]?
@@ -41,6 +38,15 @@ final class ProgressStore {
     private var _bookmarksCache: Set<Int>?
     private var _wrongAnswersCache: Set<Int>?
     private var _completedExamSetsCache: Set<Int>?
+    private var _streakCountCache: Int?
+    private var _lastStudyDateCache: String??   // outer nil = not loaded
+    private var _lastTopicKeyCache: String??    // outer nil = not loaded
+    private var _lastQuestionIndexCache: Int?
+    var _studyActivityCache: [String: Int]?
+    var _examDateCache: Date??         // outer nil = not loaded
+    var _dailyGoalCache: Int?
+    var _reviewDatesCache: [Int: Date]?
+    var _readinessCache: ReadinessStatus?
 
     private static let streakDateFormatter: DateFormatter = {
         let f = DateFormatter()
@@ -61,12 +67,20 @@ final class ProgressStore {
         _bookmarksCache = nil
         _wrongAnswersCache = nil
         _completedExamSetsCache = nil
+        _streakCountCache = nil
+        _lastStudyDateCache = nil
+        _lastTopicKeyCache = nil
+        _lastQuestionIndexCache = nil
+        _studyActivityCache = nil
+        _examDateCache = nil
+        _dailyGoalCache = nil
+        _reviewDatesCache = nil
+        _readinessCache = nil
     }
 
     // MARK: - Topic progress  [questionNo : correct]
 
     func topicProgress(for key: String) -> [Int: Bool] {
-        _ = dataVersion
         if let cached = _topicProgressCache[key] {
             return cached
         }
@@ -101,13 +115,12 @@ final class ProgressStore {
         } catch {
             logger.error("Failed to encode topic progress for '\(topicKey)': \(error.localizedDescription)")
         }
-        dataVersion += 1
+        _readinessCache = nil
     }
 
     // MARK: - Exam history
 
     var examHistory: [ExamResult] {
-        _ = dataVersion
         if let cached = _examHistoryCache { return cached }
         guard let data = defaults.data(forKey: Keys.examHistory) else {
             _examHistoryCache = []
@@ -135,13 +148,12 @@ final class ProgressStore {
         } catch {
             logger.error("Failed to encode exam history: \(error.localizedDescription)")
         }
-        dataVersion += 1
+        _readinessCache = nil
     }
 
     // MARK: - Simulation history
 
     var simulationHistory: [SimulationResult] {
-        _ = dataVersion
         if let cached = _simulationHistoryCache { return cached }
         guard let data = defaults.data(forKey: Keys.simulationHistory) else {
             _simulationHistoryCache = []
@@ -169,13 +181,11 @@ final class ProgressStore {
         } catch {
             logger.error("Failed to encode simulation history: \(error.localizedDescription)")
         }
-        dataVersion += 1
     }
 
     // MARK: - Hazard history
 
     var hazardHistory: [HazardResult] {
-        _ = dataVersion
         if let cached = _hazardHistoryCache { return cached }
         guard let data = defaults.data(forKey: Keys.hazardHistory) else {
             _hazardHistoryCache = []
@@ -203,13 +213,11 @@ final class ProgressStore {
         } catch {
             logger.error("Failed to encode hazard history: \(error.localizedDescription)")
         }
-        dataVersion += 1
     }
 
     // MARK: - Bookmarks
 
     var bookmarks: Set<Int> {
-        _ = dataVersion
         if let cached = _bookmarksCache { return cached }
         guard let data = defaults.data(forKey: Keys.bookmarks) else {
             _bookmarksCache = []
@@ -236,7 +244,6 @@ final class ProgressStore {
         }
         _bookmarksCache = current
         saveIntSet(current, forKey: Keys.bookmarks)
-        dataVersion += 1
     }
 
     func isBookmarked(questionNo: Int) -> Bool {
@@ -246,7 +253,6 @@ final class ProgressStore {
     // MARK: - Wrong answers
 
     var wrongAnswers: Set<Int> {
-        _ = dataVersion
         if let cached = _wrongAnswersCache { return cached }
         guard let data = defaults.data(forKey: Keys.wrongAnswers) else {
             _wrongAnswersCache = []
@@ -269,7 +275,6 @@ final class ProgressStore {
         current.insert(questionNo)
         _wrongAnswersCache = current
         saveIntSet(current, forKey: Keys.wrongAnswers)
-        dataVersion += 1
     }
 
     func removeWrongAnswer(_ questionNo: Int) {
@@ -277,13 +282,11 @@ final class ProgressStore {
         current.remove(questionNo)
         _wrongAnswersCache = current
         saveIntSet(current, forKey: Keys.wrongAnswers)
-        dataVersion += 1
     }
 
     // MARK: - Completed exam sets
 
     var completedExamSets: Set<Int> {
-        _ = dataVersion
         if let cached = _completedExamSetsCache { return cached }
         guard let data = defaults.data(forKey: Keys.completedExamSets) else {
             _completedExamSetsCache = []
@@ -306,7 +309,6 @@ final class ProgressStore {
         current.insert(id)
         _completedExamSetsCache = current
         saveIntSet(current, forKey: Keys.completedExamSets)
-        dataVersion += 1
     }
 
     /// Returns the most recent exam result for a given fixed exam set, if any.
@@ -317,13 +319,17 @@ final class ProgressStore {
     // MARK: - Streak
 
     var streakCount: Int {
-        _ = dataVersion
-        return defaults.integer(forKey: Keys.streakCount)
+        if let cached = _streakCountCache { return cached }
+        let value = defaults.integer(forKey: Keys.streakCount)
+        _streakCountCache = value
+        return value
     }
 
     var lastStudyDate: String? {
-        _ = dataVersion
-        return defaults.string(forKey: Keys.lastStudyDate)
+        if let cached = _lastStudyDateCache { return cached }
+        let value = defaults.string(forKey: Keys.lastStudyDate)
+        _lastStudyDateCache = .some(value)
+        return value
     }
 
     func updateStreak() {
@@ -331,7 +337,7 @@ final class ProgressStore {
         let todayStr = Self.streakDateFormatter.string(from: today)
 
         let last = lastStudyDate
-        if last == todayStr { return } // already counted today
+        if last == todayStr { return }
 
         var newStreak = 1
         if let last, let lastDate = Self.streakDateFormatter.date(from: last) {
@@ -343,25 +349,31 @@ final class ProgressStore {
 
         defaults.set(newStreak, forKey: Keys.streakCount)
         defaults.set(todayStr, forKey: Keys.lastStudyDate)
-        dataVersion += 1
+        _streakCountCache = newStreak
+        _lastStudyDateCache = .some(todayStr)
     }
 
     // MARK: - Continue learning position
 
     var lastTopicKey: String? {
-        _ = dataVersion
-        return defaults.string(forKey: Keys.lastTopicKey)
+        if let cached = _lastTopicKeyCache { return cached }
+        let value = defaults.string(forKey: Keys.lastTopicKey)
+        _lastTopicKeyCache = .some(value)
+        return value
     }
 
     var lastQuestionIndex: Int {
-        _ = dataVersion
-        return defaults.integer(forKey: Keys.lastQuestionIndex)
+        if let cached = _lastQuestionIndexCache { return cached }
+        let value = defaults.integer(forKey: Keys.lastQuestionIndex)
+        _lastQuestionIndexCache = value
+        return value
     }
 
     func saveLastPosition(topicKey: String, index: Int) {
         defaults.set(topicKey, forKey: Keys.lastTopicKey)
         defaults.set(index, forKey: Keys.lastQuestionIndex)
-        dataVersion += 1
+        _lastTopicKeyCache = .some(topicKey)
+        _lastQuestionIndexCache = index
     }
 
     // MARK: - Convenience wrappers (used by views)
@@ -384,8 +396,10 @@ final class ProgressStore {
         saveQuestionResult(topicKey: topicKey, questionNo: questionNo, correct: correct)
         if correct {
             removeWrongAnswer(questionNo)
+            clearReview(questionNo: questionNo)
         } else {
             addWrongAnswer(questionNo)
+            recordReview(questionNo: questionNo)
         }
         updateStreak()
         recordStudyActivity()
@@ -402,7 +416,6 @@ final class ProgressStore {
         clearWrongAnswers()
         clearStreak()
         invalidateCaches()
-        dataVersion += 1
     }
 
     func clearTopicProgress() {
@@ -412,45 +425,42 @@ final class ProgressStore {
         }
         defaults.removeObject(forKey: Keys.lastTopicKey)
         defaults.removeObject(forKey: Keys.lastQuestionIndex)
-        invalidateCaches()
-        dataVersion += 1
+        _topicProgressCache.removeAll()
+        _lastTopicKeyCache = nil
+        _lastQuestionIndexCache = nil
     }
 
     func clearExamHistory() {
         defaults.removeObject(forKey: Keys.examHistory)
         defaults.removeObject(forKey: Keys.completedExamSets)
         invalidateCaches()
-        dataVersion += 1
     }
 
     func clearSimulationHistory() {
         defaults.removeObject(forKey: Keys.simulationHistory)
         invalidateCaches()
-        dataVersion += 1
     }
 
     func clearHazardHistory() {
         defaults.removeObject(forKey: Keys.hazardHistory)
         invalidateCaches()
-        dataVersion += 1
     }
 
     func clearBookmarks() {
         defaults.removeObject(forKey: Keys.bookmarks)
         invalidateCaches()
-        dataVersion += 1
     }
 
     func clearWrongAnswers() {
         defaults.removeObject(forKey: Keys.wrongAnswers)
         invalidateCaches()
-        dataVersion += 1
     }
 
     func clearStreak() {
         defaults.removeObject(forKey: Keys.streakCount)
         defaults.removeObject(forKey: Keys.lastStudyDate)
-        dataVersion += 1
+        _streakCountCache = nil
+        _lastStudyDateCache = nil
     }
 
     // MARK: - Private helpers

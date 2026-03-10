@@ -2,6 +2,7 @@ import SwiftUI
 
 struct ExamCountdownCard: View {
     @Environment(ProgressStore.self) private var progressStore
+    @Environment(ThemeStore.self) private var themeStore
 
     var body: some View {
         if progressStore.daysUntilExam == nil {
@@ -9,9 +10,9 @@ struct ExamCountdownCard: View {
                 HStack(spacing: 14) {
                     Image(systemName: "calendar.badge.plus")
                         .font(.system(size: 22))
-                        .foregroundStyle(Color.appPrimary)
+                        .foregroundStyle(themeStore.primaryColor)
                         .frame(width: 44, height: 44)
-                        .background(Color.appPrimary.opacity(0.12))
+                        .background(themeStore.primaryColor.opacity(0.12))
                         .clipShape(RoundedRectangle(cornerRadius: 8))
 
                     VStack(alignment: .leading, spacing: 3) {
@@ -41,7 +42,7 @@ struct ExamCountdownCard: View {
                     VStack(spacing: 2) {
                         Text("\(daysLeft)")
                             .font(.system(size: 36, weight: .heavy).monospacedDigit())
-                            .foregroundStyle(daysLeft <= 7 ? Color.appWarning : Color.appPrimary)
+                            .foregroundStyle(daysLeft <= 7 ? Color.appWarning : themeStore.primaryColor)
                             .contentTransition(.numericText())
                         Text("ngày còn lại")
                             .font(.system(size: 12, weight: .medium))
@@ -75,7 +76,7 @@ struct ExamCountdownCard: View {
                         }
 
                         ProgressView(value: min(Double(today.done) / Double(max(today.goal, 1)), 1.0))
-                            .tint(today.done >= today.goal ? Color.appSuccess : Color.appPrimary)
+                            .tint(today.done >= today.goal ? Color.appSuccess : themeStore.primaryColor)
                     }
                 }
             }

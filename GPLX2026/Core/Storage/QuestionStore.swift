@@ -19,6 +19,7 @@ final class QuestionStore {
     private(set) var topics: [Topic] = []
     private var _diemLietCache: [Question]?
     private var _simulationCache: [Question]?
+    private var _b1Cache: [Question]?
 
     // MARK: - Memory tips cache
 
@@ -66,6 +67,19 @@ final class QuestionStore {
         let result = allQuestions.filter(\.isDiemLiet)
         _diemLietCache = result
         return result
+    }
+
+    /// Questions filtered for the current license type.
+    var questionsForCurrentLicense: [Question] {
+        switch LicenseType.current {
+        case .b1:
+            if let cached = _b1Cache { return cached }
+            let result = allQuestions.filter(\.isB1).sorted { $0.b1Position < $1.b1Position }
+            _b1Cache = result
+            return result
+        case .b2:
+            return allQuestions
+        }
     }
 
     // MARK: - Memory tips
@@ -133,22 +147,26 @@ final class QuestionStore {
 
     /// Generate random questions for a mock exam.
     func randomExamQuestions() -> [Question] {
-        let diemLietQuestions = allQuestions.filter(\.isDiemLiet)
-        let normalQuestions = allQuestions.filter { !$0.isDiemLiet }
-        let dlCount = AppConstants.Exam.diemLietPerExam
-        let normalCount = AppConstants.Exam.questionsPerExam - dlCount
-        let selectedDL = Array(diemLietQuestions.shuffled().prefix(dlCount))
-        let selectedNormal = Array(normalQuestions.shuffled().prefix(normalCount))
+        let license = LicenseType.current
+        let pool = questionsForCurrentLicense
+        let diemLiet = pool.filter(\.isDiemLiet)
+        let normal = pool.filter { !$0.isDiemLiet }
+        let dlCount = license.diemLietPerExam
+        let normalCount = license.questionsPerExam - dlCount
+        let selectedDL = Array(diemLiet.shuffled().prefix(dlCount))
+        let selectedNormal = Array(normal.shuffled().prefix(normalCount))
         return (selectedDL + selectedNormal).shuffled()
     }
 
     /// Fixed exam set questions. Each set takes a slice of questions.
     func examSetQuestions(setId: Int) -> [Question] {
-        let perSet = AppConstants.Exam.questionsPerExam
+        let license = LicenseType.current
+        let pool = questionsForCurrentLicense
+        let perSet = license.questionsPerExam
         let startIndex = (setId - 1) * perSet
-        let endIndex = min(startIndex + perSet, allQuestions.count)
-        guard startIndex < allQuestions.count else { return [] }
-        return Array(allQuestions[startIndex..<endIndex])
+        let endIndex = min(startIndex + perSet, pool.count)
+        guard startIndex < pool.count else { return [] }
+        return Array(pool[startIndex..<endIndex])
     }
 
     // MARK: - Diem Liet by topic
@@ -202,6 +220,7 @@ final class QuestionStore {
         }
         _diemLietCache = allQuestions.filter(\.isDiemLiet)
         _simulationCache = allQuestions.filter { $0.topic == 6 && $0.hasImage }
+        _b1Cache = allQuestions.filter(\.isB1).sorted { $0.b1Position < $1.b1Position }
     }
 
     // MARK: - Private helpers

@@ -42,17 +42,7 @@ extension Color {
         })
     }
 
-    // ── Primary (dynamic) ────────────────────────────────────────────────
-
-    static var appPrimary: Color {
-        primaryColor(for: UserDefaults.standard.string(forKey: AppConstants.StorageKey.primaryColor) ?? "default")
-    }
-
-    static var appOnPrimary: Color {
-        let key = UserDefaults.standard.string(forKey: AppConstants.StorageKey.primaryColor) ?? "default"
-        if key == "default" { return adaptive(light: 0xFAFAFA, dark: 0x1A1A1A) }
-        return .white
-    }
+    // ── Primary ────────────────────────────────────────────────
 
     static let primaryDark = adaptive(light: 0x0A0A0A, dark: 0xFFFFFF)
 
@@ -102,7 +92,6 @@ extension Color {
 
     // ── Accents (grayscale aliases) ───────────────────────────────────
 
-    static let accentTerra   = appPrimary
     static let accentGreen   = adaptive(light: 0x525252, dark: 0x8E8E8E)
     static let accentRose    = adaptive(light: 0x4A4A4A, dark: 0xB0B0B0)
 

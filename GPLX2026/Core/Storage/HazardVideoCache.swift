@@ -21,13 +21,25 @@ final class HazardVideoCache {
     private var speedWindowBytes: Int64 = 0
     private var speedWindowStart: Date?
 
+    // PERF5: Lazy stats — don't scan files in init()
+    private var _statsLoaded = false
+
+    // PERF4: Shared session + delegate
+    private let downloadDelegate = SharedDownloadDelegate()
+    @ObservationIgnored
+    private lazy var downloadSession: URLSession = {
+        let config = URLSessionConfiguration.default
+        config.timeoutIntervalForResource = 300
+        return URLSession(configuration: config, delegate: downloadDelegate, delegateQueue: nil)
+    }()
+
     init() {
-        refreshCacheStats()
+        // No file I/O here — stats loaded lazily
     }
 
     // MARK: - Cache directory
 
-    private static var cacheDir: URL {
+    nonisolated static var cacheDir: URL {
         let dir = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0]
             .appendingPathComponent("hazard_videos", isDirectory: true)
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
@@ -54,20 +66,43 @@ final class HazardVideoCache {
     }
 
     func cachedCount(forChapter chapterId: Int) -> Int {
-        HazardSituation.all
+        ensureStatsLoaded()
+        return HazardSituation.all
             .filter { $0.chapter == chapterId && cachedIds.contains($0.id) }
             .count
     }
 
-    private func refreshCacheStats() {
-        cachedIds = Set(HazardSituation.all.filter { localURL(for: $0) != nil }.map(\.id))
-        cachedCount = cachedIds.count
-        cacheSizeMB = computeCacheSizeMB()
+    func totalCount(forChapter chapterId: Int) -> Int {
+        HazardSituation.all.filter { $0.chapter == chapterId }.count
     }
 
-    private func computeCacheSizeMB() -> Double {
+    /// Trigger lazy stats load. Call from views that display cache info.
+    func ensureStatsLoaded() {
+        guard !_statsLoaded else { return }
+        _statsLoaded = true
+        let cacheDir = Self.cacheDir
+        let allSituations = HazardSituation.all
+        Task.detached {
+            var ids = Set<Int>()
+            for situation in allSituations {
+                let file = cacheDir.appendingPathComponent("\(situation.videoFileName).mp4")
+                if FileManager.default.fileExists(atPath: file.path) {
+                    ids.insert(situation.id)
+                }
+            }
+            let sizeMB = Self.computeCacheSizeMB(cacheDir: cacheDir)
+            await MainActor.run { [weak self] in
+                guard let self else { return }
+                self.cachedIds = ids
+                self.cachedCount = ids.count
+                self.cacheSizeMB = sizeMB
+            }
+        }
+    }
+
+    private nonisolated static func computeCacheSizeMB(cacheDir: URL) -> Double {
         let files = (try? FileManager.default.contentsOfDirectory(
-            at: Self.cacheDir,
+            at: cacheDir,
             includingPropertiesForKeys: [.fileSizeKey]
         )) ?? []
         let totalBytes = files.reduce(0) { sum, url in
@@ -77,11 +112,15 @@ final class HazardVideoCache {
         return Double(totalBytes) / (1024 * 1024)
     }
 
-    func totalCount(forChapter chapterId: Int) -> Int {
-        HazardSituation.all.filter { $0.chapter == chapterId }.count
+    private func fileSizeMB(_ url: URL) -> Double {
+        let size = (try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0
+        return Double(size) / (1024 * 1024)
     }
 
+    // MARK: - Downloads
+
     func downloadChapter(_ chapterId: Int) async {
+        ensureStatsLoaded()
         downloadingChapters.insert(chapterId)
         let uncached = HazardSituation.all
             .filter { $0.chapter == chapterId && localURL(for: $0) == nil }
@@ -98,7 +137,6 @@ final class HazardVideoCache {
 
     func cancelChapter(_ chapterId: Int) {
         downloadingChapters.remove(chapterId)
-        // Cancel active tasks for this chapter
         let chapterSituations = HazardSituation.all.filter { $0.chapter == chapterId }
         for s in chapterSituations {
             if let task = activeTasks.removeValue(forKey: s.id) {
@@ -111,24 +149,22 @@ final class HazardVideoCache {
         guard localURL(for: situation) == nil else { return }
         downloadProgress[situation.id] = 0
 
-        let delegate = DownloadProgressTracker { [weak self] bytesJustWritten, totalWritten, expectedTotal in
-            Task { @MainActor [weak self] in
-                guard let self else { return }
-                if expectedTotal > 0 {
-                    self.downloadProgress[situation.id] = Double(totalWritten) / Double(expectedTotal)
-                }
-                self.trackSpeed(bytesJustWritten: bytesJustWritten)
-            }
-        }
-
         do {
             let tempURL: URL = try await withCheckedThrowingContinuation { continuation in
-                delegate.setContinuation(continuation)
-                let config = URLSessionConfiguration.default
-                config.timeoutIntervalForResource = 300
-                let dlSession = URLSession(configuration: config, delegate: delegate, delegateQueue: nil)
-                let task = dlSession.downloadTask(with: situation.videoURL)
-                dlSession.finishTasksAndInvalidate()
+                let task = downloadSession.downloadTask(with: situation.videoURL)
+                downloadDelegate.register(
+                    taskId: task.taskIdentifier,
+                    onProgress: { [weak self] bytesWritten, totalWritten, expected in
+                        Task { @MainActor [weak self] in
+                            guard let self else { return }
+                            if expected > 0 {
+                                self.downloadProgress[situation.id] = Double(totalWritten) / Double(expected)
+                            }
+                            self.trackSpeed(bytesJustWritten: bytesWritten)
+                        }
+                    },
+                    continuation: continuation
+                )
                 self.activeTasks[situation.id] = task
                 task.resume()
             }
@@ -138,7 +174,10 @@ final class HazardVideoCache {
             try? FileManager.default.removeItem(at: dest)
             try FileManager.default.moveItem(at: tempURL, to: dest)
             downloadProgress[situation.id] = 1.0
-            refreshCacheStats()
+            // PERF5: Incremental update instead of full rescan
+            cachedIds.insert(situation.id)
+            cachedCount = cachedIds.count
+            cacheSizeMB += fileSizeMB(dest)
             Self.logger.info("Cached video \(situation.id)")
         } catch {
             activeTasks.removeValue(forKey: situation.id)
@@ -150,6 +189,7 @@ final class HazardVideoCache {
     }
 
     func downloadAll() async {
+        ensureStatsLoaded()
         isDownloadingAll = true
         let uncached = HazardSituation.all.filter { localURL(for: $0) == nil }
 
@@ -176,7 +216,9 @@ final class HazardVideoCache {
         try? FileManager.default.removeItem(at: Self.cacheDir)
         try? FileManager.default.createDirectory(at: Self.cacheDir, withIntermediateDirectories: true)
         downloadProgress.removeAll()
-        refreshCacheStats()
+        cachedIds.removeAll()
+        cachedCount = 0
+        cacheSizeMB = 0
     }
 
     // MARK: - Speed tracking
@@ -206,51 +248,46 @@ final class HazardVideoCache {
     }
 }
 
-// MARK: - Download Progress Delegate
+// MARK: - Shared Download Delegate
 
-private final class DownloadProgressTracker: NSObject, URLSessionDownloadDelegate, @unchecked Sendable {
-    let onProgress: @Sendable (Int64, Int64, Int64) -> Void
-    private var continuation: CheckedContinuation<URL, Error>?
+private final class SharedDownloadDelegate: NSObject, URLSessionDownloadDelegate, @unchecked Sendable {
     private let lock = NSLock()
+    private var progressHandlers: [Int: @Sendable (Int64, Int64, Int64) -> Void] = [:]
+    private var continuations: [Int: CheckedContinuation<URL, Error>] = [:]
 
-    init(onProgress: @escaping @Sendable (Int64, Int64, Int64) -> Void) {
-        self.onProgress = onProgress
-    }
-
-    func setContinuation(_ cont: CheckedContinuation<URL, Error>) {
-        lock.lock()
-        continuation = cont
-        lock.unlock()
-    }
-
-    private func resumeOnce(with result: Result<URL, Error>) {
-        lock.lock()
-        let cont = continuation
-        continuation = nil
-        lock.unlock()
-        switch result {
-        case .success(let url): cont?.resume(returning: url)
-        case .failure(let err): cont?.resume(throwing: err)
+    func register(
+        taskId: Int,
+        onProgress: @escaping @Sendable (Int64, Int64, Int64) -> Void,
+        continuation: CheckedContinuation<URL, Error>
+    ) {
+        lock.withLock {
+            progressHandlers[taskId] = onProgress
+            continuations[taskId] = continuation
         }
     }
 
     func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask, didFinishDownloadingTo location: URL) {
+        let id = downloadTask.taskIdentifier
         let tempFile = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".mp4")
         do {
             try FileManager.default.copyItem(at: location, to: tempFile)
-            resumeOnce(with: .success(tempFile))
+            lock.withLock { continuations.removeValue(forKey: id) }?.resume(returning: tempFile)
         } catch {
-            resumeOnce(with: .failure(error))
+            lock.withLock { continuations.removeValue(forKey: id) }?.resume(throwing: error)
         }
+        lock.withLock { _ = progressHandlers.removeValue(forKey: id) }
     }
 
     func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask, didWriteData bytesWritten: Int64, totalBytesWritten: Int64, totalBytesExpectedToWrite: Int64) {
-        onProgress(bytesWritten, totalBytesWritten, totalBytesExpectedToWrite)
+        let handler = lock.withLock { progressHandlers[downloadTask.taskIdentifier] }
+        handler?(bytesWritten, totalBytesWritten, totalBytesExpectedToWrite)
     }
 
     func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
+        let id = task.taskIdentifier
         if let error {
-            resumeOnce(with: .failure(error))
+            lock.withLock { continuations.removeValue(forKey: id) }?.resume(throwing: error)
         }
+        lock.withLock { _ = progressHandlers.removeValue(forKey: id) }
     }
 }

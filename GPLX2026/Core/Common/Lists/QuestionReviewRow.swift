@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct QuestionReviewRow: View {
+    @Environment(ThemeStore.self) private var themeStore
     let question: Question
     let status: AnswerStatus
     var showStatusIcon: Bool = true
@@ -115,7 +116,7 @@ struct QuestionReviewRow: View {
                                     Text("Luyện câu này")
                                         .font(.system(size: 13, weight: .semibold))
                                 }
-                                .foregroundStyle(Color.appPrimary)
+                                .foregroundStyle(themeStore.primaryColor)
                                 .padding(.top, 4)
                             }
                         }

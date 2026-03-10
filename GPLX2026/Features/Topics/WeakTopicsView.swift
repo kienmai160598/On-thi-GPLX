@@ -87,6 +87,7 @@ struct WeakTopicsView: View {
 // MARK: - Topic Accuracy Row
 
 private struct TopicAccuracyRow: View {
+    @Environment(ThemeStore.self) private var themeStore
     let item: (topic: Topic, accuracy: Double, correct: Int, attempted: Int, total: Int)
 
     private var accentColor: Color {
@@ -124,7 +125,7 @@ private struct TopicAccuracyRow: View {
 
             Text("Ôn tập")
                 .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(Color.appPrimary)
+                .foregroundStyle(themeStore.primaryColor)
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 14)

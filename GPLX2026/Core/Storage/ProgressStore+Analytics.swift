@@ -72,6 +72,8 @@ extension ProgressStore {
     }
 
     func readinessStatus(topics: [Topic], allQuestions: [Question]) -> ReadinessStatus {
+        if let cached = _readinessCache { return cached }
+
         let totalCorrect = totalCorrectCount(topics: topics)
         let totalAttempted = totalAttemptedCount(topics: topics)
         let overallAccuracy = totalAttempted > 0 ? Double(totalCorrect) / Double(totalAttempted) : 0
@@ -91,7 +93,7 @@ extension ProgressStore {
             && dl.correct == dl.total
             && totalAttempted >= AppConstants.Readiness.attemptedGoal
 
-        return ReadinessStatus(
+        let result = ReadinessStatus(
             score: score,
             percentage: pct,
             diemLiet: dl,
@@ -101,6 +103,8 @@ extension ProgressStore {
             isReady: isReady,
             passRate: passRate
         )
+        _readinessCache = result
+        return result
     }
 
     // MARK: - Aggregate counts

@@ -3,6 +3,7 @@ import SwiftUI
 struct QuestionView: View {
     @Environment(QuestionStore.self) private var questionStore
     @Environment(ProgressStore.self) private var progressStore
+    @Environment(ThemeStore.self) private var themeStore
     @Environment(\.dismiss) private var dismiss
     @Environment(\.openExam) private var openExam
 
@@ -16,6 +17,7 @@ struct QuestionView: View {
     @State private var answeredInSession: Set<Int> = []
     @State private var showResultSheet = false
     @State private var canAdvance = true
+    @State private var sessionQuestions: [Question] = []
 
     init(topicKey: String, startIndex: Int) {
         self.topicKey = topicKey
@@ -32,7 +34,7 @@ struct QuestionView: View {
         }
     }
 
-    private var questions: [Question] {
+    private var liveQuestions: [Question] {
         questionStore.questions(forTopicKey: topicKey, filterIds: filterIds)
     }
 
@@ -52,11 +54,20 @@ struct QuestionView: View {
     private var hasSelected: Bool { selectedAnswerId != nil }
 
     var body: some View {
-        let allQuestions = questions
-        if allQuestions.isEmpty || currentIndex >= allQuestions.count {
-            emptyState
-        } else {
-            questionContent(allQuestions: allQuestions)
+        let allQuestions = sessionQuestions
+        Group {
+            if allQuestions.isEmpty || currentIndex >= allQuestions.count {
+                emptyState
+            } else {
+                questionContent(allQuestions: allQuestions)
+            }
+        }
+        .task { loadQuestions() }
+    }
+
+    private func loadQuestions() {
+        if sessionQuestions.isEmpty {
+            sessionQuestions = liveQuestions
         }
     }
 
@@ -181,7 +192,7 @@ struct QuestionView: View {
                 } label: {
                     Image(systemName: isBookmarked ? "bookmark.fill" : "bookmark")
                         .font(.system(size: 16))
-                        .foregroundStyle(isBookmarked ? Color.appPrimary : Color.appTextDark)
+                        .foregroundStyle(isBookmarked ? themeStore.primaryColor : Color.appTextDark)
                 }
             }
         }
@@ -243,14 +254,14 @@ struct QuestionView: View {
                             showResultSheet = false
                             resetQuiz()
                         } label: {
-                            AppButton(label: "Làm lại", height: 48, cornerRadius: 12)
+                            AppButton(label: "Làm lại", height: 48)
                         }
 
                         Button {
                             showResultSheet = false
                             dismiss()
                         } label: {
-                            AppButton(label: "Hoàn thành", style: .secondary, height: 48, cornerRadius: 12)
+                            AppButton(label: "Hoàn thành", style: .secondary, height: 48)
                         }
                     }
                     .padding(.top, 8)
@@ -336,6 +347,7 @@ struct QuestionView: View {
     }
 
     private func resetQuiz() {
+        sessionQuestions = liveQuestions
         currentIndex = 0
         selectedAnswerId = nil
         isConfirmed = false

@@ -144,7 +144,7 @@ extension ProgressStore {
         }
 
         // 6. Simulation ≥70%, hazard avg < 50%
-        let hazardAvg = averageHazardScore / 100.0 // averageHazardScore is 0-100 percentage
+        let hazardAvg = averageHazardScore // averageHazardScore is already 0.0-1.0
         if simulationAccuracy >= 0.7 && hazardAvg < 0.5 {
             return .startHazard
         }

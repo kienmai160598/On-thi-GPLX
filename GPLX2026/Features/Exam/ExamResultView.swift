@@ -52,7 +52,7 @@ struct ExamResultView: View {
                     Divider().padding(.horizontal, 16)
                     ScoreRow(
                         label: "Yêu cầu đạt",
-                        value: "≥ \(AppConstants.Exam.passThreshold) & 0 ĐL sai",
+                        value: "≥ \(LicenseType.current.passThreshold) & 0 ĐL sai",
                         color: Color.appTextMedium
                     )
                 }
@@ -85,7 +85,7 @@ struct ExamResultView: View {
                         Button {
                             openExam(.questionView(topicKey: AppConstants.TopicKey.wrongAnswers, startIndex: 0))
                         } label: {
-                            AppButton(icon: "arrow.trianglehead.2.clockwise", label: "Luyện \(questions.count - correctCount) câu sai", style: .secondary, height: 48, cornerRadius: 24)
+                            AppButton(icon: "arrow.trianglehead.2.clockwise", label: "Luyện \(questions.count - correctCount) câu sai", style: .secondary, height: 48)
                         }
                     }
 
@@ -93,11 +93,11 @@ struct ExamResultView: View {
                         Button {
                             openExam(.mockExam(examSetId: examResult.examSetId))
                         } label: {
-                            AppButton(icon: "arrow.counterclockwise", label: "Thi lại", style: .secondary, height: 48, cornerRadius: 24)
+                            AppButton(icon: "arrow.counterclockwise", label: "Thi lại", style: .secondary, height: 48)
                         }
 
                         Button { popToRoot() } label: {
-                            AppButton(icon: "checkmark", label: "Hoàn thành", height: 48, cornerRadius: 24)
+                            AppButton(icon: "checkmark", label: "Hoàn thành", height: 48)
                         }
                     }
                 }
@@ -108,6 +108,11 @@ struct ExamResultView: View {
         }
         .navigationBarBackButtonHidden(!isFromHistory)
         .screenHeader(isFromHistory ? "Chi tiết bài thi" : "Kết quả thi")
+        .onAppear {
+            if !isFromHistory {
+                ReviewHelper.requestIfFirstPass(passed: examResult.passed)
+            }
+        }
         .toolbar {
             if !isFromHistory {
                 ToolbarItem(placement: .navigationBarTrailing) {

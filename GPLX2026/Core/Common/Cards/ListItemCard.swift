@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct ListItemCard<Trailing: View>: View {
-    @AppStorage(AppConstants.StorageKey.primaryColor) private var primaryColorKey = "default"
+    @Environment(ThemeStore.self) private var themeStore
     let icon: String
     let title: String
     var subtitle: String? = nil
@@ -14,7 +14,7 @@ struct ListItemCard<Trailing: View>: View {
 
     private var cardContent: some View {
         HStack(spacing: 12) {
-            IconBox(icon: icon, color: iconColor ?? Color.primaryColor(for: primaryColorKey), size: iconSize, cornerRadius: iconCornerRadius, iconFontSize: iconFontSize)
+            IconBox(icon: icon, color: iconColor ?? themeStore.primaryColor, size: iconSize, cornerRadius: iconCornerRadius, iconFontSize: iconFontSize)
 
             VStack(alignment: .leading, spacing: 3) {
                 Text(title)

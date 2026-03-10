@@ -1,4 +1,6 @@
 import Foundation
+import StoreKit
+import UIKit
 
 // MARK: - AppConstants
 
@@ -25,8 +27,8 @@ enum AppConstants {
     // MARK: - Readiness
 
     enum Readiness {
-        static let attemptedGoal = 400
-        static let totalQuestionsGoal = 600
+        static var attemptedGoal: Int { LicenseType.current == .b1 ? 200 : 400 }
+        static var totalQuestionsGoal: Int { LicenseType.current.totalQuestions }
         static let readyPercentage = 80
         static let intermediatePercentage = 50
     }
@@ -58,6 +60,8 @@ enum AppConstants {
         static let backgroundSpeed = "backgroundSpeed"
         static let dailyReminderEnabled = "dailyReminderEnabled"
         static let dailyReminderHour = "dailyReminderHour"
+        static let licenseType = "licenseType"
+        static let hasRequestedReview = "hasRequestedReview"
     }
 
     // MARK: - Special Topic Keys
@@ -67,5 +71,22 @@ enum AppConstants {
         static let bookmarks = "bookmarks"
         static let wrongAnswers = "wrong_answers"
         static let allQuestions = "all_questions"
+    }
+}
+
+// MARK: - Review Helper
+
+enum ReviewHelper {
+    static func requestIfFirstPass(passed: Bool) {
+        guard passed else { return }
+        let key = AppConstants.StorageKey.hasRequestedReview
+        guard !UserDefaults.standard.bool(forKey: key) else { return }
+        UserDefaults.standard.set(true, forKey: key)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+            guard let scene = UIApplication.shared.connectedScenes
+                .first(where: { $0.activationState == .foregroundActive }) as? UIWindowScene
+            else { return }
+            SKStoreReviewController.requestReview(in: scene)
+        }
     }
 }

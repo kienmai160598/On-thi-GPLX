@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct ProgressRing: View {
+    @Environment(ThemeStore.self) private var themeStore
     let current: Int
     let total: Int
     var size: CGFloat = 52
@@ -28,7 +29,7 @@ struct ProgressRing: View {
 
             Circle()
                 .trim(from: 0, to: fraction)
-                .stroke(Color.appPrimary, style: StrokeStyle(lineWidth: 3, lineCap: .round))
+                .stroke(themeStore.primaryColor, style: StrokeStyle(lineWidth: 3, lineCap: .round))
                 .rotationEffect(.degrees(-90))
                 .animation(.snappy, value: fraction)
 

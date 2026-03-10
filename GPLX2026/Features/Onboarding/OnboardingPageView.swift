@@ -8,6 +8,7 @@ struct OnboardingPage: Identifiable {
 }
 
 struct OnboardingPageView: View {
+    @Environment(ThemeStore.self) private var themeStore
     let page: OnboardingPage
 
     var body: some View {
@@ -41,9 +42,9 @@ struct OnboardingPageView: View {
     @ViewBuilder
     private var heroArea: some View {
         switch page.id {
-        case 1:
-            examStructureHero
         case 2:
+            examStructureHero
+        case 3:
             featureIconsHero
         default:
             singleIconHero
@@ -58,15 +59,15 @@ struct OnboardingPageView: View {
                 .fill(.ultraThinMaterial)
                 .frame(width: 200, height: 200)
 
-            if page.id == 4 {
+            if page.id == 5 {
                 Image(systemName: page.icon)
                     .font(.system(size: 88))
-                    .foregroundStyle(Color.appPrimary)
+                    .foregroundStyle(themeStore.primaryColor)
                     .symbolEffect(.breathe, isActive: true)
             } else {
                 Image(systemName: page.icon)
                     .font(.system(size: 88))
-                    .foregroundStyle(Color.appPrimary)
+                    .foregroundStyle(themeStore.primaryColor)
                     .symbolEffect(.bounce, value: bouncetrigger)
                     .onAppear { bouncetrigger += 1 }
             }
@@ -75,7 +76,7 @@ struct OnboardingPageView: View {
 
     private var examStructureHero: some View {
         VStack(spacing: 12) {
-            examPartRow(icon: "doc.text.fill", part: "Phần 1", name: "Lý thuyết", detail: "30 câu · 22 phút · ≥28 đạt", color: .topicQuyDinh)
+            examPartRow(icon: "doc.text.fill", part: "Phần 1", name: "Lý thuyết", detail: "\(LicenseType.current.questionsPerExam) câu · \(LicenseType.current.totalTimeSeconds / 60) phút · ≥\(LicenseType.current.passThreshold) đạt", color: .topicQuyDinh)
             examPartRow(icon: "photo.fill", part: "Phần 2", name: "Sa hình", detail: "20 hình · 60s mỗi câu · ≥70%", color: .topicSaHinh)
             examPartRow(icon: "play.circle.fill", part: "Phần 3", name: "Tình huống", detail: "10 video · ≥35/50 điểm", color: .topicBienBao)
 
@@ -139,7 +140,7 @@ struct OnboardingPageView: View {
 
                 Image(systemName: icon)
                     .font(.system(size: 40))
-                    .foregroundStyle(Color.appPrimary)
+                    .foregroundStyle(themeStore.primaryColor)
                     .symbolEffect(.wiggle, options: .repeating.speed(0.5), isActive: true)
             }
 

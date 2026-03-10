@@ -30,7 +30,7 @@ struct ExamBottomBar: View {
                     Haptics.selection()
                     onPrev()
                 } label: {
-                    AppButton(icon: prevIcon, label: prevLabel, style: .secondary, height: 48, cornerRadius: 24)
+                    AppButton(icon: prevIcon, label: prevLabel, style: .secondary, height: 48)
                 }
                 .disabled(isPrevDisabled ?? (currentIndex == 0))
             }
@@ -39,7 +39,7 @@ struct ExamBottomBar: View {
                 Haptics.selection()
                 onNext()
             } label: {
-                AppButton(label: nextLabel, height: 48, cornerRadius: 24)
+                AppButton(label: nextLabel, height: 48)
             }
             .disabled(isNextDisabled)
 
@@ -53,6 +53,14 @@ struct ExamBottomBar: View {
         }
         .padding(.horizontal, 16)
         .padding(.top, 10)
-        .padding(.bottom, 8)
+        .padding(.bottom, bottomSafeArea + 8)
+    }
+
+    private var bottomSafeArea: CGFloat {
+        UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .flatMap(\.windows)
+            .first(where: \.isKeyWindow)?
+            .safeAreaInsets.bottom ?? 0
     }
 }

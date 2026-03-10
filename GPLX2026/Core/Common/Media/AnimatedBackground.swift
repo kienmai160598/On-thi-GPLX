@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct AnimatedBackground: View {
-    @AppStorage(AppConstants.StorageKey.primaryColor) private var primaryColorKey = "default"
+    @Environment(ThemeStore.self) private var themeStore
     @AppStorage(AppConstants.StorageKey.backgroundAnimation) private var animationStyle = "none"
     @AppStorage(AppConstants.StorageKey.backgroundSpeed) private var speedKey = "normal"
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -16,10 +16,10 @@ struct AnimatedBackground: View {
 
     var body: some View {
         if animationStyle != "none" && !reduceMotion {
+            let color = themeStore.primaryColor
             TimelineView(.animation) { timeline in
                 Canvas { context, size in
                     let t = timeline.date.timeIntervalSinceReferenceDate * speed
-                    let color = Color.primaryColor(for: primaryColorKey)
 
                     switch animationStyle {
                     case "bubbles":

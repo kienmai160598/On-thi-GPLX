@@ -3,12 +3,13 @@ import SwiftUI
 struct SettingsView: View {
     @Environment(ProgressStore.self) private var progressStore
     @Environment(HazardVideoCache.self) private var videoCache
+    @Environment(ThemeStore.self) private var themeStore
     @AppStorage(AppConstants.StorageKey.themeMode) private var themeMode: String = "system"
     @AppStorage(AppConstants.StorageKey.fontSize) private var fontSize: String = "medium"
-    @AppStorage(AppConstants.StorageKey.primaryColor) private var primaryColorKey: String = "default"
     @AppStorage(AppConstants.StorageKey.hapticsEnabled) private var hapticsEnabled: Bool = true
     @AppStorage(AppConstants.StorageKey.backgroundAnimation) private var backgroundAnimation: String = "none"
     @AppStorage(AppConstants.StorageKey.backgroundSpeed) private var backgroundSpeed: String = "normal"
+    @AppStorage(AppConstants.StorageKey.licenseType) private var licenseType: String = "b2"
     @AppStorage(AppConstants.StorageKey.dailyReminderEnabled) private var dailyReminderEnabled: Bool = false
     @AppStorage(AppConstants.StorageKey.dailyReminderHour) private var dailyReminderHour: Int = 20
 
@@ -22,19 +23,54 @@ struct SettingsView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 28) {
                 // ──────────────────────────────────────────────
+                // MARK: - Hạng bằng lái (License Type)
+                // ──────────────────────────────────────────────
+
+                settingsSection("Hạng bằng lái") {
+                    VStack(spacing: 0) {
+                        HStack {
+                            Image(systemName: "person.text.rectangle")
+                                .font(.system(size: 16))
+                                .foregroundStyle(themeStore.primaryColor)
+                                .frame(width: 28)
+                            Text("Hạng bằng")
+                                .font(.system(size: 15))
+                            Spacer()
+                            Picker("", selection: $licenseType) {
+                                ForEach(LicenseType.allCases, id: \.self) { type in
+                                    Text(type.displayName).tag(type.rawValue)
+                                }
+                            }
+                            .pickerStyle(.segmented)
+                            .frame(width: 120)
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 12)
+                    }
+                    .glassCard()
+
+                    if let current = LicenseType(rawValue: licenseType) {
+                        Text("\(current.questionsPerExam) câu · \(current.totalTimeSeconds / 60) phút · Đạt \(current.passThreshold)")
+                            .font(.system(size: 12))
+                            .foregroundStyle(Color.appTextLight)
+                            .lineSpacing(3)
+                    }
+                }
+
+                // ──────────────────────────────────────────────
                 // MARK: - Giao diện (Appearance)
                 // ──────────────────────────────────────────────
 
                 settingsSection("Giao diện", subtitle: "Tuỳ chỉnh giao diện ứng dụng") {
-                    ThemeModePicker(selected: $themeMode, primaryColorKey: primaryColorKey)
+                    ThemeModePicker(selected: $themeMode, primaryColorKey: themeStore.primaryColorKey)
 
                     // Primary Color
                     settingsLabel("Màu chủ đạo")
-                    PrimaryColorPicker(selected: $primaryColorKey)
+                    PrimaryColorPicker(selected: Bindable(themeStore).primaryColorKey)
 
                     // Font Size
                     settingsLabel("Cỡ chữ câu hỏi")
-                    FontSizeSlider(selected: $fontSize, primaryColorKey: primaryColorKey)
+                    FontSizeSlider(selected: $fontSize, primaryColorKey: themeStore.primaryColorKey)
                     FontSizePreview(fontSize: fontSize)
 
                     // Background Animation — compact row that opens sheet
@@ -42,7 +78,7 @@ struct SettingsView: View {
                         HStack(spacing: 12) {
                             Image(systemName: backgroundAnimation == "none" ? "sparkles" : "wand.and.stars")
                                 .font(.system(size: 16))
-                                .foregroundStyle(Color.appPrimary)
+                                .foregroundStyle(themeStore.primaryColor)
                                 .frame(width: 22)
                             VStack(alignment: .leading, spacing: 2) {
                                 Text("Hiệu ứng nền")
@@ -107,7 +143,7 @@ struct SettingsView: View {
                             HStack(spacing: 14) {
                                 Image(systemName: "clock")
                                     .font(.system(size: 18))
-                                    .foregroundStyle(Color.appPrimary)
+                                    .foregroundStyle(themeStore.primaryColor)
                                     .frame(width: 22)
 
                                 Text("Giờ nhắc")
@@ -122,7 +158,7 @@ struct SettingsView: View {
                                     }
                                 }
                                 .pickerStyle(.menu)
-                                .tint(Color.primaryColor(for: primaryColorKey))
+                                .tint(themeStore.primaryColor)
                             }
                             .padding(.horizontal, 16)
                             .padding(.vertical, 14)
@@ -346,7 +382,7 @@ struct SettingsView: View {
             BackgroundAnimationSheet(
                 selected: $backgroundAnimation,
                 speedKey: $backgroundSpeed,
-                primaryColorKey: primaryColorKey
+                primaryColorKey: themeStore.primaryColorKey
             )
             .presentationDetents([.medium])
         }
@@ -453,7 +489,7 @@ struct SettingsView: View {
         HStack(spacing: 14) {
             Image(systemName: isOn.wrappedValue ? iconOn : iconOff)
                 .font(.system(size: 18))
-                .foregroundStyle(isOn.wrappedValue ? Color.appPrimary : Color.appTextLight)
+                .foregroundStyle(isOn.wrappedValue ? themeStore.primaryColor : Color.appTextLight)
                 .frame(width: 22)
                 .contentTransition(.symbolEffect(.replace))
 
@@ -470,7 +506,7 @@ struct SettingsView: View {
 
             Toggle("", isOn: isOn)
                 .labelsHidden()
-                .tint(Color.primaryColor(for: primaryColorKey))
+                .tint(themeStore.primaryColor)
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 14)
@@ -654,6 +690,7 @@ private struct BackgroundAnimationSheet: View {
 // MARK: - Font Size Slider
 
 struct FontSizeSlider: View {
+    @Environment(ThemeStore.self) private var themeStore
     @Binding var selected: String
     var primaryColorKey: String
 
@@ -678,7 +715,7 @@ struct FontSizeSlider: View {
                 in: 0...2,
                 step: 1
             )
-            .tint(Color.primaryColor(for: primaryColorKey))
+            .tint(themeStore.primaryColor)
             .accessibilityLabel("Cỡ chữ câu hỏi")
             .accessibilityValue(sizeLabel)
 
@@ -753,6 +790,7 @@ enum AppFontScale {
 // MARK: - Video Offline Card
 
 private struct VideoOfflineCard: View {
+    @Environment(ThemeStore.self) private var themeStore
     let videoCache: HazardVideoCache
     @Binding var showClearAlert: Bool
     @State private var showChapters = false
@@ -768,7 +806,7 @@ private struct VideoOfflineCard: View {
                 HStack(spacing: 8) {
                     Image(systemName: allComplete ? "checkmark.icloud.fill" : "icloud.and.arrow.down")
                         .font(.system(size: 16))
-                        .foregroundStyle(Color.appPrimary)
+                        .foregroundStyle(themeStore.primaryColor)
                         .symbolRenderingMode(.hierarchical)
                     Text("Video offline")
                         .font(.system(size: 15, weight: .bold))
@@ -780,7 +818,7 @@ private struct VideoOfflineCard: View {
                 }
 
                 VStack(alignment: .leading, spacing: 4) {
-                    ProgressBarView(fraction: fraction, color: .appPrimary, height: 6)
+                    ProgressBarView(fraction: fraction, color: themeStore.primaryColor, height: 6)
                     Text("\(cached)/\(total) video đã tải")
                         .font(.system(size: 13, weight: .medium).monospacedDigit())
                         .foregroundStyle(Color.appTextMedium)
@@ -793,12 +831,12 @@ private struct VideoOfflineCard: View {
                             Haptics.impact(.medium)
                         } label: {
                             HStack(spacing: 6) {
-                                ProgressView().scaleEffect(0.7).tint(Color.appPrimary)
+                                ProgressView().scaleEffect(0.7).tint(themeStore.primaryColor)
                                 Text(videoCache.downloadSpeedMBps > 0
                                      ? String(format: "%.1f MB/s (Huỷ)", videoCache.downloadSpeedMBps)
                                      : "Đang tải... (Huỷ)")
                                     .font(.system(size: 13, weight: .semibold))
-                                    .foregroundStyle(Color.appPrimary)
+                                    .foregroundStyle(themeStore.primaryColor)
                             }
                             .frame(maxWidth: .infinity)
                             .frame(height: 36)
@@ -809,13 +847,13 @@ private struct VideoOfflineCard: View {
                             Haptics.impact(.medium)
                             Task { await videoCache.downloadAll() }
                         } label: {
-                            AppButton(icon: "icloud.and.arrow.down", label: "Tải tất cả", height: 36, cornerRadius: 18)
+                            AppButton(icon: "icloud.and.arrow.down", label: "Tải tất cả", height: 36)
                         }
                     }
 
                     if cached > 0 && !videoCache.isDownloading {
                         Button { showClearAlert = true } label: {
-                            AppButton(label: "Xoá", style: .secondary, height: 36, cornerRadius: 18)
+                            AppButton(label: "Xoá", style: .secondary, height: 36)
                         }
                         .frame(width: 80)
                     }
@@ -830,10 +868,10 @@ private struct VideoOfflineCard: View {
                         HStack(spacing: 6) {
                             Text(showChapters ? "Ẩn chi tiết" : "Tải theo chương")
                                 .font(.system(size: 13, weight: .medium))
-                                .foregroundStyle(Color.appPrimary)
+                                .foregroundStyle(themeStore.primaryColor)
                             Image(systemName: showChapters ? "chevron.up" : "chevron.down")
                                 .font(.system(size: 11, weight: .semibold))
-                                .foregroundStyle(Color.appPrimary)
+                                .foregroundStyle(themeStore.primaryColor)
                         }
                     }
                 }
@@ -859,11 +897,11 @@ private struct VideoOfflineCard: View {
                                 HStack(spacing: 4) {
                                     Text("\(chCached)/\(chTotal) video")
                                         .font(.system(size: 11, weight: .medium).monospacedDigit())
-                                        .foregroundStyle(chComplete ? Color.appPrimary : Color.appTextLight)
+                                        .foregroundStyle(chComplete ? themeStore.primaryColor : Color.appTextLight)
                                     if isDownloading && videoCache.downloadSpeedMBps > 0 {
                                         Text(String(format: "· %.1f MB/s", videoCache.downloadSpeedMBps))
                                             .font(.system(size: 11, weight: .medium).monospacedDigit())
-                                            .foregroundStyle(Color.appPrimary)
+                                            .foregroundStyle(themeStore.primaryColor)
                                     }
                                 }
                             }
@@ -880,15 +918,15 @@ private struct VideoOfflineCard: View {
                             } label: {
                                 Group {
                                     if isDownloading {
-                                        ProgressView().scaleEffect(0.65).tint(Color.appPrimary)
+                                        ProgressView().scaleEffect(0.65).tint(themeStore.primaryColor)
                                     } else if chComplete {
                                         Image(systemName: "checkmark.circle.fill")
                                             .font(.system(size: 16))
-                                            .foregroundStyle(Color.appPrimary)
+                                            .foregroundStyle(themeStore.primaryColor)
                                     } else {
                                         Image(systemName: "icloud.and.arrow.down")
                                             .font(.system(size: 14, weight: .medium))
-                                            .foregroundStyle(Color.appPrimary)
+                                            .foregroundStyle(themeStore.primaryColor)
                                     }
                                 }
                                 .frame(width: 32, height: 32)
@@ -907,6 +945,9 @@ private struct VideoOfflineCard: View {
             }
         }
         .glassCard()
+        .onAppear {
+            videoCache.ensureStatsLoaded()
+        }
     }
 }
 

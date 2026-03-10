@@ -28,6 +28,7 @@ struct BaseExamView: View {
     @State private var isRevealed = false
     @State private var examResult: ExamResult?
     @State private var simulationResult: SimulationResult?
+    @State private var savedRemainingTime: [Int: Int] = [:]
 
     // MARK: - Computed
 
@@ -139,6 +140,7 @@ struct BaseExamView: View {
                 onPrev: handlePrev,
                 onNext: handleNext,
                 onSelectIndex: { index in
+                    if !isMockExam { saveCurrentTimerState() }
                     withAnimation(.easeOut(duration: 0.25)) {
                         currentIndex = index
                         if !isMockExam { restoreStateForCurrentIndex() }
@@ -180,6 +182,7 @@ struct BaseExamView: View {
         if isMockExam {
             withAnimation(.easeOut(duration: 0.25)) { currentIndex -= 1 }
         } else if currentIndex > 0 {
+            saveCurrentTimerState()
             withAnimation(.easeOut(duration: 0.25)) {
                 currentIndex -= 1
                 restoreStateForCurrentIndex()
@@ -213,7 +216,7 @@ struct BaseExamView: View {
             } else {
                 questions = questionStore.randomExamQuestions()
             }
-            remainingSeconds = AppConstants.Exam.totalTimeSeconds
+            remainingSeconds = LicenseType.current.totalTimeSeconds
             startGlobalTimer()
 
         case .simulation(let simMode):
@@ -233,7 +236,7 @@ struct BaseExamView: View {
     private func startGlobalTimer() {
         timer?.invalidate()
         deadline = Date().addingTimeInterval(TimeInterval(remainingSeconds))
-        timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { _ in
+        let t = Timer(timeInterval: 1, repeats: true) { _ in
             Task { @MainActor in
                 guard let deadline else { return }
                 let remaining = max(0, Int(deadline.timeIntervalSinceNow))
@@ -244,6 +247,8 @@ struct BaseExamView: View {
                 }
             }
         }
+        RunLoop.main.add(t, forMode: .common)
+        timer = t
     }
 
     private func submitMockExam() {
@@ -255,7 +260,7 @@ struct BaseExamView: View {
         let result = ExamResult.calculate(
             questions: questions,
             answers: answers,
-            timeUsedSeconds: AppConstants.Exam.totalTimeSeconds - remainingSeconds,
+            timeUsedSeconds: LicenseType.current.totalTimeSeconds - remainingSeconds,
             examSetId: examSetId
         )
         examResult = result
@@ -277,11 +282,11 @@ struct BaseExamView: View {
 
     // MARK: - Simulation Timer
 
-    private func startScenarioTimer() {
-        remainingSeconds = AppConstants.Simulation.scenarioTimeSeconds
+    private func startScenarioTimer(remainingTime: Int? = nil) {
+        remainingSeconds = remainingTime ?? AppConstants.Simulation.scenarioTimeSeconds
         deadline = Date().addingTimeInterval(TimeInterval(remainingSeconds))
         timer?.invalidate()
-        timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { _ in
+        let t = Timer(timeInterval: 1, repeats: true) { _ in
             Task { @MainActor in
                 guard let deadline else { return }
                 let remaining = max(0, Int(deadline.timeIntervalSinceNow))
@@ -291,6 +296,8 @@ struct BaseExamView: View {
                 }
             }
         }
+        RunLoop.main.add(t, forMode: .common)
+        timer = t
     }
 
     private func handleSimulationAnswerSelection(answer: Answer) {
@@ -328,15 +335,22 @@ struct BaseExamView: View {
         progressStore.recordQuestionAnswer(topicKey: topicKey, questionNo: question.no, correct: false)
     }
 
+    private func saveCurrentTimerState() {
+        if !isMockExam && !isRevealed && answers[currentIndex] == nil {
+            savedRemainingTime[currentIndex] = remainingSeconds
+        }
+    }
+
     private func restoreStateForCurrentIndex() {
         if let savedAnswer = answers[currentIndex] {
-            selectedAnswerId = savedAnswer
+            selectedAnswerId = savedAnswer == -1 ? nil : savedAnswer
             isRevealed = true
             timer?.invalidate()
         } else {
             selectedAnswerId = nil
             isRevealed = false
-            startScenarioTimer()
+            let saved = savedRemainingTime[currentIndex]
+            startScenarioTimer(remainingTime: saved)
         }
     }
 

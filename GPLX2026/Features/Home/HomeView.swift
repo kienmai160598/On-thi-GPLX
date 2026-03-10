@@ -1,12 +1,12 @@
 import SwiftUI
 
 struct HomeView: View {
-    @AppStorage(AppConstants.StorageKey.primaryColor) private var primaryColorKey = "default"
+    @Environment(ThemeStore.self) private var themeStore
     @State private var activeExam: ExamScreen?
     @State private var pendingExam: ExamScreen?
 
     private var accentColor: Color {
-        Color.primaryColor(for: primaryColorKey)
+        themeStore.primaryColor
     }
 
     var body: some View {
