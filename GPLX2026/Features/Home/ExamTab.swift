@@ -70,7 +70,7 @@ struct ExamTab: View {
 
         if !progressStore.examHistory.isEmpty {
             VStack(alignment: .leading, spacing: 12) {
-                SectionTitle(title: "Lịch sử")
+                SectionTitle(title: "Lịch sử câu hỏi")
                 HistoryList(
                     results: Array(progressStore.examHistory.prefix(5)),
                     scoreText: { "\($0.score)/\($0.totalQuestions) đúng" },
@@ -103,7 +103,7 @@ struct ExamTab: View {
 
         if !progressStore.simulationHistory.isEmpty {
             VStack(alignment: .leading, spacing: 12) {
-                SectionTitle(title: "Lịch sử")
+                SectionTitle(title: "Lịch sử sa hình")
                 HistoryList(
                     results: Array(progressStore.simulationHistory.prefix(5)),
                     scoreText: { "\($0.score)/\($0.totalScenarios) đúng" },
@@ -136,7 +136,7 @@ struct ExamTab: View {
 
         if !progressStore.hazardHistory.isEmpty {
             VStack(alignment: .leading, spacing: 12) {
-                SectionTitle(title: "Lịch sử")
+                SectionTitle(title: "Lịch sử tình huống")
                 HistoryList(
                     results: Array(progressStore.hazardHistory.prefix(5)),
                     scoreText: { "\($0.totalScore)/\($0.maxScore) điểm" },

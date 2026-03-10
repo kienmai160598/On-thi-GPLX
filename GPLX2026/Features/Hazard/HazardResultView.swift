@@ -103,8 +103,7 @@ struct HazardResultView: View {
                     }
                 }
                 .padding(.horizontal, 20)
-                .padding(.vertical, 12)
-                .background(.ultraThinMaterial)
+                .padding(.bottom, 4)
             }
         }
         .navigationBarBackButtonHidden(!isFromHistory)

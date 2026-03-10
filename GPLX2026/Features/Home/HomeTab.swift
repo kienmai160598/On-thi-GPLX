@@ -26,8 +26,6 @@ struct HomeTab: View {
                 ShortcutsRow()
                 RecentResultsCard()
                 AchievementsCard()
-                ScoreTrendCard()
-                ActivityCalendarCard()
             }
             .padding(.horizontal, 20)
             .padding(.bottom, 32)

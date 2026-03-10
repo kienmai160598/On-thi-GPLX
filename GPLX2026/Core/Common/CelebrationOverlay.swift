@@ -58,11 +58,12 @@ struct DailyGoalCelebrationModifier: ViewModifier {
     let isDone: Bool
     @State private var hasShownCelebration = false
     @State private var showCelebration = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     func body(content: Content) -> some View {
         content
             .overlay {
-                if showCelebration {
+                if showCelebration && !reduceMotion {
                     CelebrationOverlay()
                         .transition(.opacity)
                 }
@@ -70,10 +71,12 @@ struct DailyGoalCelebrationModifier: ViewModifier {
             .onChange(of: isDone) { _, done in
                 if done && !hasShownCelebration {
                     hasShownCelebration = true
-                    withAnimation { showCelebration = true }
-                    Task { @MainActor in
-                        try? await Task.sleep(for: .seconds(2.5))
-                        withAnimation { showCelebration = false }
+                    if !reduceMotion {
+                        withAnimation { showCelebration = true }
+                        Task { @MainActor in
+                            try? await Task.sleep(for: .seconds(2.5))
+                            withAnimation { showCelebration = false }
+                        }
                     }
                 }
             }

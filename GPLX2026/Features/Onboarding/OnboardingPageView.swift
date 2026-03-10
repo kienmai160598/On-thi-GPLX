@@ -16,14 +16,12 @@ struct OnboardingPageView: View {
             Spacer()
 
             heroArea
-                .staggered(0)
 
             Text(page.title)
                 .font(.system(size: 32, weight: .heavy))
                 .multilineTextAlignment(.center)
                 .foregroundStyle(Color.appTextDark)
                 .padding(.top, 44)
-                .staggered(1)
 
             Text(page.subtitle)
                 .font(.system(size: 16))
@@ -31,7 +29,6 @@ struct OnboardingPageView: View {
                 .foregroundStyle(Color.appTextMedium)
                 .lineSpacing(4)
                 .padding(.top, 14)
-                .staggered(2)
 
             Spacer()
             Spacer()
