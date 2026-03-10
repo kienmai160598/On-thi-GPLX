@@ -1,8 +1,9 @@
 import SwiftUI
 
 struct HomeView: View {
-    @AppStorage("appPrimaryColor") private var primaryColorKey = "default"
+    @AppStorage(AppConstants.StorageKey.primaryColor) private var primaryColorKey = "default"
     @State private var activeExam: ExamScreen?
+    @State private var pendingExam: ExamScreen?
 
     private var accentColor: Color {
         Color.primaryColor(for: primaryColorKey)
@@ -17,42 +18,38 @@ struct HomeView: View {
                 .tint(accentColor)
             }
 
-            Tab("Ôn tập", systemImage: "books.vertical") {
+            Tab("Luyện tập", systemImage: "book") {
                 NavigationStack {
-                    StudyMenuView()
+                    PracticeTab()
                 }
                 .tint(accentColor)
             }
 
-            Tab("Thi thử", systemImage: "doc.text") {
+            Tab("Thi thử", systemImage: "list.clipboard.fill") {
                 NavigationStack {
-                    MockExamTab()
-                }
-                .tint(accentColor)
-            }
-
-            Tab("Thực hành", systemImage: "car.side") {
-                NavigationStack {
-                    SimulationTab()
-                }
-                .tint(accentColor)
-            }
-
-            Tab(role: .search) {
-                NavigationStack {
-                    QuestionSearchView()
+                    ExamTab()
                 }
                 .tint(accentColor)
             }
         }
         .tint(accentColor)
         .environment(\.openExam) { screen in activeExam = screen }
-        .fullScreenCover(item: $activeExam) { exam in
+        .fullScreenCover(item: $activeExam, onDismiss: {
+            if let next = pendingExam {
+                pendingExam = nil
+                DispatchQueue.main.async {
+                    activeExam = next
+                }
+            }
+        }) { exam in
             NavigationStack {
                 exam.destination
             }
             .environment(\.popToRoot) { activeExam = nil }
-            .environment(\.openExam) { newScreen in activeExam = newScreen }
+            .environment(\.openExam) { newScreen in
+                pendingExam = newScreen
+                activeExam = nil
+            }
             .tint(accentColor)
         }
     }

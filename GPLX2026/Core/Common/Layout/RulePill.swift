@@ -9,6 +9,7 @@ struct RulePill: View {
             Image(systemName: icon)
                 .font(.system(size: 12, weight: .medium))
                 .foregroundStyle(Color.appPrimary)
+                .symbolRenderingMode(.hierarchical)
             Text(text)
                 .font(.system(size: 13, weight: .semibold))
                 .foregroundStyle(Color.appTextDark)
@@ -16,6 +17,6 @@ struct RulePill: View {
         .frame(maxWidth: .infinity)
         .padding(.vertical, 8)
         .background(Color.appPrimary.opacity(0.06))
-        .clipShape(RoundedRectangle(cornerRadius: 10))
+        .clipShape(RoundedRectangle(cornerRadius: 8))
     }
 }

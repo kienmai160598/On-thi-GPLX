@@ -13,12 +13,24 @@ struct OnboardingView: View {
         ),
         OnboardingPage(
             id: 1,
+            icon: "list.clipboard.fill",
+            title: "Kỳ thi gồm 3 phần",
+            subtitle: "Bạn phải đạt cả 3 phần mới được cấp bằng"
+        ),
+        OnboardingPage(
+            id: 2,
             icon: "book.fill",
             title: "Mọi thứ bạn cần",
             subtitle: "Từ lý thuyết đến thực hành, từ ôn luyện\nđến kiểm tra — tất cả trong một ứng dụng"
         ),
         OnboardingPage(
-            id: 2,
+            id: 3,
+            icon: "paintpalette.fill",
+            title: "Tuỳ chỉnh giao diện",
+            subtitle: "Chọn màu sắc, cỡ chữ và chế độ sáng/tối\ntrong phần Cài đặt theo sở thích của bạn"
+        ),
+        OnboardingPage(
+            id: 4,
             icon: "flag.checkered",
             title: "Sẵn sàng rồi!",
             subtitle: "Bắt đầu hành trình chinh phục\nbằng lái xe B2 của bạn"
@@ -30,7 +42,7 @@ struct OnboardingView: View {
             // Skip button
             HStack {
                 Spacer()
-                if currentPage < 2 {
+                if currentPage < pages.count - 1 {
                     Button("Bỏ qua") {
                         completeOnboarding()
                     }
@@ -54,7 +66,7 @@ struct OnboardingView: View {
 
             // Page dots
             HStack(spacing: 8) {
-                ForEach(0..<3, id: \.self) { index in
+                ForEach(0..<pages.count, id: \.self) { index in
                     Capsule()
                         .fill(index == currentPage ? Color.appPrimary : Color.appTextLight.opacity(0.4))
                         .frame(
@@ -68,7 +80,7 @@ struct OnboardingView: View {
 
             // CTA button
             Button {
-                if currentPage < 2 {
+                if currentPage < pages.count - 1 {
                     withAnimation(.spring(duration: 0.3)) {
                         currentPage += 1
                     }
@@ -77,8 +89,8 @@ struct OnboardingView: View {
                 }
             } label: {
                 AppButton(
-                    icon: currentPage == 2 ? "arrow.right" : nil,
-                    label: currentPage == 2 ? "Bắt đầu ngay" : "Tiếp tục"
+                    icon: currentPage == pages.count - 1 ? "arrow.right" : nil,
+                    label: currentPage == pages.count - 1 ? "Bắt đầu ngay" : "Tiếp tục"
                 )
             }
             .padding(.horizontal, 24)

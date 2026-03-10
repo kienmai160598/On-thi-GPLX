@@ -30,7 +30,7 @@ final class ProgressStore {
     private let defaults: UserDefaults
 
     /// Stored property so @Observable can track data changes.
-    private(set) var dataVersion = 0
+    internal(set) var dataVersion = 0
 
     // MARK: - In-memory caches (invalidated on dataVersion change)
 
@@ -388,6 +388,7 @@ final class ProgressStore {
             addWrongAnswer(questionNo)
         }
         updateStreak()
+        recordStudyActivity()
     }
 
     // MARK: - Reset

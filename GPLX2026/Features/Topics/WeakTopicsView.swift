@@ -17,16 +17,18 @@ struct WeakTopicsView: View {
                     SectionTitle(title: "Cần ôn thêm")
                         .padding(.bottom, 10)
 
-                    ForEach(Array(weakList.enumerated()), id: \.element.topic.id) { _, item in
-                        Button {
-                            let progress = progressStore.topicProgress(for: item.topic.key)
-                            let topicQs = questionStore.questionsForTopic(key: item.topic.key)
-                            let idx = topicQs.firstIndex(where: { progress[$0.no] == nil }) ?? 0
-                            openExam(.questionView(topicKey: item.topic.key, startIndex: idx))
-                        } label: {
-                            TopicAccuracyRow(item: item)
+                    VStack(spacing: 10) {
+                        ForEach(Array(weakList.enumerated()), id: \.element.topic.id) { _, item in
+                            Button {
+                                let progress = progressStore.topicProgress(for: item.topic.key)
+                                let topicQs = questionStore.questionsForTopic(key: item.topic.key)
+                                let idx = topicQs.firstIndex(where: { progress[$0.no] == nil }) ?? 0
+                                openExam(.questionView(topicKey: item.topic.key, startIndex: idx))
+                            } label: {
+                                TopicAccuracyRow(item: item)
+                            }
+                            .buttonStyle(.plain)
                         }
-                        .buttonStyle(.plain)
                     }
                     .padding(.bottom, 10)
                 }
@@ -35,16 +37,18 @@ struct WeakTopicsView: View {
                     SectionTitle(title: "Đã tốt")
                         .padding(.bottom, 10)
 
-                    ForEach(Array(strongList.enumerated()), id: \.element.topic.id) { _, item in
-                        Button {
-                            let progress = progressStore.topicProgress(for: item.topic.key)
-                            let topicQs = questionStore.questionsForTopic(key: item.topic.key)
-                            let idx = topicQs.firstIndex(where: { progress[$0.no] == nil }) ?? 0
-                            openExam(.questionView(topicKey: item.topic.key, startIndex: idx))
-                        } label: {
-                            TopicAccuracyRow(item: item)
+                    VStack(spacing: 10) {
+                        ForEach(Array(strongList.enumerated()), id: \.element.topic.id) { _, item in
+                            Button {
+                                let progress = progressStore.topicProgress(for: item.topic.key)
+                                let topicQs = questionStore.questionsForTopic(key: item.topic.key)
+                                let idx = topicQs.firstIndex(where: { progress[$0.no] == nil }) ?? 0
+                                openExam(.questionView(topicKey: item.topic.key, startIndex: idx))
+                            } label: {
+                                TopicAccuracyRow(item: item)
+                            }
+                            .buttonStyle(.plain)
                         }
-                        .buttonStyle(.plain)
                     }
                     .padding(.bottom, 10)
                 }
@@ -53,13 +57,15 @@ struct WeakTopicsView: View {
                     SectionTitle(title: "Chưa bắt đầu")
                         .padding(.bottom, 10)
 
-                    ForEach(Array(notStarted.enumerated()), id: \.element.topic.id) { _, item in
-                        Button {
-                            openExam(.questionView(topicKey: item.topic.key, startIndex: 0))
-                        } label: {
-                            TopicAccuracyRow(item: item)
+                    VStack(spacing: 10) {
+                        ForEach(Array(notStarted.enumerated()), id: \.element.topic.id) { _, item in
+                            Button {
+                                openExam(.questionView(topicKey: item.topic.key, startIndex: 0))
+                            } label: {
+                                TopicAccuracyRow(item: item)
+                            }
+                            .buttonStyle(.plain)
                         }
-                        .buttonStyle(.plain)
                     }
                 }
 

@@ -1,12 +1,12 @@
 import SwiftUI
 
 struct ListItemCard<Trailing: View>: View {
-    @AppStorage("appPrimaryColor") private var primaryColorKey = "default"
+    @AppStorage(AppConstants.StorageKey.primaryColor) private var primaryColorKey = "default"
     let icon: String
     let title: String
     var subtitle: String? = nil
     var iconSize: CGFloat = 36
-    var iconCornerRadius: CGFloat = 9
+    var iconCornerRadius: CGFloat = 8
     var iconFontSize: CGFloat = 16
     var iconColor: Color? = nil
     var showCard: Bool = true
@@ -34,7 +34,7 @@ struct ListItemCard<Trailing: View>: View {
 
             trailing()
         }
-        .padding(.horizontal, 14)
+        .padding(.horizontal, 12)
         .padding(.vertical, 12)
     }
 
@@ -48,7 +48,7 @@ struct ListItemCard<Trailing: View>: View {
 }
 
 extension ListItemCard where Trailing == EmptyView {
-    init(icon: String, title: String, subtitle: String? = nil, iconSize: CGFloat = 36, iconCornerRadius: CGFloat = 9, iconFontSize: CGFloat = 16, iconColor: Color? = nil, showCard: Bool = true) {
+    init(icon: String, title: String, subtitle: String? = nil, iconSize: CGFloat = 36, iconCornerRadius: CGFloat = 8, iconFontSize: CGFloat = 16, iconColor: Color? = nil, showCard: Bool = true) {
         self.icon = icon
         self.title = title
         self.subtitle = subtitle

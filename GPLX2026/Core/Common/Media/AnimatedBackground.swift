@@ -1,9 +1,9 @@
 import SwiftUI
 
 struct AnimatedBackground: View {
-    @AppStorage("appPrimaryColor") private var primaryColorKey = "default"
-    @AppStorage("backgroundAnimation") private var animationStyle = "none"
-    @AppStorage("backgroundSpeed") private var speedKey = "normal"
+    @AppStorage(AppConstants.StorageKey.primaryColor) private var primaryColorKey = "default"
+    @AppStorage(AppConstants.StorageKey.backgroundAnimation) private var animationStyle = "none"
+    @AppStorage(AppConstants.StorageKey.backgroundSpeed) private var speedKey = "normal"
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var speed: Double {
@@ -16,7 +16,7 @@ struct AnimatedBackground: View {
 
     var body: some View {
         if animationStyle != "none" && !reduceMotion {
-            TimelineView(.animation(minimumInterval: 1.0 / 20)) { timeline in
+            TimelineView(.animation) { timeline in
                 Canvas { context, size in
                     let t = timeline.date.timeIntervalSinceReferenceDate * speed
                     let color = Color.primaryColor(for: primaryColorKey)

@@ -14,8 +14,8 @@ struct ExamStatsRow: View {
                 StatItem(value: item.value, label: item.label)
             }
         }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 14)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 12)
         .glassCard()
     }
 }

@@ -133,21 +133,22 @@ final class QuestionStore {
 
     /// Generate random questions for a mock exam.
     func randomExamQuestions() -> [Question] {
-        let count = AppConstants.Exam.questionsPerExam
-        guard allQuestions.count >= count else { return Array(allQuestions.shuffled()) }
-        return Array(allQuestions.shuffled().prefix(count))
+        let diemLietQuestions = allQuestions.filter(\.isDiemLiet)
+        let normalQuestions = allQuestions.filter { !$0.isDiemLiet }
+        let dlCount = AppConstants.Exam.diemLietPerExam
+        let normalCount = AppConstants.Exam.questionsPerExam - dlCount
+        let selectedDL = Array(diemLietQuestions.shuffled().prefix(dlCount))
+        let selectedNormal = Array(normalQuestions.shuffled().prefix(normalCount))
+        return (selectedDL + selectedNormal).shuffled()
     }
 
     /// Fixed exam set questions. Each set takes a slice of questions.
     func examSetQuestions(setId: Int) -> [Question] {
-        let setSize = AppConstants.Exam.questionsPerExam
-        let startIndex = (setId - 1) * setSize
-        guard startIndex < allQuestions.count else { return randomExamQuestions() }
-        let endIndex = min(startIndex + setSize, allQuestions.count)
-        let slice = Array(allQuestions[startIndex..<endIndex])
-        // If the set is shorter than required, fall back to random to ensure fair exam
-        guard slice.count >= setSize else { return randomExamQuestions() }
-        return slice
+        let perSet = AppConstants.Exam.questionsPerExam
+        let startIndex = (setId - 1) * perSet
+        let endIndex = min(startIndex + perSet, allQuestions.count)
+        guard startIndex < allQuestions.count else { return [] }
+        return Array(allQuestions[startIndex..<endIndex])
     }
 
     // MARK: - Diem Liet by topic

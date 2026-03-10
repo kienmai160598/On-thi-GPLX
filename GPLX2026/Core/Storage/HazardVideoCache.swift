@@ -13,11 +13,17 @@ final class HazardVideoCache {
     private(set) var isDownloadingAll = false
     private(set) var downloadSpeedMBps: Double = 0
     private(set) var downloadingChapters: Set<Int> = []
+    private(set) var cachedCount: Int = 0
+    private(set) var cacheSizeMB: Double = 0
+    private var cachedIds: Set<Int> = []
     private var activeTasks: [Int: URLSessionTask] = [:]
-    private var _cacheVersion = 0
 
     private var speedWindowBytes: Int64 = 0
     private var speedWindowStart: Date?
+
+    init() {
+        refreshCacheStats()
+    }
 
     // MARK: - Cache directory
 
@@ -39,11 +45,6 @@ final class HazardVideoCache {
         localURL(for: situation) ?? situation.videoURL
     }
 
-    var cachedCount: Int {
-        _ = _cacheVersion
-        return HazardSituation.all.filter { localURL(for: $0) != nil }.count
-    }
-
     var totalCount: Int { HazardSituation.all.count }
 
     var isCached: Bool { cachedCount == totalCount }
@@ -53,10 +54,27 @@ final class HazardVideoCache {
     }
 
     func cachedCount(forChapter chapterId: Int) -> Int {
-        _ = _cacheVersion
-        return HazardSituation.all
-            .filter { $0.chapter == chapterId && localURL(for: $0) != nil }
+        HazardSituation.all
+            .filter { $0.chapter == chapterId && cachedIds.contains($0.id) }
             .count
+    }
+
+    private func refreshCacheStats() {
+        cachedIds = Set(HazardSituation.all.filter { localURL(for: $0) != nil }.map(\.id))
+        cachedCount = cachedIds.count
+        cacheSizeMB = computeCacheSizeMB()
+    }
+
+    private func computeCacheSizeMB() -> Double {
+        let files = (try? FileManager.default.contentsOfDirectory(
+            at: Self.cacheDir,
+            includingPropertiesForKeys: [.fileSizeKey]
+        )) ?? []
+        let totalBytes = files.reduce(0) { sum, url in
+            let size = (try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0
+            return sum + size
+        }
+        return Double(totalBytes) / (1024 * 1024)
     }
 
     func totalCount(forChapter chapterId: Int) -> Int {
@@ -120,7 +138,7 @@ final class HazardVideoCache {
             try? FileManager.default.removeItem(at: dest)
             try FileManager.default.moveItem(at: tempURL, to: dest)
             downloadProgress[situation.id] = 1.0
-            _cacheVersion += 1
+            refreshCacheStats()
             Self.logger.info("Cached video \(situation.id)")
         } catch {
             activeTasks.removeValue(forKey: situation.id)
@@ -158,21 +176,7 @@ final class HazardVideoCache {
         try? FileManager.default.removeItem(at: Self.cacheDir)
         try? FileManager.default.createDirectory(at: Self.cacheDir, withIntermediateDirectories: true)
         downloadProgress.removeAll()
-        _cacheVersion += 1
-    }
-
-    var cacheSizeMB: Double {
-        let files = (try? FileManager.default.contentsOfDirectory(
-            at: Self.cacheDir,
-            includingPropertiesForKeys: [.fileSizeKey]
-        )) ?? []
-
-        let totalBytes = files.reduce(0) { sum, url in
-            let size = (try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0
-            return sum + size
-        }
-
-        return Double(totalBytes) / (1024 * 1024)
+        refreshCacheStats()
     }
 
     // MARK: - Speed tracking

@@ -16,7 +16,6 @@ struct ExamQuestionGridSheet: View {
 
     var body: some View {
         VStack(spacing: 0) {
-          
             // ── Legend ───────────────────────────────────────
             legend
                 .padding(.horizontal, pad)
@@ -37,9 +36,13 @@ struct ExamQuestionGridSheet: View {
                         }
                     }
                 }
-                .padding(pad)
+                .padding(.horizontal, pad)
+                .padding(.top, pad)
+                .padding(.bottom, pad + 20)
             }
+            .scrollBounceBehavior(.basedOnSize)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     // MARK: - Legend
@@ -61,7 +64,7 @@ struct ExamQuestionGridSheet: View {
             .foregroundStyle(foregroundColor(for: index))
             .frame(maxWidth: .infinity, minHeight: 44)
             .background(backgroundColor(for: index))
-            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .clipShape(RoundedRectangle(cornerRadius: 8))
     }
 
     // MARK: - Colors

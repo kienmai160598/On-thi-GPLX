@@ -15,7 +15,7 @@ struct AnswerOptionCard: View {
                 .foregroundStyle(letterColor)
                 .frame(width: 36, height: 36)
                 .background(letterBgColor)
-                .clipShape(RoundedRectangle(cornerRadius: 10))
+                .clipShape(RoundedRectangle(cornerRadius: 8))
 
             Text(text)
                 .font(.system(size: 15 * AppFontScale.current, weight: .medium))
@@ -27,10 +27,10 @@ struct AnswerOptionCard: View {
 
             statusIcon
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 14)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 12)
         .background(bgColor)
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
         .glassCard()
     }
 

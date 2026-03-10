@@ -117,41 +117,4 @@ extension ProgressStore {
         topics.reduce(0) { $0 + topicProgress(for: $1.key).count }
     }
 
-    // MARK: - Badge support
-
-    func unlockedBadgesCount(diemLietQuestions: [Question]) -> Int {
-        badgeStatuses(diemLietQuestions: diemLietQuestions).filter(\.isUnlocked).count
-    }
-
-    func badgeStatuses(diemLietQuestions: [Question]) -> [BadgeStatus] {
-        let history = examHistory
-        let passedCount = history.filter(\.passed).count
-        let avgAccuracy = history.isEmpty ? 0.0 : history.reduce(0.0) { $0 + $1.accuracy } / Double(history.count)
-        let topicKeys = Topic.all.map(\.key)
-        let correctPerTopic = Dictionary(uniqueKeysWithValues: topicKeys.map { ($0, correctCount(forTopic: $0)) })
-        let totalCorrect = correctPerTopic.values.reduce(0, +)
-
-        return AppBadge.all.map { badge in
-            let (progress, target, unlocked): (Int, Int, Bool) = {
-                switch badge.type {
-                case .streak7, .streak30:
-                    return (streakCount, badge.threshold, streakCount >= badge.threshold)
-                case .questions100, .questions300, .questions600:
-                    return (totalCorrect, badge.threshold, totalCorrect >= badge.threshold)
-                case .allTopics:
-                    let completed = correctPerTopic.values.filter { $0 > 0 }.count
-                    return (completed, topicKeys.count, completed >= topicKeys.count)
-                case .exam10Pass:
-                    return (passedCount, badge.threshold, passedCount >= badge.threshold)
-                case .accuracy90:
-                    let pct = Int(avgAccuracy * 100)
-                    return (pct, badge.threshold, pct >= badge.threshold)
-                case .diemLietMaster:
-                    let dl = diemLietMastery(questions: diemLietQuestions)
-                    return (dl.correct, dl.total, dl.correct == dl.total && dl.total > 0)
-                }
-            }()
-            return BadgeStatus(badge: badge, isUnlocked: unlocked, progress: progress, target: target)
-        }
-    }
 }

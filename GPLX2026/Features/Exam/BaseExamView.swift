@@ -317,6 +317,7 @@ struct BaseExamView: View {
 
     private func handleSimulationTimeout() {
         timer?.invalidate()
+        answers[currentIndex] = -1
         timePerScenario[currentIndex] = AppConstants.Simulation.scenarioTimeSeconds
         Haptics.notification(.warning)
 

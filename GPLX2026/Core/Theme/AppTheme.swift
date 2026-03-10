@@ -45,12 +45,12 @@ extension Color {
     // ── Primary (dynamic) ────────────────────────────────────────────────
 
     static var appPrimary: Color {
-        primaryColor(for: UserDefaults.standard.string(forKey: "appPrimaryColor") ?? "default")
+        primaryColor(for: UserDefaults.standard.string(forKey: AppConstants.StorageKey.primaryColor) ?? "default")
     }
 
     static var appOnPrimary: Color {
-        let key = UserDefaults.standard.string(forKey: "appPrimaryColor") ?? "default"
-        if key == "default" { return adaptive(light: 0xFAFAFA, dark: 0x0A0A0A) }
+        let key = UserDefaults.standard.string(forKey: AppConstants.StorageKey.primaryColor) ?? "default"
+        if key == "default" { return adaptive(light: 0xFAFAFA, dark: 0x1A1A1A) }
         return .white
     }
 
@@ -58,16 +58,9 @@ extension Color {
 
     static func primaryColor(for key: String) -> Color {
         switch key {
-        case "blue":       return Color(red: 0/255, green: 122/255, blue: 255/255)   // #007AFF
-        case "cyan":       return Color(red: 0/255, green: 188/255, blue: 212/255)   // #00BCD4
-        case "mint":       return Color(red: 100/255, green: 255/255, blue: 218/255) // #64FFDA
-        case "teal":       return Color(red: 45/255, green: 212/255, blue: 191/255)  // #2DD4BF
-        case "violet":     return Color(red: 124/255, green: 77/255, blue: 255/255)  // #7C4DFF
-        case "purple":     return Color(red: 170/255, green: 0/255, blue: 255/255)   // #AA00FF
-        case "indigo":     return Color(red: 88/255, green: 86/255, blue: 214/255)   // #5856D6
-        case "rose":       return Color(red: 244/255, green: 63/255, blue: 94/255)   // #F43F5E
-        case "chartreuse": return Color(red: 163/255, green: 230/255, blue: 53/255)  // #A3E635
-        default:           return adaptive(light: 0x171717, dark: 0xFAFAFA)
+        case "blue":   return Color(red: 0/255, green: 122/255, blue: 255/255)   // #007AFF
+        case "indigo": return Color(red: 88/255, green: 86/255, blue: 214/255)   // #5856D6
+        default:       return adaptive(light: 0x27272A, dark: 0xE4E4E7)          // Zinc-800/200
         }
     }
 
@@ -122,7 +115,7 @@ extension Color {
 // MARK: - GlassCard ViewModifier
 
 struct GlassCard: ViewModifier {
-    var cornerRadius: CGFloat = 16
+    var cornerRadius: CGFloat = 20
     var interactive: Bool = true
 
     func body(content: Content) -> some View {
@@ -149,8 +142,17 @@ struct GlassCard: ViewModifier {
 }
 
 extension View {
-    func glassCard(cornerRadius: CGFloat = 16, interactive: Bool = true) -> some View {
+    func glassCard(cornerRadius: CGFloat = 20, interactive: Bool = true) -> some View {
         modifier(GlassCard(cornerRadius: cornerRadius, interactive: interactive))
+    }
+
+    @ViewBuilder
+    func glassContainer() -> some View {
+        if #available(iOS 26.0, *) {
+            GlassEffectContainer { self }
+        } else {
+            self
+        }
     }
 }
 
@@ -161,7 +163,6 @@ enum ExamScreen: Identifiable {
     case simulationExam(mode: SimulationExamView.Mode)
     case hazardTest(mode: HazardTestView.Mode)
     case questionView(topicKey: String, startIndex: Int)
-    case flashcard(topicKey: String)
 
     var id: String {
         switch self {
@@ -169,7 +170,6 @@ enum ExamScreen: Identifiable {
         case .simulationExam(let mode): "sim-\(mode)"
         case .hazardTest(let mode): "hazard-\(mode)"
         case .questionView(let key, let idx): "q-\(key)-\(idx)"
-        case .flashcard(let key): "flash-\(key)"
         }
     }
 
@@ -180,7 +180,6 @@ enum ExamScreen: Identifiable {
         case .simulationExam(let mode): SimulationExamView(mode: mode)
         case .hazardTest(let mode): HazardTestView(mode: mode)
         case .questionView(let key, let idx): QuestionView(topicKey: key, startIndex: idx)
-        case .flashcard(let key): FlashcardView(topicKey: key)
         }
     }
 }
@@ -211,7 +210,7 @@ extension View {
     func screenHeader(_ title: String) -> some View {
         self
             .navigationTitle(title)
-            .navigationBarTitleDisplayMode(.inline)
+            .navigationBarTitleDisplayMode(.large)
             .toolbarBackgroundVisibility(.hidden, for: .navigationBar)
             .background {
                 ZStack {
@@ -255,4 +254,48 @@ extension View {
         modifier(GlassBackground())
     }
 }
+
+// MARK: - Section Filter (Dropdown)
+
+struct SectionRow: View {
+    let icon: String
+    let title: String
+    let subtitle: String
+    let color: Color
+    var filledIcon: Bool = false
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 14) {
+                Image(systemName: icon)
+                    .font(.system(size: 20))
+                    .foregroundStyle(filledIcon ? .white : color)
+                    .frame(width: 44, height: 44)
+                    .background(filledIcon ? color : color.opacity(0.12))
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(title)
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundStyle(Color.appTextDark)
+                    Text(subtitle)
+                        .font(.system(size: 13))
+                        .foregroundStyle(Color.appTextMedium)
+                }
+
+                Spacer(minLength: 4)
+
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(Color.appTextLight)
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 12)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+}
+
 

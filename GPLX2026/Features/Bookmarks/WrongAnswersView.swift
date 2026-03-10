@@ -22,17 +22,6 @@ struct WrongAnswersView: View {
                 .padding(.bottom, 24)
             }
         }
-        .safeAreaInset(edge: .bottom) {
-            if totalWrong > 1 {
-                Button { openExam(.questionView(topicKey: AppConstants.TopicKey.wrongAnswers, startIndex: 0)) } label: {
-                    AppButton(label: "Luyện tất cả (\(totalWrong) câu)")
-                }
-                .buttonStyle(.plain)
-                .padding(.horizontal, 20)
-                .padding(.vertical, 12)
-                .background(.ultraThinMaterial)
-            }
-        }
         .screenHeader("Câu sai theo chủ đề")
     }
 }
@@ -46,7 +35,7 @@ private struct WrongTopicCard: View {
 
     var body: some View {
         HStack(spacing: 14) {
-            IconBox(icon: topic.sfSymbol, color: .appError, size: 44, cornerRadius: 11, iconFontSize: 18)
+            IconBox(icon: topic.sfSymbol, color: .appError, size: 44, cornerRadius: 8, iconFontSize: 18)
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(topic.name)
@@ -61,17 +50,11 @@ private struct WrongTopicCard: View {
             Spacer()
 
             Button { openExam(.questionView(topicKey: "\(AppConstants.TopicKey.wrongAnswers):\(topic.key)", startIndex: 0)) } label: {
-                Text("Luyện")
-                    .font(.system(size: 13, weight: .bold))
-                    .foregroundStyle(Color.appOnPrimary)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 8)
-                    .background(Color.appPrimary)
-                    .clipShape(RoundedRectangle(cornerRadius: 16))
+                InlinePill("Luyện")
             }
             .buttonStyle(.plain)
         }
-        .padding(16)
+        .padding(12)
         .glassCard()
     }
 }

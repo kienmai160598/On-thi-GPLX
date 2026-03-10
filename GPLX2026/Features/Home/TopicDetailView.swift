@@ -4,6 +4,8 @@ struct TopicDetailView: View {
     let item: (topic: Topic, accuracy: Double, correct: Int, attempted: Int, total: Int)
     @Environment(\.dismiss) private var dismiss
     @Environment(\.openExam) private var openExam
+    @Environment(QuestionStore.self) private var questionStore
+    @Environment(ProgressStore.self) private var progressStore
 
     private var statusInfo: (label: String, color: Color) {
         if item.attempted == 0 {
@@ -85,18 +87,18 @@ struct TopicDetailView: View {
                         cornerRadius: 5
                     )
                 }
-                .padding(16)
+                .padding(12)
                 .glassCard()
 
                 // CTA
                 VStack(spacing: 12) {
-                    Button { openExam(.questionView(topicKey: item.topic.key, startIndex: 0)) } label: {
+                    Button {
+                        let progress = progressStore.topicProgress(for: item.topic.key)
+                        let topicQs = questionStore.questionsForTopic(key: item.topic.key)
+                        let idx = topicQs.firstIndex(where: { progress[$0.no] == nil }) ?? 0
+                        openExam(.questionView(topicKey: item.topic.key, startIndex: idx))
+                    } label: {
                         AppButton(icon: "play.fill", label: "Ôn tập chủ đề này")
-                    }
-                    .buttonStyle(.plain)
-
-                    Button { openExam(.flashcard(topicKey: item.topic.key)) } label: {
-                        AppButton(icon: "rectangle.on.rectangle.angled", label: "Flashcard", style: .secondary)
                     }
                     .buttonStyle(.plain)
                 }
@@ -106,11 +108,15 @@ struct TopicDetailView: View {
         }
         .navigationTitle(item.topic.shortName)
         .navigationBarTitleDisplayMode(.inline)
-        .navigationBarBackButtonHidden(true)
         .toolbar {
-            ToolbarItem(placement: .navigationBarTrailing) {
-                CloseButton { dismiss() }
+            ToolbarItem(placement: .navigationBarLeading) {
+                Button { dismiss() } label: {
+                    Image(systemName: "chevron.left")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundStyle(Color.appTextDark)
+                }
             }
         }
+        .navigationBarBackButtonHidden(true)
     }
 }

@@ -13,7 +13,7 @@ struct MemoryTipsView: View {
             VStack(alignment: .leading, spacing: 0) {
                 // Topic header
                 HStack(spacing: 14) {
-                    IconBox(icon: topic.sfSymbol, color: .appPrimary, size: 44, cornerRadius: 11, iconFontSize: 18)
+                    IconBox(icon: topic.sfSymbol, color: .appPrimary, size: 44, cornerRadius: 8, iconFontSize: 18)
 
                     VStack(alignment: .leading, spacing: 3) {
                         Text(topic.name)
@@ -26,7 +26,7 @@ struct MemoryTipsView: View {
 
                     Spacer()
                 }
-                .padding(16)
+                .padding(12)
                 .glassCard()
                 .padding(.bottom, 20)
 
@@ -63,12 +63,17 @@ private struct TipCard: View {
                     .foregroundStyle(Color.appTextDark)
             }
 
-            Text(tip.content)
+            Text(tip.content
+                .replacingOccurrences(of: "<br/>", with: "\n")
+                .replacingOccurrences(of: "<br>", with: "\n")
+                .replacingOccurrences(of: "<br />", with: "\n")
+                .replacingOccurrences(of: "; ", with: ";\n")
+            )
                 .font(.system(size: 14))
                 .foregroundStyle(Color.appTextMedium)
                 .lineSpacing(4)
         }
-        .padding(16)
+        .padding(12)
         .glassCard()
     }
 }

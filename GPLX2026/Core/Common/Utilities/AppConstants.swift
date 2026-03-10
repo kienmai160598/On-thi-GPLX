@@ -7,9 +7,10 @@ enum AppConstants {
     // MARK: - Mock Exam
 
     enum Exam {
-        static let totalTimeSeconds = 25 * 60
-        static let questionsPerExam = 35
-        static let passThreshold = 32
+        static let totalTimeSeconds = 22 * 60
+        static let questionsPerExam = 30
+        static let passThreshold = 28
+        static let diemLietPerExam = 1
         static let urgencyThresholdSeconds = 300
     }
 
@@ -43,6 +44,20 @@ enum AppConstants {
 
     enum Storage {
         static let historyLimit = 50
+        static let totalExamSets = 20
+    }
+
+    // MARK: - AppStorage Keys
+
+    enum StorageKey {
+        static let themeMode = "appThemeMode"
+        static let fontSize = "appFontSize"
+        static let primaryColor = "appPrimaryColor"
+        static let hapticsEnabled = "hapticsEnabled"
+        static let backgroundAnimation = "backgroundAnimation"
+        static let backgroundSpeed = "backgroundSpeed"
+        static let dailyReminderEnabled = "dailyReminderEnabled"
+        static let dailyReminderHour = "dailyReminderHour"
     }
 
     // MARK: - Special Topic Keys

@@ -25,6 +25,7 @@ struct QuestionGridButton: View {
             }
             .presentationDetents([.medium, .large])
             .presentationDragIndicator(.visible)
+            .presentationBackground(Material.ultraThinMaterial)
         }
     }
 }

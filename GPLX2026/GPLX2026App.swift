@@ -5,7 +5,7 @@ struct GPLX2026App: App {
     @State private var questionStore = QuestionStore()
     @State private var progressStore = ProgressStore()
     @State private var hazardVideoCache = HazardVideoCache()
-    @AppStorage("appThemeMode") private var themeMode: String = "system"
+    @AppStorage(AppConstants.StorageKey.themeMode) private var themeMode: String = "system"
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
 
     private var colorScheme: ColorScheme? {
