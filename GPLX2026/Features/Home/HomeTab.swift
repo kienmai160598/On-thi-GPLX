@@ -68,50 +68,57 @@ private struct ProgressOverview: View {
         let wrongCount = progressStore.wrongAnswers.count
         let dlDone = status.diemLiet.correct == status.diemLiet.total && status.diemLiet.total > 0
 
-        HStack(spacing: 20) {
+        HStack(spacing: 16) {
             // Ring left
             TopicProgressRing(fraction: mastery, color: .appPrimary, size: 110)
 
-            // Stats right
-            VStack(alignment: .leading, spacing: 12) {
-                // Caption + badges
-                HStack(spacing: 6) {
-                    Text("\(status.totalCorrect)/\(status.totalQuestions) câu đúng")
+            // All stats right
+            VStack(alignment: .leading, spacing: 10) {
+                // Main count
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Đã thuộc \(status.totalCorrect)/\(status.totalQuestions) câu")
                         .font(.system(size: 15, weight: .bold))
                         .foregroundStyle(Color.appTextDark)
+                        .contentTransition(.numericText())
 
-                    Spacer(minLength: 0)
-
-                    if streak > 0 {
-                        Label("\(streak)", systemImage: "flame.fill")
-                            .font(.system(size: 12, weight: .bold))
-                            .foregroundStyle(Color.appPrimary)
+                    HStack(spacing: 8) {
+                        if let days = daysUntilExam {
+                            Label(
+                                days <= 0 ? "Hôm nay thi!" : "Còn \(days) ngày",
+                                systemImage: "calendar"
+                            )
+                        }
+                        if streak > 0 {
+                            Label("\(streak) ngày liên tục", systemImage: "flame.fill")
+                        }
                     }
-                    if let days = daysUntilExam {
-                        Label(days <= 0 ? "!" : "\(days)d", systemImage: "calendar")
-                            .font(.system(size: 12, weight: .bold))
-                            .foregroundStyle(Color.appPrimary)
-                    }
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(Color.appPrimary)
                 }
+
+                Divider()
 
                 // Stat rows
                 statRow(
                     icon: "exclamationmark.triangle.fill",
-                    label: "Điểm liệt",
+                    label: "Câu điểm liệt",
                     value: "\(status.diemLiet.correct)/\(status.diemLiet.total)",
+                    status: dlDone ? "Đạt" : nil,
                     color: dlDone ? .appSuccess : .appWarning
                 )
                 statRow(
                     icon: "target",
                     label: "Hôm nay",
                     value: "\(today.done)/\(today.goal)",
+                    status: today.done >= today.goal ? "Xong" : nil,
                     color: today.done >= today.goal ? .appSuccess : .appPrimary
                 )
                 statRow(
                     icon: "xmark.circle.fill",
                     label: "Câu sai",
                     value: "\(wrongCount)",
-                    color: wrongCount > 0 ? .appError : .appTextMedium
+                    status: wrongCount == 0 ? "Tốt" : nil,
+                    color: wrongCount > 0 ? .appError : .appSuccess
                 )
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -120,7 +127,7 @@ private struct ProgressOverview: View {
         .glassCard()
     }
 
-    private func statRow(icon: String, label: String, value: String, color: Color) -> some View {
+    private func statRow(icon: String, label: String, value: String, status: String?, color: Color) -> some View {
         HStack(spacing: 8) {
             Image(systemName: icon)
                 .font(.system(size: 14))
@@ -130,6 +137,11 @@ private struct ProgressOverview: View {
                 .font(.system(size: 15, weight: .medium))
                 .foregroundStyle(Color.appTextMedium)
             Spacer()
+            if let status {
+                Text(status)
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundStyle(color)
+            }
             Text(value)
                 .font(.system(size: 17, weight: .bold).monospacedDigit())
                 .foregroundStyle(color)
@@ -338,7 +350,7 @@ private struct HomeActionCard: View {
     }
 }
 
-// MARK: - Shortcuts Row (Đã lưu)
+// MARK: - Shortcuts Row
 
 private struct ShortcutsRow: View {
     @Environment(ProgressStore.self) private var progressStore
@@ -346,29 +358,59 @@ private struct ShortcutsRow: View {
     var body: some View {
         let bookmarkCount = progressStore.bookmarks.count
 
-        NavigationLink(destination: BookmarksView()) {
-            HStack(spacing: 8) {
-                Image(systemName: "bookmark.fill")
-                    .font(.system(size: 16))
-                    .foregroundStyle(bookmarkCount > 0 ? Color.appPrimary : Color.appTextLight)
-
-                Text("Đã lưu")
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(Color.appTextDark)
-
-                Spacer()
-
-                if bookmarkCount > 0 {
-                    Text("\(bookmarkCount)")
-                        .font(.system(size: 14, weight: .bold).monospacedDigit())
-                        .foregroundStyle(Color.appPrimary)
-                }
+        VStack(spacing: 0) {
+            NavigationLink(destination: BookmarksView()) {
+                shortcutRow(
+                    icon: "bookmark.fill",
+                    title: "Đã lưu",
+                    color: bookmarkCount > 0 ? .appPrimary : .appTextLight,
+                    trailing: bookmarkCount > 0 ? "\(bookmarkCount)" : nil
+                )
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 14)
-            .glassCard()
+            .buttonStyle(.plain)
+
+            Divider().padding(.leading, 44)
+
+            NavigationLink(destination: TrafficSignsReferenceView()) {
+                shortcutRow(icon: "diamond.fill", title: "Biển báo giao thông", color: .appPrimary)
+            }
+            .buttonStyle(.plain)
+
+            Divider().padding(.leading, 44)
+
+            NavigationLink(destination: SpeedDistanceReferenceView()) {
+                shortcutRow(icon: "speedometer", title: "Tốc độ & Quy tắc", color: .appPrimary)
+            }
+            .buttonStyle(.plain)
         }
-        .buttonStyle(.plain)
+        .glassCard()
+    }
+
+    private func shortcutRow(icon: String, title: String, color: Color, trailing: String? = nil) -> some View {
+        HStack(spacing: 8) {
+            Image(systemName: icon)
+                .font(.system(size: 16))
+                .foregroundStyle(color)
+
+            Text(title)
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(Color.appTextDark)
+
+            Spacer()
+
+            if let trailing {
+                Text(trailing)
+                    .font(.system(size: 14, weight: .bold).monospacedDigit())
+                    .foregroundStyle(Color.appPrimary)
+            }
+
+            Image(systemName: "chevron.right")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(Color.appTextLight)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 14)
+        .contentShape(Rectangle())
     }
 }
 

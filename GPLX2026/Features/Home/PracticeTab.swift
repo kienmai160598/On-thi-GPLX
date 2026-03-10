@@ -1,41 +1,15 @@
 import SwiftUI
 
-private enum PracticeFilter: String, CaseIterable {
-    case all = "Tất cả"
-    case questions = "Câu hỏi"
-    case hazard = "Tình huống"
-    case reference = "Tra cứu"
-}
-
 struct PracticeTab: View {
     @Environment(QuestionStore.self) private var questionStore
     @Environment(ProgressStore.self) private var progressStore
     @Environment(\.openExam) private var openExam
-    @State private var filter: PracticeFilter = .all
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
-                // Filter chips
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 8) {
-                        ForEach(PracticeFilter.allCases, id: \.self) { item in
-                            FilterChip(label: item.rawValue, isSelected: filter == item) {
-                                filter = item
-                            }
-                        }
-                    }
-                }
-
-                if filter == .all || filter == .questions {
-                    questionSection
-                }
-                if filter == .all || filter == .hazard {
-                    hazardSection
-                }
-                if filter == .all || filter == .reference {
-                    referenceSection
-                }
+                questionSection
+                hazardSection
             }
             .padding(.horizontal, 20)
             .padding(.top, 8)
@@ -57,6 +31,11 @@ struct PracticeTab: View {
         let overallAccuracy = totalCount > 0 ? Double(totalCorrect) / Double(totalCount) : 0
         let masteredTopics = topicStats.filter { $0.total > 0 && Double($0.correct) / Double($0.total) >= 0.8 }.count
 
+        // Find weakest attempted topic
+        let weakest = topicStats
+            .filter { $0.correct > 0 && $0.total > 0 && Double($0.correct) / Double($0.total) < 0.8 }
+            .min { Double($0.correct) / Double($0.total) < Double($1.correct) / Double($1.total) }
+
         VStack(alignment: .leading, spacing: 12) {
             SectionTitle(title: "Câu hỏi")
 
@@ -68,17 +47,26 @@ struct PracticeTab: View {
                 ]
             )
 
-            // Play All button
-            Button {
-                openExam(.questionView(topicKey: AppConstants.TopicKey.allQuestions, startIndex: 0))
-            } label: {
-                AppButton(icon: "play.fill", label: "Tất cả \(totalCount) câu", height: 48, cornerRadius: 14)
+            // Smart "Ôn câu yếu" button — only shows if there's a weak topic
+            if let weak = weakest {
+                let accuracy = Int(Double(weak.correct) / Double(weak.total) * 100)
+                Button {
+                    openExam(.questionView(topicKey: weak.topic.key, startIndex: 0))
+                } label: {
+                    AppButton(
+                        icon: "arrow.counterclockwise",
+                        label: "Ôn câu yếu: \(weak.topic.name) (\(accuracy)%)",
+                        height: 48,
+                        cornerRadius: 14
+                    )
+                }
             }
 
-            // Topic list with progress rings
+            // Topic list with color-coded progress rings
             VStack(spacing: 0) {
                 ForEach(Array(topicStats.enumerated()), id: \.element.topic.id) { index, item in
                     let topicAccuracy = item.total > 0 ? Double(item.correct) / Double(item.total) : 0
+                    let ringColor = topicRingColor(accuracy: topicAccuracy, attempted: item.correct > 0)
 
                     Button {
                         openExam(.questionView(topicKey: item.topic.key, startIndex: 0))
@@ -87,7 +75,7 @@ struct PracticeTab: View {
                             TopicIconRing(
                                 icon: item.topic.icon,
                                 fraction: topicAccuracy,
-                                color: .appPrimary
+                                color: ringColor
                             )
 
                             VStack(alignment: .leading, spacing: 3) {
@@ -142,11 +130,6 @@ struct PracticeTab: View {
                 ]
             )
 
-            // Play All button
-            Button { openExam(.hazardTest(mode: .practice)) } label: {
-                AppButton(icon: "play.fill", label: "Luyện tất cả (\(totalSituations) tình huống)", height: 48, cornerRadius: 14)
-            }
-
             // Chapter list with progress rings
             VStack(spacing: 0) {
                 ForEach(Array(HazardSituation.chapters.enumerated()), id: \.element.id) { index, chapter in
@@ -166,8 +149,8 @@ struct PracticeTab: View {
                                     .font(.system(size: 15, weight: .bold))
                                     .foregroundStyle(Color.appTextDark)
                                 Text(hasPractice
-                                    ? "\(chapter.name) · \(Int(chapterScore * 100))%"
-                                    : "\(chapter.name) (\(chapter.range.count) TH)")
+                                    ? "\(Int(chapterScore * 100))% · \(chapter.range.count) tình huống"
+                                    : "\(chapter.name) · \(chapter.range.count) tình huống")
                                     .font(.system(size: 13))
                                     .foregroundStyle(Color.appTextMedium)
                             }
@@ -190,72 +173,16 @@ struct PracticeTab: View {
                 }
             }
             .glassCard()
-
         }
     }
 
-    // MARK: - Tra cứu Section
+    // MARK: - Helpers
 
-    @ViewBuilder
-    private var referenceSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            SectionTitle(title: "Tra cứu")
-
-            VStack(spacing: 0) {
-                NavigationLink(destination: TrafficSignsReferenceView()) {
-                    HStack(spacing: 14) {
-                        TopicIconRing(icon: "diamond.fill", fraction: 0, color: .appPrimary)
-
-                        VStack(alignment: .leading, spacing: 3) {
-                            Text("Biển báo giao thông")
-                                .font(.system(size: 15, weight: .semibold))
-                                .foregroundStyle(Color.appTextDark)
-                            Text("47 biển báo phổ biến")
-                                .font(.system(size: 13))
-                                .foregroundStyle(Color.appTextMedium)
-                        }
-
-                        Spacer(minLength: 4)
-
-                        Image(systemName: "chevron.right")
-                            .font(.system(size: 12, weight: .semibold))
-                            .foregroundStyle(Color.appTextLight)
-                    }
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 12)
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-
-                Divider().padding(.leading, 68)
-
-                NavigationLink(destination: SpeedDistanceReferenceView()) {
-                    HStack(spacing: 14) {
-                        TopicIconRing(icon: "speedometer", fraction: 0, color: .appPrimary)
-
-                        VStack(alignment: .leading, spacing: 3) {
-                            Text("Tốc độ & Quy tắc")
-                                .font(.system(size: 15, weight: .semibold))
-                                .foregroundStyle(Color.appTextDark)
-                            Text("Tốc độ, khoảng cách, mức phạt")
-                                .font(.system(size: 13))
-                                .foregroundStyle(Color.appTextMedium)
-                        }
-
-                        Spacer(minLength: 4)
-
-                        Image(systemName: "chevron.right")
-                            .font(.system(size: 12, weight: .semibold))
-                            .foregroundStyle(Color.appTextLight)
-                    }
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 12)
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-            }
-            .glassCard()
-        }
+    private func topicRingColor(accuracy: Double, attempted: Bool) -> Color {
+        guard attempted else { return .appPrimary }
+        if accuracy >= 0.8 { return .appSuccess }
+        if accuracy >= 0.5 { return .appWarning }
+        return .appError
     }
 
     private func chapterIcon(_ id: Int) -> String {
@@ -270,5 +197,3 @@ struct PracticeTab: View {
         }
     }
 }
-
-
