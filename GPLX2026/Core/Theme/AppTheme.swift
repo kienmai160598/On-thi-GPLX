@@ -42,7 +42,17 @@ extension Color {
         })
     }
 
-    // ── Primary ────────────────────────────────────────────────
+    // ── Primary (dynamic) ────────────────────────────────────────────────
+
+    static var appPrimary: Color {
+        primaryColor(for: UserDefaults.standard.string(forKey: AppConstants.StorageKey.primaryColor) ?? "default")
+    }
+
+    static var appOnPrimary: Color {
+        let key = UserDefaults.standard.string(forKey: AppConstants.StorageKey.primaryColor) ?? "default"
+        if key == "default" { return adaptive(light: 0xFAFAFA, dark: 0x1A1A1A) }
+        return .white
+    }
 
     static let primaryDark = adaptive(light: 0x0A0A0A, dark: 0xFFFFFF)
 
@@ -207,22 +217,6 @@ extension View {
                     AnimatedBackground()
                 }
             }
-    }
-}
-
-// MARK: - Staggered Appearance
-
-struct StaggeredItem: ViewModifier {
-    let index: Int
-
-    func body(content: Content) -> some View {
-        content
-    }
-}
-
-extension View {
-    func staggered(_ index: Int) -> some View {
-        modifier(StaggeredItem(index: index))
     }
 }
 
