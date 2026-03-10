@@ -289,26 +289,6 @@ struct SettingsView: View {
                 }
 
                 // ──────────────────────────────────────────────
-                // MARK: - Ủng hộ (Support the developer)
-                // ──────────────────────────────────────────────
-
-                settingsSection("Ủng hộ tác giả") {
-                    VStack(spacing: 0) {
-                        copyableRow(icon: "building.columns", label: "Ngân hàng", value: "Techcombank")
-                        Divider().padding(.horizontal, 16)
-                        copyableRow(icon: "person", label: "Chủ TK", value: "Kien Mai")
-                        Divider().padding(.horizontal, 16)
-                        copyableRow(icon: "number", label: "STK", value: "686816051998")
-                    }
-                    .glassCard()
-
-                    Text("Nếu bạn thấy ứng dụng hữu ích, bạn có thể ủng hộ tác giả qua chuyển khoản.")
-                        .font(.system(size: 12))
-                        .foregroundStyle(Color.appTextLight)
-                        .lineSpacing(3)
-                }
-
-                // ──────────────────────────────────────────────
                 // MARK: - Thông tin (About)
                 // ──────────────────────────────────────────────
 
@@ -569,39 +549,6 @@ struct SettingsView: View {
         .padding(.vertical, 12)
     }
 
-    // MARK: - Copyable Row
-
-    @ViewBuilder
-    private func copyableRow(icon: String, label: String, value: String) -> some View {
-        Button {
-            UIPasteboard.general.string = value
-            Haptics.notification(.success)
-            showToast("Đã sao chép \(label)")
-        } label: {
-            HStack(spacing: 12) {
-                Image(systemName: icon)
-                    .font(.system(size: 14))
-                    .foregroundStyle(Color.appTextLight)
-                    .frame(width: 20)
-                Text(label)
-                    .font(.system(size: 14))
-                    .foregroundStyle(Color.appTextMedium)
-                Spacer()
-                Text(value)
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundStyle(Color.appTextDark)
-                Image(systemName: "doc.on.doc")
-                    .font(.system(size: 11))
-                    .foregroundStyle(Color.appTextLight)
-            }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel("\(label): \(value)")
-        .accessibilityHint("Nhấn để sao chép")
-    }
 }
 
 // MARK: - Reset Action

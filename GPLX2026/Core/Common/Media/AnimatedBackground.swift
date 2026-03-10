@@ -17,7 +17,7 @@ struct AnimatedBackground: View {
     var body: some View {
         if animationStyle != "none" && !reduceMotion {
             let color = themeStore.primaryColor
-            TimelineView(.animation) { timeline in
+            TimelineView(.periodic(from: .now, by: 1.0 / 30)) { timeline in
                 Canvas { context, size in
                     let t = timeline.date.timeIntervalSinceReferenceDate * speed
 
@@ -47,7 +47,7 @@ struct AnimatedBackground: View {
 
         // Draw all bubbles inside a blurred sublayer
         context.drawLayer { blurCtx in
-            blurCtx.addFilter(.blur(radius: 40))
+            blurCtx.addFilter(.blur(radius: 30))
 
             for i in 0..<n {
                 let s = Double(i) * 137.508

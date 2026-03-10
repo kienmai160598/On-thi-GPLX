@@ -169,18 +169,6 @@ struct HazardTestView: View {
                 }
                 .padding(isRegular ? 12 : 8)
             }
-            .overlay(alignment: .topTrailing) {
-                Button {
-                    OrientationManager.shared.forceToPortrait()
-                } label: {
-                    Image(systemName: "rectangle.portrait.arrowtriangle.2.outward")
-                        .font(.system(size: isRegular ? 16 : 14, weight: .bold))
-                        .foregroundStyle(.white)
-                        .frame(width: isRegular ? 38 : 32, height: isRegular ? 38 : 32)
-                        .background(Color.black.opacity(0.5), in: Circle())
-                }
-                .padding(isRegular ? 12 : 8)
-            }
             .overlay {
                 if playerState.hasError {
                     videoErrorOverlay
@@ -389,19 +377,6 @@ struct HazardTestView: View {
                         .animation(.easeOut(duration: 0.2), value: showTapFlash)
                         .allowsHitTesting(false)
                 )
-                .overlay(alignment: .topTrailing) {
-                    Button {
-                        OrientationManager.shared.forceToLandscape()
-                    } label: {
-                        Image(systemName: "rectangle.landscape.arrowtriangle.2.outward")
-                            .font(.system(size: 14, weight: .bold))
-                            .foregroundStyle(.white)
-                            .frame(width: 32, height: 32)
-                            .background(Color.black.opacity(0.5), in: Circle())
-                    }
-                    .padding(8)
-                }
-
                 if playerState.hasError {
                     videoErrorOverlay
                 } else if playerState.isBuffering {
@@ -837,6 +812,7 @@ private struct HazardDangerButton: View {
     let action: () -> Void
 
     @State private var isPulsing = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var isDisabled: Bool { hasTapped || countdown }
 
@@ -878,6 +854,8 @@ private struct HazardDangerButton: View {
         }
         .buttonStyle(.plain)
         .disabled(isDisabled)
+        .accessibilityLabel(hasTapped ? "Đã phát hiện nguy hiểm" : "Nhấn khi phát hiện nguy hiểm")
+        .accessibilityHint(hasTapped ? "" : "Nhấn nhanh khi thấy tình huống nguy hiểm trong video")
         // Pulsing red glow when active (not yet tapped)
         .shadow(
             color: isDisabled ? .clear : Color.appError.opacity(isPulsing ? 0.55 : 0.15),
@@ -888,7 +866,7 @@ private struct HazardDangerButton: View {
         .animation(.spring(duration: 0.35, bounce: 0.3), value: hasTapped)
         .animation(.easeOut(duration: 0.3), value: countdown)
         .onChange(of: countdown) { _, inCountdown in
-            if !inCountdown && !hasTapped && !isPulsing {
+            if !inCountdown && !hasTapped && !isPulsing && !reduceMotion {
                 withAnimation(
                     .easeInOut(duration: 1.1)
                     .repeatForever(autoreverses: true)
@@ -1247,6 +1225,7 @@ struct HazardVideoPlayer: UIViewControllerRepresentable {
     static func dismantleUIViewController(_ vc: AVPlayerViewController, coordinator: Coordinator) {
         vc.player?.pause()
         coordinator.cleanup(player: vc.player)
+        vc.player = nil
     }
 }
 

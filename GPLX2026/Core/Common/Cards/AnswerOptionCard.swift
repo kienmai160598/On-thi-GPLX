@@ -40,6 +40,18 @@ struct AnswerOptionCard: View {
             }
         }
         .glassCard()
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(letter). \(text)")
+        .accessibilityValue(accessibilityStatus)
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
+    }
+
+    private var accessibilityStatus: String {
+        if !isConfirmed && !isSelected { return "" }
+        if !isConfirmed && isSelected { return "Đã chọn" }
+        if isCorrect { return "Đúng" }
+        if isSelected && !isCorrect { return "Sai" }
+        return ""
     }
 
     private var letterColor: Color {

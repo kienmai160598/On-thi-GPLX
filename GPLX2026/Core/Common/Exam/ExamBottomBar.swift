@@ -51,9 +51,8 @@ struct ExamBottomBar: View {
                 onSelectIndex(index)
             }
         }
-        .padding(.horizontal, 16)
-        .padding(.top, 10)
-        .padding(.bottom, bottomSafeArea + 8)
+        .padding(.horizontal, 20)
+        .padding(.bottom, bottomSafeArea)
     }
 
     private var bottomSafeArea: CGFloat {

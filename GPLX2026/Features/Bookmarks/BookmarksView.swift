@@ -30,7 +30,7 @@ struct BookmarksView: View {
                 }
                 .buttonStyle(.plain)
                 .padding(.horizontal, 20)
-                .padding(.vertical, 12)
+                .padding(.bottom, 4)
             }
         }
         .screenHeader("Đánh dấu")
