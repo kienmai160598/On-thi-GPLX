@@ -6,9 +6,14 @@ extension ProgressStore {
 
     /// Returns study activity as [dateString: count] for the last N days.
     var studyActivity: [String: Int] {
-        _ = dataVersion
-        guard let data = UserDefaults.standard.data(forKey: Self.activityKey) else { return [:] }
-        return (try? JSONDecoder().decode([String: Int].self, from: data)) ?? [:]
+        if let cached = _studyActivityCache { return cached }
+        guard let data = defaults.data(forKey: Self.activityKey) else {
+            _studyActivityCache = [:]
+            return [:]
+        }
+        let value = (try? JSONDecoder().decode([String: Int].self, from: data)) ?? [:]
+        _studyActivityCache = value
+        return value
     }
 
     /// Record one question answered today.
@@ -21,9 +26,9 @@ extension ProgressStore {
         let cutoffStr = Self.activityDateString(from: cutoff)
         activity = activity.filter { $0.key >= cutoffStr }
         if let data = try? JSONEncoder().encode(activity) {
-            UserDefaults.standard.set(data, forKey: Self.activityKey)
+            defaults.set(data, forKey: Self.activityKey)
         }
-        dataVersion += 1
+        _studyActivityCache = activity
     }
 
     /// Activity count for a specific date.

@@ -2,6 +2,7 @@ import SwiftUI
 
 struct ContentView: View {
     @Environment(QuestionStore.self) private var questionStore
+    @Environment(ThemeStore.self) private var themeStore
 
     var body: some View {
         Group {
@@ -10,7 +11,7 @@ struct ContentView: View {
                     Color.scaffoldBg.ignoresSafeArea()
                     VStack(spacing: 16) {
                         ProgressView()
-                            .tint(Color.appPrimary)
+                            .tint(themeStore.primaryColor)
                         Text("Đang tải dữ liệu...")
                             .font(.subheadline)
                             .foregroundStyle(Color.appTextMedium)

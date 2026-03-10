@@ -4,8 +4,7 @@ import Foundation
 
 struct HazardResult: Codable, Identifiable {
 
-    var id: Date { date }
-
+    let id: UUID
     let date: Date
     let totalScore: Int
     let maxScore: Int
@@ -32,7 +31,7 @@ struct HazardResult: Codable, Identifiable {
     // MARK: Coding
 
     enum CodingKeys: String, CodingKey {
-        case date, totalScore, maxScore, situationCount, details
+        case id, date, totalScore, maxScore, situationCount, details
     }
 
     init(
@@ -42,6 +41,7 @@ struct HazardResult: Codable, Identifiable {
         situationCount: Int,
         details: [SituationDetail]
     ) {
+        self.id = UUID()
         self.date = date
         self.totalScore = totalScore
         self.maxScore = maxScore
@@ -51,6 +51,7 @@ struct HazardResult: Codable, Identifiable {
 
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = (try? c.decode(UUID.self, forKey: .id)) ?? UUID()
         let dateString = try c.decode(String.self, forKey: .date)
         date = DateFormatters.iso8601.date(from: dateString) ?? Date()
         totalScore = try c.decode(Int.self, forKey: .totalScore)
@@ -61,6 +62,7 @@ struct HazardResult: Codable, Identifiable {
 
     func encode(to encoder: Encoder) throws {
         var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(id, forKey: .id)
         try c.encode(DateFormatters.iso8601.string(from: date), forKey: .date)
         try c.encode(totalScore, forKey: .totalScore)
         try c.encode(maxScore, forKey: .maxScore)

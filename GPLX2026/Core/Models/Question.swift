@@ -24,12 +24,14 @@ struct Question: Codable, Identifiable, Hashable {
     let required1: Int
     let required2: Int
     let required3: Int
+    let b1Position: Int  // 0 = not in B1 pool, 1-300 = position in B1 exam bank
 
     // MARK: Coding keys
 
     enum CodingKeys: String, CodingKey {
         case no, text, tip, answers, topic, image
         case required1, required2, required3
+        case b1Position = "b1"
     }
 
     // MARK: Custom decoding (handle optional / missing fields)
@@ -45,6 +47,7 @@ struct Question: Codable, Identifiable, Hashable {
         required1 = try c.decodeIfPresent(Int.self, forKey: .required1) ?? 0
         required2 = try c.decodeIfPresent(Int.self, forKey: .required2) ?? 0
         required3 = try c.decodeIfPresent(Int.self, forKey: .required3) ?? 0
+        b1Position = try c.decodeIfPresent(Int.self, forKey: .b1Position) ?? 0
     }
 
     // MARK: Memberwise init (for previews / tests)
@@ -58,7 +61,8 @@ struct Question: Codable, Identifiable, Hashable {
         image: String = "",
         required1: Int = 0,
         required2: Int = 0,
-        required3: Int = 0
+        required3: Int = 0,
+        b1Position: Int = 0
     ) {
         self.no = no
         self.text = text
@@ -69,6 +73,7 @@ struct Question: Codable, Identifiable, Hashable {
         self.required1 = required1
         self.required2 = required2
         self.required3 = required3
+        self.b1Position = b1Position
     }
 
     // MARK: Computed properties
@@ -78,6 +83,9 @@ struct Question: Codable, Identifiable, Hashable {
 
     /// Whether this is a "diem liet" (critical / disqualifying) question.
     var isDiemLiet: Bool { required1 != 0 || required2 != 0 || required3 != 0 }
+
+    /// Whether this question is in the B1 question pool.
+    var isB1: Bool { b1Position > 0 }
 
     /// Shuffled copy of the answers array, deterministic per question number.
     var shuffledAnswers: [Answer] {

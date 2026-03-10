@@ -86,7 +86,7 @@ struct SimulationResultView: View {
                         Button {
                             openExam(.questionView(topicKey: AppConstants.TopicKey.wrongAnswers, startIndex: 0))
                         } label: {
-                            AppButton(icon: "arrow.trianglehead.2.clockwise", label: "Luyện \(questions.count - correctCount) câu sai", style: .secondary, height: 48, cornerRadius: 24)
+                            AppButton(icon: "arrow.trianglehead.2.clockwise", label: "Luyện \(questions.count - correctCount) câu sai", style: .secondary, height: 48)
                         }
                     }
 
@@ -94,11 +94,11 @@ struct SimulationResultView: View {
                         Button {
                             openExam(.simulationExam(mode: .random))
                         } label: {
-                            AppButton(icon: "arrow.counterclockwise", label: "Thi lại", style: .secondary, height: 48, cornerRadius: 24)
+                            AppButton(icon: "arrow.counterclockwise", label: "Thi lại", style: .secondary, height: 48)
                         }
 
                         Button { popToRoot() } label: {
-                            AppButton(icon: "checkmark", label: "Hoàn thành", height: 48, cornerRadius: 24)
+                            AppButton(icon: "checkmark", label: "Hoàn thành", height: 48)
                         }
                     }
                 }
@@ -109,6 +109,11 @@ struct SimulationResultView: View {
         }
         .navigationBarBackButtonHidden(!isFromHistory)
         .screenHeader(isFromHistory ? "Chi tiết mô phỏng" : "Kết quả mô phỏng")
+        .onAppear {
+            if !isFromHistory {
+                ReviewHelper.requestIfFirstPass(passed: simulationResult.passed)
+            }
+        }
         .toolbar {
             if !isFromHistory {
                 ToolbarItem(placement: .navigationBarTrailing) {

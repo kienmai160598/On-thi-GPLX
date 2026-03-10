@@ -16,6 +16,8 @@ struct HomeTab: View {
     }
 
     var body: some View {
+        let goalDone = progressStore.todayProgress.done >= progressStore.todayProgress.goal
+
         ScrollView {
             VStack(spacing: 20) {
                 ProgressOverview()
@@ -23,10 +25,14 @@ struct HomeTab: View {
                 QuickActionsGrid()
                 ShortcutsRow()
                 RecentResultsCard()
+                AchievementsCard()
+                ScoreTrendCard()
+                ActivityCalendarCard()
             }
             .padding(.horizontal, 20)
             .padding(.bottom, 32)
         }
+        .dailyGoalCelebration(isDone: goalDone)
         .glassContainer()
         .screenHeader(greetingText)
         .toolbar {
@@ -53,6 +59,7 @@ struct HomeTab: View {
 private struct ProgressOverview: View {
     @Environment(QuestionStore.self) private var questionStore
     @Environment(ProgressStore.self) private var progressStore
+    @Environment(ThemeStore.self) private var themeStore
 
     var body: some View {
         let status = progressStore.readinessStatus(
@@ -70,7 +77,7 @@ private struct ProgressOverview: View {
 
         HStack(spacing: 16) {
             // Ring left
-            TopicProgressRing(fraction: mastery, color: .appPrimary, size: 110)
+            TopicProgressRing(fraction: mastery, color: themeStore.primaryColor, size: 110)
 
             // All stats right
             VStack(alignment: .leading, spacing: 10) {
@@ -93,7 +100,7 @@ private struct ProgressOverview: View {
                         }
                     }
                     .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(Color.appPrimary)
+                    .foregroundStyle(themeStore.primaryColor)
                 }
 
                 Divider()
@@ -111,7 +118,7 @@ private struct ProgressOverview: View {
                     label: "Hôm nay",
                     value: "\(today.done)/\(today.goal)",
                     status: today.done >= today.goal ? "Xong" : nil,
-                    color: today.done >= today.goal ? .appSuccess : .appPrimary
+                    color: today.done >= today.goal ? .appSuccess : themeStore.primaryColor
                 )
                 statRow(
                     icon: "xmark.circle.fill",
@@ -155,6 +162,7 @@ private struct ProgressOverview: View {
 private struct PrimaryActionCard: View {
     @Environment(QuestionStore.self) private var questionStore
     @Environment(ProgressStore.self) private var progressStore
+    @Environment(ThemeStore.self) private var themeStore
     @Environment(\.openExam) private var openExam
 
     var body: some View {
@@ -184,7 +192,7 @@ private struct PrimaryActionCard: View {
             HStack(spacing: 14) {
                 Image(systemName: "play.circle.fill")
                     .font(.system(size: 36))
-                    .foregroundStyle(Color.appPrimary)
+                    .foregroundStyle(themeStore.primaryColor)
 
                 VStack(alignment: .leading, spacing: 3) {
                     Text("Tiếp tục học")
@@ -219,10 +227,10 @@ private struct PrimaryActionCard: View {
             HStack(spacing: 14) {
                 Image(systemName: nudge.icon)
                     .font(.system(size: 24))
-                    .foregroundStyle(Color.appPrimary)
+                    .foregroundStyle(themeStore.primaryColor)
                     .symbolRenderingMode(.hierarchical)
                     .frame(width: 48, height: 48)
-                    .background(Color.appPrimary.opacity(0.12))
+                    .background(themeStore.primaryColor.opacity(0.12))
                     .clipShape(RoundedRectangle(cornerRadius: 8))
 
                 VStack(alignment: .leading, spacing: 3) {
@@ -269,6 +277,7 @@ private struct PrimaryActionCard: View {
 private struct QuickActionsGrid: View {
     @Environment(QuestionStore.self) private var questionStore
     @Environment(ProgressStore.self) private var progressStore
+    @Environment(ThemeStore.self) private var themeStore
     @Environment(\.openExam) private var openExam
 
     private let columns = [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)]
@@ -278,7 +287,7 @@ private struct QuickActionsGrid: View {
             HomeActionCard(
                 icon: "book.fill",
                 title: "Ôn câu hỏi",
-                color: .appPrimary
+                color: themeStore.primaryColor
             ) {
                 openExam(.questionView(topicKey: AppConstants.TopicKey.allQuestions, startIndex: 0))
             }
@@ -286,7 +295,7 @@ private struct QuickActionsGrid: View {
             HomeActionCard(
                 icon: "list.clipboard.fill",
                 title: "Thi thử",
-                color: .appPrimary
+                color: themeStore.primaryColor
             ) {
                 openExam(.mockExam())
             }
@@ -294,7 +303,7 @@ private struct QuickActionsGrid: View {
             HomeActionCard(
                 icon: "exclamationmark.triangle.fill",
                 title: "Điểm liệt",
-                color: .appPrimary
+                color: themeStore.primaryColor
             ) {
                 openExam(.questionView(topicKey: AppConstants.TopicKey.diemLiet, startIndex: 0))
             }
@@ -303,7 +312,7 @@ private struct QuickActionsGrid: View {
                 VStack(spacing: 10) {
                     Image(systemName: "xmark.circle.fill")
                         .font(.system(size: 28))
-                        .foregroundStyle(Color.appPrimary)
+                        .foregroundStyle(themeStore.primaryColor)
 
                     Text("Câu sai")
                         .font(.system(size: 16, weight: .bold))
@@ -354,6 +363,7 @@ private struct HomeActionCard: View {
 
 private struct ShortcutsRow: View {
     @Environment(ProgressStore.self) private var progressStore
+    @Environment(ThemeStore.self) private var themeStore
 
     var body: some View {
         let bookmarkCount = progressStore.bookmarks.count
@@ -363,7 +373,7 @@ private struct ShortcutsRow: View {
                 shortcutRow(
                     icon: "bookmark.fill",
                     title: "Đã lưu",
-                    color: bookmarkCount > 0 ? .appPrimary : .appTextLight,
+                    color: bookmarkCount > 0 ? themeStore.primaryColor : .appTextLight,
                     trailing: bookmarkCount > 0 ? "\(bookmarkCount)" : nil
                 )
             }
@@ -372,14 +382,14 @@ private struct ShortcutsRow: View {
             Divider().padding(.leading, 44)
 
             NavigationLink(destination: TrafficSignsReferenceView()) {
-                shortcutRow(icon: "diamond.fill", title: "Biển báo giao thông", color: .appPrimary)
+                shortcutRow(icon: "diamond.fill", title: "Biển báo giao thông", color: themeStore.primaryColor)
             }
             .buttonStyle(.plain)
 
             Divider().padding(.leading, 44)
 
             NavigationLink(destination: SpeedDistanceReferenceView()) {
-                shortcutRow(icon: "speedometer", title: "Tốc độ & Quy tắc", color: .appPrimary)
+                shortcutRow(icon: "speedometer", title: "Tốc độ & Quy tắc", color: themeStore.primaryColor)
             }
             .buttonStyle(.plain)
         }
@@ -401,7 +411,7 @@ private struct ShortcutsRow: View {
             if let trailing {
                 Text(trailing)
                     .font(.system(size: 14, weight: .bold).monospacedDigit())
-                    .foregroundStyle(Color.appPrimary)
+                    .foregroundStyle(themeStore.primaryColor)
             }
 
             Image(systemName: "chevron.right")
@@ -494,7 +504,7 @@ private struct RecentResultRow: View {
         HStack(spacing: 12) {
             Image(systemName: passed ? "checkmark.circle.fill" : "xmark.circle.fill")
                 .font(.system(size: 20))
-                .foregroundStyle(Color.appPrimary)
+                .foregroundStyle(passed ? Color.appSuccess : Color.appError)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
@@ -513,7 +523,7 @@ private struct RecentResultRow: View {
 
             StatusBadge(
                 text: passed ? "Đạt" : "Trượt",
-                color: .appPrimary,
+                color: passed ? .appSuccess : .appError,
                 fontSize: 12
             )
         }

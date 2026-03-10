@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct FilterChip: View {
+    @Environment(ThemeStore.self) private var themeStore
     let label: String
     let isSelected: Bool
     let action: () -> Void
@@ -23,12 +24,12 @@ struct FilterChip: View {
     private var chipContent: some View {
         if #available(iOS 26.0, *) {
             chipText
-                .foregroundStyle(isSelected ? Color.appPrimary : Color.appTextMedium)
+                .foregroundStyle(isSelected ? themeStore.primaryColor : Color.appTextMedium)
                 .glassEffect(.regular.interactive(), in: .capsule)
         } else {
             chipText
-                .foregroundStyle(isSelected ? Color.appOnPrimary : Color.appTextMedium)
-                .background(isSelected ? Color.appPrimary : Color.appDivider)
+                .foregroundStyle(isSelected ? themeStore.onPrimaryColor : Color.appTextMedium)
+                .background(isSelected ? themeStore.primaryColor : Color.appDivider)
                 .clipShape(Capsule())
         }
     }

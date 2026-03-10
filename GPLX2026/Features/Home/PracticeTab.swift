@@ -27,39 +27,14 @@ struct PracticeTab: View {
         let topicStats = progressStore.weakTopics(topics: allTopics)
             .sorted { $0.topic.topicIds.first ?? 0 < $1.topic.topicIds.first ?? 0 }
         let totalCount = allTopics.reduce(0) { $0 + $1.questionCount }
-        let totalCorrect = topicStats.reduce(0) { $0 + $1.correct }
-        let overallAccuracy = totalCount > 0 ? Double(totalCorrect) / Double(totalCount) : 0
-        let masteredTopics = topicStats.filter { $0.total > 0 && Double($0.correct) / Double($0.total) >= 0.8 }.count
-
-        // Find weakest attempted topic
-        let weakest = topicStats
-            .filter { $0.correct > 0 && $0.total > 0 && Double($0.correct) / Double($0.total) < 0.8 }
-            .min { Double($0.correct) / Double($0.total) < Double($1.correct) / Double($1.total) }
 
         VStack(alignment: .leading, spacing: 12) {
             SectionTitle(title: "Câu hỏi")
 
-            MiniMetricCard(
-                fraction: overallAccuracy,
-                stats: [
-                    (value: "\(totalCorrect)/\(totalCount)", label: "Đã đúng"),
-                    (value: "\(masteredTopics)/\(topicStats.count)", label: "Hoàn thành")
-                ]
-            )
-
-            // Smart "Ôn câu yếu" button — only shows if there's a weak topic
-            if let weak = weakest {
-                let accuracy = Int(Double(weak.correct) / Double(weak.total) * 100)
-                Button {
-                    openExam(.questionView(topicKey: weak.topic.key, startIndex: 0))
-                } label: {
-                    AppButton(
-                        icon: "arrow.counterclockwise",
-                        label: "Ôn câu yếu: \(weak.topic.name) (\(accuracy)%)",
-                        height: 48,
-                        cornerRadius: 14
-                    )
-                }
+            Button {
+                openExam(.questionView(topicKey: AppConstants.TopicKey.allQuestions, startIndex: 0))
+            } label: {
+                AppButton(icon: "play.fill", label: "Ôn tập \(totalCount) câu", height: 48)
             }
 
             // Topic list with color-coded progress rings
@@ -115,20 +90,8 @@ struct PracticeTab: View {
 
     @ViewBuilder
     private var hazardSection: some View {
-        let totalSituations = HazardSituation.all.count
-        let practicedCount = progressStore.hazardPracticedCount
-        let avgScore = progressStore.averageHazardScore
-
         VStack(alignment: .leading, spacing: 12) {
             SectionTitle(title: "Tình huống nguy hiểm")
-
-            MiniMetricCard(
-                fraction: avgScore,
-                stats: [
-                    (value: "\(practicedCount)/\(totalSituations)", label: "Đã luyện"),
-                    (value: practicedCount > 0 ? "\(Int(avgScore * 100))%" : "--", label: "Điểm TB")
-                ]
-            )
 
             // Chapter list with progress rings
             VStack(spacing: 0) {

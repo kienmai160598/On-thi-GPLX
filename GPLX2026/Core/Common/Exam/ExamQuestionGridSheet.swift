@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct ExamQuestionGridSheet: View {
+    @Environment(ThemeStore.self) private var themeStore
     @Environment(\.dismiss) private var dismiss
 
     let totalQuestions: Int
@@ -70,13 +71,13 @@ struct ExamQuestionGridSheet: View {
     // MARK: - Colors
 
     private func foregroundColor(for index: Int) -> Color {
-        if index == currentIndex { return Color.appOnPrimary }
+        if index == currentIndex { return themeStore.onPrimaryColor }
         if answeredIndices.contains(index) { return Color.appSuccess }
         return Color.appTextMedium
     }
 
     private func backgroundColor(for index: Int) -> Color {
-        if index == currentIndex { return Color.appPrimary }
+        if index == currentIndex { return themeStore.primaryColor }
         if answeredIndices.contains(index) { return Color.appSuccess.opacity(0.12) }
         return Color.appTextLight.opacity(0.25)
     }

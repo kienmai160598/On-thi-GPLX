@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct InlinePill: View {
+    @Environment(ThemeStore.self) private var themeStore
     let label: String
 
     init(_ label: String) {
@@ -10,12 +11,12 @@ struct InlinePill: View {
     var body: some View {
         if #available(iOS 26.0, *) {
             pillText
-                .foregroundStyle(Color.appPrimary)
+                .foregroundStyle(themeStore.primaryColor)
                 .glassEffect(.regular.interactive(), in: .capsule)
         } else {
             pillText
-                .foregroundStyle(Color.appOnPrimary)
-                .background(Color.appPrimary)
+                .foregroundStyle(themeStore.onPrimaryColor)
+                .background(themeStore.primaryColor)
                 .clipShape(Capsule())
         }
     }

@@ -4,8 +4,7 @@ import Foundation
 
 struct SimulationResult: Codable, Identifiable {
 
-    var id: Date { date }
-
+    let id: UUID
     let date: Date
     let score: Int
     let totalScenarios: Int
@@ -35,7 +34,7 @@ struct SimulationResult: Codable, Identifiable {
     // MARK: Coding
 
     enum CodingKeys: String, CodingKey {
-        case date, score, totalScenarios, totalTimeUsedSeconds, timedOutCount, scenarioDetails
+        case id, date, score, totalScenarios, totalTimeUsedSeconds, timedOutCount, scenarioDetails
     }
 
     init(
@@ -46,6 +45,7 @@ struct SimulationResult: Codable, Identifiable {
         timedOutCount: Int,
         scenarioDetails: [ScenarioDetail]
     ) {
+        self.id = UUID()
         self.date = date
         self.score = score
         self.totalScenarios = totalScenarios
@@ -56,6 +56,7 @@ struct SimulationResult: Codable, Identifiable {
 
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = (try? c.decode(UUID.self, forKey: .id)) ?? UUID()
         let dateString = try c.decode(String.self, forKey: .date)
         date = DateFormatters.iso8601.date(from: dateString) ?? Date()
         score = try c.decode(Int.self, forKey: .score)
@@ -67,6 +68,7 @@ struct SimulationResult: Codable, Identifiable {
 
     func encode(to encoder: Encoder) throws {
         var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(id, forKey: .id)
         try c.encode(DateFormatters.iso8601.string(from: date), forKey: .date)
         try c.encode(score, forKey: .score)
         try c.encode(totalScenarios, forKey: .totalScenarios)
@@ -88,15 +90,16 @@ struct SimulationResult: Codable, Identifiable {
 
         for (i, q) in questions.enumerated() {
             let selectedId = answers[i]
-            let isCorrect = selectedId != nil && q.answers.contains(where: { $0.id == selectedId && $0.correct })
+            let isTimedOut = selectedId == nil || selectedId == -1
+            let isCorrect = !isTimedOut && q.answers.contains(where: { $0.id == selectedId && $0.correct })
             let timeUsed = timePerScenario[i] ?? 0
 
             if isCorrect { correctCount += 1 }
-            if selectedId == nil { timedOut += 1 }
+            if isTimedOut { timedOut += 1 }
 
             details.append(ScenarioDetail(
                 questionNo: q.no,
-                selectedAnswerId: selectedId,
+                selectedAnswerId: isTimedOut ? nil : selectedId,
                 correct: isCorrect,
                 timeUsedSeconds: timeUsed
             ))

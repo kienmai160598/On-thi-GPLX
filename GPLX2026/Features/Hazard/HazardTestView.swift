@@ -4,7 +4,9 @@ import AVKit
 struct HazardTestView: View {
     @Environment(ProgressStore.self) private var progressStore
     @Environment(HazardVideoCache.self) private var videoCache
+    @Environment(ThemeStore.self) private var themeStore
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.horizontalSizeClass) private var sizeClass
 
     let mode: Mode
 
@@ -25,12 +27,16 @@ struct HazardTestView: View {
     @State private var playerState = PlayerState()
     @State private var scoreRevealed = false
     @State private var restartToken = 0
+    @State private var showTapFlash = false
+    @State private var isCurrentlyLandscape = false
+    @State private var videoHeight: CGFloat = 0
 
     private var isLast: Bool { currentIndex + 1 >= situations.count }
     private var isPractice: Bool {
         if case .exam = mode { return false }
         return true
     }
+    private var isRegular: Bool { sizeClass == .regular }
 
     var body: some View {
         Group {
@@ -48,6 +54,7 @@ struct HazardTestView: View {
         }
         .navigationBarBackButtonHidden(true)
         .navigationBarTitleDisplayMode(.inline)
+        .toolbarVisibility(isCurrentlyLandscape ? .hidden : .visible, for: .navigationBar)
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
                 Button { showExitDialog = true } label: {
@@ -70,6 +77,10 @@ struct HazardTestView: View {
         } message: {
             Text("Kết quả sẽ không được lưu.")
         }
+        .onAppear {
+            OrientationManager.shared.allowedOrientations = .allButUpsideDown
+        }
+        .onDisappear { OrientationManager.shared.lock() }
         .task { startTest() }
         .onChange(of: playerState.isFinished) { _, finished in
             if finished { revealScore() }
@@ -90,83 +101,351 @@ struct HazardTestView: View {
 
     @ViewBuilder
     private var testContent: some View {
-        let situation = situations[currentIndex]
-        let hasTapped = tapTimes[currentIndex] != nil
+        GeometryReader { geo in
+            let isLandscape = geo.size.width > geo.size.height
+            let situation = situations[currentIndex]
+            let hasTapped = tapTimes[currentIndex] != nil
+
+            if isLandscape {
+                landscapeLayout(situation: situation, hasTapped: hasTapped, geo: geo)
+            } else {
+                portraitLayout(situation: situation, hasTapped: hasTapped)
+            }
+        }
+        .onGeometryChange(for: Bool.self) { geo in
+            geo.size.width > geo.size.height
+        } action: { isLandscape in
+            isCurrentlyLandscape = isLandscape
+        }
+    }
+
+    // MARK: - Landscape Layout
+
+    @ViewBuilder
+    private func landscapeLayout(situation: HazardSituation, hasTapped: Bool, geo: GeometryProxy) -> some View {
+        let panelWidth: CGFloat = isRegular
+            ? min(geo.size.width * 0.30, 360)
+            : min(geo.size.width * 0.28, 240)
+        let btnHeight: CGFloat = isRegular ? 48 : 40
+        let panelPadding: CGFloat = isRegular ? 16 : 10
+        let panelSpacing: CGFloat = isRegular ? 12 : 8
+        // Video must fit within available height
+        let availableHeight = geo.size.height
+        let videoWidth = geo.size.width - panelWidth
+        let fittedVideoHeight = min(availableHeight, videoWidth * 9 / 16)
+
+        HStack(alignment: .center, spacing: 0) {
+            // Left: Video — constrained to available height
+            HazardVideoPlayer(
+                url: videoCache.playableURL(for: situation),
+                state: $playerState
+            )
+            .aspectRatio(16 / 9, contentMode: .fit)
+            .frame(maxHeight: fittedVideoHeight)
+            .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { videoHeight = $0 }
+            .overlay(
+                Color.white
+                    .opacity(showTapFlash ? 0.4 : 0)
+                    .animation(.easeOut(duration: 0.2), value: showTapFlash)
+                    .allowsHitTesting(false)
+            )
+            .overlay(alignment: .topLeading) {
+                HStack(spacing: 8) {
+                    Button { showExitDialog = true } label: {
+                        Image(systemName: "xmark")
+                            .font(.system(size: isRegular ? 16 : 14, weight: .bold))
+                            .foregroundStyle(.white)
+                            .frame(width: isRegular ? 38 : 32, height: isRegular ? 38 : 32)
+                            .background(Color.black.opacity(0.5), in: Circle())
+                    }
+
+                    Text("TH \(situation.id)  ·  \(currentIndex + 1)/\(situations.count)")
+                        .font(.system(size: isRegular ? 14 : 12, weight: .semibold).monospacedDigit())
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, isRegular ? 14 : 10)
+                        .padding(.vertical, isRegular ? 7 : 5)
+                        .background(Color.black.opacity(0.4), in: Capsule())
+                        .contentTransition(.numericText())
+                }
+                .padding(isRegular ? 12 : 8)
+            }
+            .overlay(alignment: .topTrailing) {
+                Button {
+                    OrientationManager.shared.forceToPortrait()
+                } label: {
+                    Image(systemName: "rectangle.portrait.arrowtriangle.2.outward")
+                        .font(.system(size: isRegular ? 16 : 14, weight: .bold))
+                        .foregroundStyle(.white)
+                        .frame(width: isRegular ? 38 : 32, height: isRegular ? 38 : 32)
+                        .background(Color.black.opacity(0.5), in: Circle())
+                }
+                .padding(isRegular ? 12 : 8)
+            }
+            .overlay {
+                if playerState.hasError {
+                    videoErrorOverlay
+                } else if playerState.isBuffering {
+                    ProgressView().tint(themeStore.primaryColor)
+                }
+            }
+            .frame(maxWidth: .infinity)
+
+            // Right: Controls panel — matched to video height
+            VStack(spacing: panelSpacing) {
+                if !playerState.isFinished {
+                    VStack(spacing: panelSpacing) {
+                        HStack(spacing: 6) {
+                            if playerState.duration > 0 {
+                                HStack(spacing: 4) {
+                                    Circle()
+                                        .fill(hasTapped ? Color.appSuccess : Color.appError)
+                                        .frame(width: isRegular ? 8 : 6, height: isRegular ? 8 : 6)
+                                    Text(timeText)
+                                        .font(.system(size: isRegular ? 14 : 11, weight: .semibold).monospacedDigit())
+                                        .foregroundStyle(Color.appTextDark)
+                                }
+                            }
+                            Spacer()
+                        }
+
+                        if playerState.duration > 0 {
+                            HazardPlayingBar(
+                                currentTime: playerState.currentTime,
+                                duration: playerState.duration,
+                                situation: situation,
+                                hasTapped: hasTapped
+                            )
+                        }
+                    }
+                    .padding(.horizontal, panelPadding)
+                    .padding(.vertical, isRegular ? 12 : 8)
+                    .glassCard(cornerRadius: 16, interactive: false)
+                }
+
+                if playerState.isFinished {
+                    if scoreRevealed {
+                        landscapeScoreView(situation: situation, hasTapped: hasTapped)
+                    } else {
+                        Spacer(minLength: 0)
+                        ProgressView().tint(themeStore.primaryColor)
+                        Spacer(minLength: 0)
+                    }
+                } else {
+                    Spacer(minLength: 0)
+
+                    VStack(spacing: panelSpacing) {
+                        HazardDangerButton(
+                            hasTapped: hasTapped,
+                            compact: !isRegular,
+                            countdown: playerState.currentTime < 3,
+                            countdownSeconds: max(1, 3 - Int(playerState.currentTime))
+                        ) {
+                            handleTap(at: playerState.currentTime)
+                        }
+
+                        if hasTapped {
+                            Button {
+                                Haptics.selection()
+                                skipVideo()
+                            } label: {
+                                AppButton(icon: "forward.fill", label: "Bỏ qua", height: btnHeight)
+                            }
+                            .transition(.move(edge: .bottom).combined(with: .opacity))
+                        }
+                    }
+                    .animation(.spring(duration: 0.35, bounce: 0.15), value: hasTapped)
+                }
+            }
+            .padding(panelPadding)
+            .frame(width: panelWidth, height: videoHeight > 0 ? videoHeight : nil)
+        }
+        .frame(maxHeight: availableHeight)
+        .id("\(currentIndex)-\(restartToken)")
+        .animation(.easeOut(duration: 0.15), value: currentIndex)
+    }
+
+    @ViewBuilder
+    private func landscapeScoreView(situation: HazardSituation, hasTapped: Bool) -> some View {
+        let score = situation.score(tapTime: tapTimes[currentIndex] ?? nil)
+        let scoreColor: Color = score >= 4 ? .appSuccess : score >= 2 ? .appWarning : .appError
+        let sectionPad: CGFloat = isRegular ? 14 : 10
+        let btnHeight: CGFloat = isRegular ? 48 : 36
+        let btnSpacing: CGFloat = isRegular ? 10 : 6
+
+        // Score summary card
+        VStack(spacing: 0) {
+            // Score header
+            HStack(spacing: 0) {
+                Text("\(score)")
+                    .font(.system(size: isRegular ? 36 : 28, weight: .heavy).monospacedDigit())
+                    .foregroundStyle(scoreColor)
+                    .frame(width: isRegular ? 56 : 44)
+
+                VStack(alignment: .leading, spacing: isRegular ? 5 : 3) {
+                    Text(scoreLabelFor(score))
+                        .font(.system(size: isRegular ? 15 : 12, weight: .bold))
+                        .foregroundStyle(scoreColor)
+
+                    HStack(spacing: isRegular ? 4 : 3) {
+                        ForEach(0..<5, id: \.self) { i in
+                            RoundedRectangle(cornerRadius: 2)
+                                .fill(i < score ? scoreColor : Color.appDivider)
+                                .frame(height: isRegular ? 6 : 4)
+                        }
+                    }
+                }
+
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal, sectionPad)
+            .padding(.vertical, isRegular ? 12 : 8)
+
+            Divider().foregroundStyle(Color.appDivider.opacity(0.5))
+
+            // Timeline
+            HazardTimeline(
+                situation: situation,
+                tapTime: tapTimes[currentIndex] ?? nil,
+                duration: playerState.duration
+            )
+            .padding(.horizontal, sectionPad)
+            .padding(.vertical, isRegular ? 12 : 8)
+
+            Divider().foregroundStyle(Color.appDivider.opacity(0.5))
+
+            // Tip
+            HStack(alignment: .top, spacing: 6) {
+                Image(systemName: "lightbulb.fill")
+                    .font(.system(size: isRegular ? 13 : 10))
+                    .foregroundStyle(Color.appWarning)
+                    .padding(.top, 1)
+                Text(situation.tip)
+                    .font(.system(size: isRegular ? 13 : 10))
+                    .foregroundStyle(Color.appTextMedium)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .padding(.horizontal, sectionPad)
+            .padding(.vertical, isRegular ? 12 : 8)
+        }
+        .glassCard(cornerRadius: 16, interactive: false)
+
+        Spacer(minLength: 0)
+
+        // Nav buttons outside card
+        VStack(spacing: btnSpacing) {
+            if isPractice && currentIndex > 0 {
+                Button {
+                    Haptics.selection()
+                    goToPrevious()
+                } label: {
+                    AppButton(icon: "backward.fill", label: "Trước", style: .secondary, height: btnHeight)
+                }
+            }
+
+            Button {
+                Haptics.selection()
+                retryCurrent()
+            } label: {
+                AppButton(icon: "arrow.counterclockwise", label: "Xem lại", style: .secondary, height: btnHeight)
+            }
+
+            Button {
+                Haptics.selection()
+                advanceOrFinish()
+            } label: {
+                AppButton(
+                    icon: isLast ? "checkmark" : "forward.fill",
+                    label: isLast ? "Kết quả" : "Tiếp theo",
+                    height: btnHeight
+                )
+            }
+        }
+    }
+
+    // MARK: - Portrait Layout
+
+    @ViewBuilder
+    private func portraitLayout(situation: HazardSituation, hasTapped: Bool) -> some View {
+        let hPad: CGFloat = isRegular ? 40 : 16
+        let btnHeight: CGFloat = isRegular ? 56 : 48
 
         VStack(spacing: 0) {
-            ScrollView {
-                VStack(spacing: 14) {
-                    // MARK: Video Player
-                    ZStack {
-                        HazardVideoPlayer(
-                            url: videoCache.playableURL(for: situation),
-                            state: $playerState
-                        )
-                        .aspectRatio(16 / 9, contentMode: .fit)
+            // MARK: Video Player
+            ZStack {
+                HazardVideoPlayer(
+                    url: videoCache.playableURL(for: situation),
+                    state: $playerState
+                )
+                .aspectRatio(16 / 9, contentMode: .fit)
+                .clipShape(RoundedRectangle(cornerRadius: 14))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 14)
+                        .strokeBorder(Color.white.opacity(0.15), lineWidth: 1)
+                )
+                .overlay(
+                    Color.white
+                        .opacity(showTapFlash ? 0.4 : 0)
                         .clipShape(RoundedRectangle(cornerRadius: 14))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 14)
-                                .strokeBorder(Color.white.opacity(0.15), lineWidth: 1)
-                        )
-
-                        if playerState.hasError {
-                            VStack(spacing: 8) {
-                                Image(systemName: "exclamationmark.triangle.fill")
-                                    .font(.system(size: 28))
-                                    .foregroundStyle(Color.appError)
-                                Text("Không thể tải video")
-                                    .font(.system(size: 14, weight: .semibold))
-                                    .foregroundStyle(Color.appTextDark)
-                                Text("Kiểm tra kết nối mạng")
-                                    .font(.system(size: 12))
-                                    .foregroundStyle(Color.appTextMedium)
-                            }
-                            .frame(maxWidth: .infinity)
-                            .aspectRatio(16 / 9, contentMode: .fit)
-                            .background(Color.scaffoldBg)
-                            .clipShape(RoundedRectangle(cornerRadius: 14))
-                        } else if playerState.isBuffering {
-                            ProgressView()
-                                .tint(Color.appPrimary)
-                        }
+                        .animation(.easeOut(duration: 0.2), value: showTapFlash)
+                        .allowsHitTesting(false)
+                )
+                .overlay(alignment: .topTrailing) {
+                    Button {
+                        OrientationManager.shared.forceToLandscape()
+                    } label: {
+                        Image(systemName: "rectangle.landscape.arrowtriangle.2.outward")
+                            .font(.system(size: 14, weight: .bold))
+                            .foregroundStyle(.white)
+                            .frame(width: 32, height: 32)
+                            .background(Color.black.opacity(0.5), in: Circle())
                     }
-                    .padding(.horizontal, 16)
+                    .padding(8)
+                }
 
-                    // MARK: Chapter info + timer
-                    HStack(spacing: 8) {
-                        Text("Ch.\(situation.chapter): \(situation.chapterName)")
-                            .font(.system(size: 12, weight: .medium))
+                if playerState.hasError {
+                    videoErrorOverlay
+                } else if playerState.isBuffering {
+                    ProgressView()
+                        .tint(themeStore.primaryColor)
+                }
+            }
+            .padding(.horizontal, hPad)
+            .padding(.top, 12)
+
+            if !playerState.isFinished {
+                // MARK: Timer + progress bar
+                HStack(spacing: 8) {
+                    HStack(spacing: 4) {
+                        Circle()
+                            .fill(hasTapped ? Color.appSuccess : Color.appError)
+                            .frame(width: 6, height: 6)
+                        Text(timeText)
+                            .font(.system(size: isRegular ? 14 : 12, weight: .semibold).monospacedDigit())
                             .foregroundStyle(Color.appTextMedium)
-                            .lineLimit(1)
-
-                        Spacer()
-
-                        if playerState.duration > 0 && !playerState.isFinished {
-                            HStack(spacing: 4) {
-                                Circle()
-                                    .fill(hasTapped ? Color.appSuccess : Color.appError)
-                                    .frame(width: 6, height: 6)
-                                Text(timeText)
-                                    .font(.system(size: 12, weight: .semibold).monospacedDigit())
-                                    .foregroundStyle(Color.appTextMedium)
-                            }
-                        }
-                    }
-                    .padding(.horizontal, 20)
-
-                    // MARK: Video progress bar (3-state after tap)
-                    if !playerState.isFinished && playerState.duration > 0 {
-                        HazardPlayingBar(
-                            currentTime: playerState.currentTime,
-                            duration: playerState.duration,
-                            situation: situation,
-                            hasTapped: hasTapped
-                        )
-                        .padding(.horizontal, 20)
                     }
 
-                    // MARK: Action area
-                    if playerState.isFinished && scoreRevealed {
+                    Spacer()
+                }
+                .padding(.horizontal, hPad)
+                .padding(.top, 12)
+
+                // MARK: Video progress bar
+                if playerState.duration > 0 {
+                    HazardPlayingBar(
+                        currentTime: playerState.currentTime,
+                        duration: playerState.duration,
+                        situation: situation,
+                        hasTapped: hasTapped
+                    )
+                    .padding(.horizontal, hPad)
+                    .padding(.top, 10)
+                }
+            }
+
+            if playerState.isFinished {
+                // MARK: Finished — scrollable score + bottom bar
+                ScrollView {
+                    if scoreRevealed {
                         let score = situation.score(tapTime: tapTimes[currentIndex] ?? nil)
                         HazardScoreCard(
                             score: score,
@@ -174,80 +453,41 @@ struct HazardTestView: View {
                             tapTime: tapTimes[currentIndex] ?? nil,
                             duration: playerState.duration
                         )
-                        .padding(.horizontal, 16)
+                        .padding(.horizontal, hPad)
                         .transition(.asymmetric(
                             insertion: .scale(scale: 0.96).combined(with: .opacity),
                             removal: .opacity
                         ))
-                    } else if playerState.isFinished && !scoreRevealed {
-                        // Brief processing state before score reveal
+                    } else {
                         VStack(spacing: 8) {
                             ProgressView()
-                                .tint(Color.appPrimary)
+                                .tint(themeStore.primaryColor)
                             Text("Đang tính điểm...")
-                                .font(.system(size: 13, weight: .medium))
+                                .font(.system(size: isRegular ? 15 : 13, weight: .medium))
                                 .foregroundStyle(Color.appTextLight)
                         }
                         .frame(maxWidth: .infinity)
                         .frame(height: 80)
                         .transition(.opacity)
-                    } else if !playerState.isFinished {
-                        VStack(spacing: 10) {
-                            HazardDangerButton(hasTapped: hasTapped) {
-                                handleTap(at: playerState.currentTime)
-                            }
-
-                            // Skip button after confirming
-                            if hasTapped {
-                                Button {
-                                    Haptics.selection()
-                                    skipVideo()
-                                } label: {
-                                    HStack(spacing: 6) {
-                                        Image(systemName: "forward.fill")
-                                            .font(.system(size: 12))
-                                        Text("Bỏ qua")
-                                            .font(.system(size: 14, weight: .semibold))
-                                    }
-                                    .foregroundStyle(Color.appPrimary)
-                                    .frame(maxWidth: .infinity)
-                                    .frame(height: 40)
-                                }
-                                .transition(.move(edge: .top).combined(with: .opacity))
-                            }
-                        }
-                        .padding(.horizontal, 16)
-                        .transition(.opacity)
-                        .animation(.easeOut(duration: 0.25), value: hasTapped)
                     }
                 }
-                .padding(.top, 10)
-                .padding(.bottom, 20)
-                .animation(.spring(duration: 0.4, bounce: 0.1), value: playerState.isFinished && scoreRevealed)
-                .animation(.easeOut(duration: 0.15), value: currentIndex)
-            }
-            .id("\(currentIndex)-\(restartToken)")
+                .padding(.top, 16)
 
-            // MARK: Bottom Navigation
-            HStack(spacing: 10) {
-                if isPractice {
-                    Button {
-                        Haptics.selection()
-                        goToPrevious()
-                    } label: {
-                        AppButton(label: "Trước", style: .secondary, height: 48, cornerRadius: 24)
-                    }
-                    .disabled(currentIndex == 0)
-                }
-
-                if playerState.isFinished {
-                    if isPractice {
+                HStack(spacing: isRegular ? 14 : 10) {
+                    if isPractice && currentIndex > 0 {
                         Button {
                             Haptics.selection()
-                            retryCurrent()
+                            goToPrevious()
                         } label: {
-                            AppButton(icon: "arrow.counterclockwise", label: "Xem lại", style: .secondary, height: 48, cornerRadius: 24)
+                            AppButton(icon: "backward.fill", label: "Trước", style: .secondary, height: btnHeight)
                         }
+                    }
+
+                    Button {
+                        Haptics.selection()
+                        retryCurrent()
+                    } label: {
+                        AppButton(icon: "arrow.counterclockwise", label: "Xem lại", style: .secondary, height: btnHeight)
                     }
 
                     Button {
@@ -257,31 +497,101 @@ struct HazardTestView: View {
                         AppButton(
                             icon: isLast ? "checkmark" : "forward.fill",
                             label: isLast ? "Xem kết quả" : "Tiếp theo",
-                            height: 48,
-                            cornerRadius: 24
+                            height: btnHeight
                         )
                     }
-                } else {
-                    // Subtle progress indicator during playback
-                    Text("\(currentIndex + 1) / \(situations.count)")
-                        .font(.system(size: 14, weight: .semibold).monospacedDigit())
-                        .foregroundStyle(Color.appTextLight)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 48)
-                        .contentTransition(.numericText())
                 }
+                .padding(.horizontal, hPad)
+                .padding(.top, 12)
+                .padding(.bottom, isRegular ? 16 : 8)
+            } else {
+                // MARK: Playing — action area pinned to bottom
+                Spacer(minLength: 0)
+
+                VStack(spacing: isRegular ? 14 : 12) {
+                    HazardDangerButton(
+                        hasTapped: hasTapped,
+                        countdown: playerState.currentTime < 3,
+                        countdownSeconds: max(1, 3 - Int(playerState.currentTime))
+                    ) {
+                        handleTap(at: playerState.currentTime)
+                    }
+
+                    if hasTapped {
+                        Button {
+                            Haptics.selection()
+                            skipVideo()
+                        } label: {
+                            AppButton(icon: "forward.fill", label: "Bỏ qua", height: btnHeight)
+                        }
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                    }
+                }
+                .padding(.horizontal, hPad)
+                .padding(.bottom, isRegular ? 16 : 8)
+                .animation(.spring(duration: 0.35, bounce: 0.15), value: hasTapped)
             }
-            .padding(.horizontal, 16)
-            .padding(.top, 10)
-            .padding(.bottom, 4)
-            .animation(.easeOut(duration: 0.25), value: playerState.isFinished)
         }
+        .frame(maxWidth: isRegular ? 700 : .infinity)
+        .frame(maxWidth: .infinity)
+        .id("\(currentIndex)-\(restartToken)")
+        .animation(.spring(duration: 0.35, bounce: 0.15), value: playerState.isFinished && scoreRevealed)
+        .animation(.easeOut(duration: 0.2), value: currentIndex)
+    }
+
+    // MARK: - Shared Components
+
+    @ViewBuilder
+    private var videoErrorOverlay: some View {
+        VStack(spacing: 8) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .font(.system(size: 28))
+                .foregroundStyle(Color.appError)
+            Text("Không thể tải video")
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(Color.appTextDark)
+            Text("Kiểm tra kết nối mạng")
+                .font(.system(size: 12))
+                .foregroundStyle(Color.appTextMedium)
+
+            Button {
+                playerState = PlayerState()
+                restartToken += 1
+            } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: "arrow.clockwise")
+                        .font(.system(size: 13, weight: .semibold))
+                    Text("Thử lại")
+                        .font(.system(size: 14, weight: .semibold))
+                }
+                .foregroundStyle(themeStore.primaryColor)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+                .background(themeStore.primaryColor.opacity(0.12))
+                .clipShape(Capsule())
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .aspectRatio(16 / 9, contentMode: .fit)
+        .background(Color.scaffoldBg)
+        .clipShape(RoundedRectangle(cornerRadius: 14))
     }
 
     private var timeText: String {
         let cur = Int(playerState.currentTime)
         let dur = Int(playerState.duration)
         return String(format: "%d:%02d / %d:%02d", cur / 60, cur % 60, dur / 60, dur % 60)
+    }
+
+    private func scoreLabelFor(_ score: Int) -> String {
+        switch score {
+        case 5: return "Hoàn hảo!"
+        case 4: return "Rất tốt"
+        case 3: return "Tốt"
+        case 2: return "Tạm được"
+        case 1: return "Muộn"
+        default: return "Không đạt"
+        }
     }
 
     // MARK: - Logic
@@ -302,6 +612,15 @@ struct HazardTestView: View {
         guard tapTimes[currentIndex] == nil else { return }
         tapTimes[currentIndex] = time
         Haptics.impact(.rigid)
+        showTapFlash = true
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(200))
+            showTapFlash = false
+        }
+    }
+
+    private func undoTap() {
+        tapTimes.removeValue(forKey: currentIndex)
     }
 
     private func skipVideo() {
@@ -473,6 +792,7 @@ private struct HazardPlayingBar: View {
 // MARK: - Hazard Progress Capsule (toolbar principal)
 
 private struct HazardProgressCapsule: View {
+    @Environment(ThemeStore.self) private var themeStore
     let situationId: Int
     let current: Int
     let total: Int
@@ -481,7 +801,7 @@ private struct HazardProgressCapsule: View {
         let content = HStack(spacing: 6) {
             Image(systemName: "play.rectangle.fill")
                 .font(.system(size: 13))
-                .foregroundStyle(Color.appPrimary)
+                .foregroundStyle(themeStore.primaryColor)
             Text("TH \(situationId)")
                 .font(.system(size: 15, weight: .bold))
                 .foregroundStyle(Color.appTextDark)
@@ -511,54 +831,70 @@ private struct HazardProgressCapsule: View {
 
 private struct HazardDangerButton: View {
     let hasTapped: Bool
+    var compact: Bool = false
+    var countdown: Bool = false
+    var countdownSeconds: Int = 3
     let action: () -> Void
 
     @State private var isPulsing = false
+
+    private var isDisabled: Bool { hasTapped || countdown }
+
+    private var buttonText: String {
+        if hasTapped { return "Đã phát hiện!" }
+        if countdown { return "Chuẩn bị... \(countdownSeconds)" }
+        return "Phát hiện nguy hiểm"
+    }
 
     var body: some View {
         Button(action: action) {
             let content = HStack(spacing: 10) {
                 Image(systemName: hasTapped ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
-                    .font(.system(size: 22, weight: .semibold))
+                    .font(.system(size: compact ? 18 : 22, weight: .semibold))
                     .contentTransition(.symbolEffect(.replace))
 
-                Text(hasTapped ? "Đã phát hiện nguy hiểm!" : "Nhấn khi phát hiện nguy hiểm")
-                    .font(.system(size: 17, weight: .bold))
+                Text(buttonText)
+                    .font(.system(size: compact ? 15 : 17, weight: .bold))
+                    .contentTransition(.numericText())
             }
             .foregroundStyle(hasTapped ? Color.appSuccess : .white)
+            .opacity(countdown ? 0.5 : 1.0)
             .frame(maxWidth: .infinity)
-            .frame(height: 64)
+            .frame(height: compact ? 48 : 64)
 
             if #available(iOS 26.0, *) {
                 content
                     .background(
                         RoundedRectangle(cornerRadius: 18)
-                            .fill(hasTapped ? Color.appSuccess.opacity(0.15) : Color.appError.opacity(0.85))
+                            .fill(hasTapped ? Color.appSuccess.opacity(0.15) : Color.appError.opacity(countdown ? 0.4 : 0.85))
                     )
                     .clipShape(RoundedRectangle(cornerRadius: 18))
                     .glassEffect(.regular.interactive(), in: .rect(cornerRadius: 18))
             } else {
                 content
-                    .background(hasTapped ? Color.appSuccess.opacity(0.15) : Color.appError)
+                    .background(hasTapped ? Color.appSuccess.opacity(0.15) : Color.appError.opacity(countdown ? 0.4 : 1.0))
                     .clipShape(RoundedRectangle(cornerRadius: 18))
             }
         }
-        .disabled(hasTapped)
+        .buttonStyle(.plain)
+        .disabled(isDisabled)
         // Pulsing red glow when active (not yet tapped)
         .shadow(
-            color: hasTapped ? .clear : Color.appError.opacity(isPulsing ? 0.55 : 0.15),
+            color: isDisabled ? .clear : Color.appError.opacity(isPulsing ? 0.55 : 0.15),
             radius: isPulsing ? 18 : 6,
             y: isPulsing ? 4 : 2
         )
         .scaleEffect(hasTapped ? 0.97 : 1.0)
         .animation(.spring(duration: 0.35, bounce: 0.3), value: hasTapped)
-        .onAppear {
-            guard !hasTapped else { return }
-            withAnimation(
-                .easeInOut(duration: 1.1)
-                .repeatForever(autoreverses: true)
-            ) {
-                isPulsing = true
+        .animation(.easeOut(duration: 0.3), value: countdown)
+        .onChange(of: countdown) { _, inCountdown in
+            if !inCountdown && !hasTapped && !isPulsing {
+                withAnimation(
+                    .easeInOut(duration: 1.1)
+                    .repeatForever(autoreverses: true)
+                ) {
+                    isPulsing = true
+                }
             }
         }
         .onChange(of: hasTapped) { _, tapped in
@@ -584,9 +920,7 @@ private struct HazardScoreCard: View {
                 tapTime: tapTime,
                 duration: duration
             )
-            .padding(.horizontal, 4)
 
-            // Tip inline at bottom — no separate divider
             HStack(alignment: .top, spacing: 8) {
                 Image(systemName: "lightbulb.fill")
                     .font(.system(size: 13))
@@ -597,17 +931,16 @@ private struct HazardScoreCard: View {
                     .foregroundStyle(Color.appTextMedium)
                     .fixedSize(horizontal: false, vertical: true)
             }
-            .padding(.horizontal, 4)
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 16)
-        .glassCard(interactive: false)
+        .padding(16)
+        .glassCard(cornerRadius: 16, interactive: false)
     }
 }
 
 // MARK: - Score Reveal
 
 private struct HazardScoreReveal: View {
+    @Environment(ThemeStore.self) private var themeStore
     let score: Int
 
     @State private var displayedScore = 0
@@ -629,7 +962,7 @@ private struct HazardScoreReveal: View {
             HStack(spacing: 6) {
                 ForEach(0..<5, id: \.self) { i in
                     Circle()
-                        .fill(i < animatedDots ? Color.appPrimary : Color.appDivider)
+                        .fill(i < animatedDots ? themeStore.primaryColor : Color.appDivider)
                         .frame(width: 14, height: 14)
                         .scaleEffect(i < animatedDots ? 1.0 : 0.6)
                         .animation(
@@ -916,3 +1249,4 @@ struct HazardVideoPlayer: UIViewControllerRepresentable {
         coordinator.cleanup(player: vc.player)
     }
 }
+

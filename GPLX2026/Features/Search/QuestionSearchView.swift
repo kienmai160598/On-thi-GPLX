@@ -3,6 +3,7 @@ import SwiftUI
 struct QuestionSearchView: View {
     @Environment(QuestionStore.self) private var questionStore
     @Environment(ProgressStore.self) private var progressStore
+    @Environment(ThemeStore.self) private var themeStore
     @Environment(\.openExam) private var openExam
 
     @State private var searchText = ""
@@ -105,7 +106,7 @@ struct QuestionSearchView: View {
                 } label: {
                     Image(systemName: selectedFilter == .all ? "line.3.horizontal.decrease.circle" : "line.3.horizontal.decrease.circle.fill")
                         .font(.system(size: 17))
-                        .foregroundStyle(selectedFilter == .all ? Color.appTextMedium : Color.appPrimary)
+                        .foregroundStyle(selectedFilter == .all ? Color.appTextMedium : themeStore.primaryColor)
                 }
             }
         }

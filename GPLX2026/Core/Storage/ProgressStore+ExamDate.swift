@@ -6,29 +6,36 @@ extension ProgressStore {
     private static let dailyGoalKey = "daily_goal"
 
     var examDate: Date? {
-        _ = dataVersion
-        guard let interval = UserDefaults.standard.object(forKey: Self.examDateKey) as? TimeInterval else { return nil }
-        return Date(timeIntervalSince1970: interval)
+        if let cached = _examDateCache { return cached }
+        guard let interval = defaults.object(forKey: Self.examDateKey) as? TimeInterval else {
+            _examDateCache = .some(nil)
+            return nil
+        }
+        let value = Date(timeIntervalSince1970: interval)
+        _examDateCache = .some(value)
+        return value
     }
 
     func setExamDate(_ date: Date?) {
         if let date {
-            UserDefaults.standard.set(date.timeIntervalSince1970, forKey: Self.examDateKey)
+            defaults.set(date.timeIntervalSince1970, forKey: Self.examDateKey)
         } else {
-            UserDefaults.standard.removeObject(forKey: Self.examDateKey)
+            defaults.removeObject(forKey: Self.examDateKey)
         }
-        dataVersion += 1
+        _examDateCache = .some(date)
     }
 
     var dailyGoal: Int {
-        _ = dataVersion
-        let goal = UserDefaults.standard.integer(forKey: Self.dailyGoalKey)
-        return goal > 0 ? goal : 30
+        if let cached = _dailyGoalCache { return cached }
+        let goal = defaults.integer(forKey: Self.dailyGoalKey)
+        let value = goal > 0 ? goal : 30
+        _dailyGoalCache = value
+        return value
     }
 
     func setDailyGoal(_ goal: Int) {
-        UserDefaults.standard.set(goal, forKey: Self.dailyGoalKey)
-        dataVersion += 1
+        defaults.set(goal, forKey: Self.dailyGoalKey)
+        _dailyGoalCache = goal
     }
 
     var daysUntilExam: Int? {

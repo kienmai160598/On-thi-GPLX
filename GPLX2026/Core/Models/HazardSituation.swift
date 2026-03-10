@@ -14,12 +14,10 @@ struct HazardSituation: Codable, Identifiable {
         String(format: "th%03d", id)
     }
 
+    private static let fallbackURL = URL(string: "https://gmec.vn")!
+
     var videoURL: URL {
-        // Safe: format is always valid ASCII URL
-        guard let url = URL(string: "https://gmec.vn/videos/\(videoFileName).mp4") else {
-            fatalError("Invalid video URL for situation \(id)")
-        }
-        return url
+        URL(string: "https://gmec.vn/videos/\(videoFileName).mp4") ?? Self.fallbackURL
     }
 
     /// Score based on tap time. Linear interpolation: perfectStart = 5, perfectEnd = 0.

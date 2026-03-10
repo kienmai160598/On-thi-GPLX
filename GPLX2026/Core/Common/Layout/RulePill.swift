@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct RulePill: View {
+    @Environment(ThemeStore.self) private var themeStore
     let icon: String
     let text: String
 
@@ -8,7 +9,7 @@ struct RulePill: View {
         HStack(spacing: 5) {
             Image(systemName: icon)
                 .font(.system(size: 12, weight: .medium))
-                .foregroundStyle(Color.appPrimary)
+                .foregroundStyle(themeStore.primaryColor)
                 .symbolRenderingMode(.hierarchical)
             Text(text)
                 .font(.system(size: 13, weight: .semibold))
@@ -16,7 +17,7 @@ struct RulePill: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 8)
-        .background(Color.appPrimary.opacity(0.06))
+        .background(themeStore.primaryColor.opacity(0.06))
         .clipShape(RoundedRectangle(cornerRadius: 8))
     }
 }
