@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct TrafficSignsReferenceView: View {
+    @Environment(LayoutMetrics.self) private var metrics
     @State private var selectedCategory: String? = nil
     @State private var searchText = ""
 
@@ -13,28 +14,28 @@ struct TrafficSignsReferenceView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 0) {
-                ForEach(Array(displayCategories.enumerated()), id: \.element.id) { i, category in
+            AdaptiveGrid(spacing: 16) {
+                ForEach(Array(displayCategories.enumerated()), id: \.element.id) { _, category in
                     let signs = filteredSigns(category.signs)
                     if !signs.isEmpty {
-                        SectionTitle(title: category.name)
-                            .padding(.bottom, 10)
+                        VStack(alignment: .leading, spacing: 0) {
+                            SectionTitle(title: category.name)
+                                .padding(.bottom, 10)
 
-                        VStack(spacing: 0) {
-                            ForEach(Array(signs.enumerated()), id: \.element.id) { j, sign in
-                                if j > 0 {
-                                    Divider().padding(.horizontal, 16)
+                            VStack(spacing: 0) {
+                                ForEach(Array(signs.enumerated()), id: \.element.id) { j, sign in
+                                    if j > 0 {
+                                        Divider().padding(.horizontal, 16)
+                                    }
+                                    SignRow(sign: sign)
                                 }
-                                SignRow(sign: sign)
                             }
+                            .glassCard()
                         }
-                        .glassCard()
-                        .padding(.bottom, 24)
                     }
                 }
             }
-            .padding(.horizontal, 20)
-            .iPadReadable(maxWidth: 900)
+            .padding(.horizontal, metrics.contentPadding)
             .padding(.bottom, 20)
         }
         .searchable(text: $searchText, prompt: "Tìm biển báo...")

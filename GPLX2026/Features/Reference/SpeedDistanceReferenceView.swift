@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct SpeedDistanceReferenceView: View {
+    @Environment(LayoutMetrics.self) private var metrics
     @State private var selectedSection: SpeedSection? = nil
 
     private enum SpeedSection: String, CaseIterable, Identifiable {
@@ -142,8 +143,7 @@ struct SpeedDistanceReferenceView: View {
                         .glassCard()
                     }
             }
-            .padding(.horizontal, 20)
-            .iPadReadable(maxWidth: 900)
+            .padding(.horizontal, metrics.contentPadding)
             .padding(.bottom, 20)
         }
         .screenHeader("Tốc độ & Quy tắc")
