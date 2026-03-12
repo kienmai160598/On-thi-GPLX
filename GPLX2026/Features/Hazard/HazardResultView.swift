@@ -43,10 +43,10 @@ struct HazardResultView: View {
 
     var body: some View {
         ScrollView {
-            VStack(spacing: metrics.isWide ? 16 : 20) {
-                Spacer().frame(height: metrics.isWide ? 4 : 16)
+            VStack(spacing: metrics.isIPadLayout ? 16 : 20) {
+                Spacer().frame(height: metrics.isIPadLayout ? 4 : 16)
 
-                if metrics.isWide {
+                if metrics.isIPadLayout {
                     // iPad: hero + scores side-by-side
                     HStack(alignment: .top, spacing: metrics.gridSpacing) {
                         HazardResultHero(result: result)
@@ -84,8 +84,6 @@ struct HazardResultView: View {
                 }
                 .padding(.horizontal, metrics.contentPadding)
             }
-            .frame(maxWidth: metrics.isWide ? 1000 : .infinity)
-            .frame(maxWidth: .infinity)
             .padding(.bottom, 32)
         }
         .safeAreaInset(edge: .bottom) {
@@ -308,7 +306,7 @@ private struct HazardReviewRow: View {
                         ForEach(0..<5, id: \.self) { i in
                             Circle()
                                 .fill(i < score ? themeStore.primaryColor : Color.appDivider)
-                                .frame(width: metrics.isWide ? 10 : 8, height: metrics.isWide ? 10 : 8)
+                                .frame(width: metrics.isIPadLayout ? 10 : 8, height: metrics.isIPadLayout ? 10 : 8)
                         }
                     }
 
@@ -322,7 +320,7 @@ private struct HazardReviewRow: View {
                         .foregroundStyle(Color.appTextLight)
                         .rotationEffect(.degrees(isExpanded ? 90 : 0))
 
-                    if metrics.isWide {
+                    if metrics.isIPadLayout {
                         Text(isExpanded ? "Thu gọn" : "Xem chi tiết")
                             .font(.appSans(size: 13, weight: .medium))
                             .foregroundStyle(Color.appTextLight)
