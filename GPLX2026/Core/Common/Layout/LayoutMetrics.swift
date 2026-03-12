@@ -6,7 +6,8 @@ final class LayoutMetrics {
     var horizontalSizeClass: UserInterfaceSizeClass? = .compact
     var windowWidth: CGFloat = 0
 
-    var isWide: Bool { horizontalSizeClass == .regular }
+    /// Only wide when iPad landscape (portrait uses iPhone layout)
+    var isWide: Bool { horizontalSizeClass == .regular && windowWidth >= 1024 }
 
     var columns: Int {
         guard isWide else { return 1 }
