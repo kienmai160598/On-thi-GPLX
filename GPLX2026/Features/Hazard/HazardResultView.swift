@@ -12,55 +12,61 @@ struct HazardResultView: View {
     var isFromHistory: Bool = false
     var retryMode: HazardTestView.Mode? = nil
 
+    private var hazardScoreDetails: some View {
+        VStack(spacing: 0) {
+            ScoreRow(label: "Tổng điểm", value: "\(result.totalScore)/\(result.maxScore)", color: themeStore.primaryColor)
+            Divider().padding(.horizontal, 16)
+
+            let avg = result.situationCount > 0
+                ? String(format: "%.1f", Double(result.totalScore) / Double(result.situationCount))
+                : "0"
+            ScoreRow(label: "Điểm trung bình", value: avg, color: Color.appTextMedium)
+            Divider().padding(.horizontal, 16)
+
+            let goodCount = result.details.filter { $0.score >= 3 }.count
+            ScoreRow(label: "Đạt điểm tốt (\u{2265} 3)", value: "\(goodCount)", color: Color.appSuccess)
+            Divider().padding(.horizontal, 16)
+
+            let missedCount = result.details.filter { $0.score == 0 }.count
+            ScoreRow(label: "Không đạt điểm", value: "\(missedCount)", color: missedCount > 0 ? Color.appError : Color.appSuccess)
+            Divider().padding(.horizontal, 16)
+
+            ScoreRow(
+                label: "Yêu cầu đạt",
+                value: "\u{2265} \(AppConstants.Hazard.passScore)/\(result.maxScore)",
+                color: Color.appTextMedium
+            )
+        }
+        .padding(.vertical, 4)
+        .glassCard()
+    }
+
     var body: some View {
         ScrollView {
-            VStack(spacing: 0) {
-                Spacer().frame(height: 16)
+            VStack(spacing: metrics.isWide ? 16 : 20) {
+                Spacer().frame(height: metrics.isWide ? 4 : 16)
 
-                // MARK: - Hero with score ring
-                HazardResultHero(result: result)
+                if metrics.isWide {
+                    // iPad: hero + scores side-by-side
+                    HStack(alignment: .top, spacing: metrics.gridSpacing) {
+                        HazardResultHero(result: result)
+                        hazardScoreDetails
+                    }
                     .padding(.horizontal, metrics.contentPadding)
-                    .padding(.bottom, 20)
-
-                // MARK: - Score details
-                VStack(spacing: 0) {
-                    ScoreRow(label: "Tổng điểm", value: "\(result.totalScore)/\(result.maxScore)", color: themeStore.primaryColor)
-                    Divider().padding(.horizontal, 16)
-
-                    let avg = result.situationCount > 0
-                        ? String(format: "%.1f", Double(result.totalScore) / Double(result.situationCount))
-                        : "0"
-                    ScoreRow(label: "Điểm trung bình", value: avg, color: Color.appTextMedium)
-                    Divider().padding(.horizontal, 16)
-
-                    let goodCount = result.details.filter { $0.score >= 3 }.count
-                    ScoreRow(label: "Đạt điểm tốt (\u{2265} 3)", value: "\(goodCount)", color: Color.appSuccess)
-                    Divider().padding(.horizontal, 16)
-
-                    let missedCount = result.details.filter { $0.score == 0 }.count
-                    ScoreRow(label: "Không đạt điểm", value: "\(missedCount)", color: missedCount > 0 ? Color.appError : Color.appSuccess)
-                    Divider().padding(.horizontal, 16)
-
-                    ScoreRow(
-                        label: "Yêu cầu đạt",
-                        value: "\u{2265} \(AppConstants.Hazard.passScore)/\(result.maxScore)",
-                        color: Color.appTextMedium
-                    )
+                } else {
+                    HazardResultHero(result: result)
+                        .padding(.horizontal, metrics.contentPadding)
+                    hazardScoreDetails
+                        .padding(.horizontal, metrics.contentPadding)
                 }
-                .padding(.vertical, 4)
-                .glassCard()
-                .padding(.horizontal, metrics.contentPadding)
-                .padding(.bottom, 20)
 
                 // MARK: - Score distribution
                 ScoreDistributionChart(details: result.details)
                     .padding(.horizontal, metrics.contentPadding)
-                    .padding(.bottom, 20)
 
                 // MARK: - Review
                 SectionTitle(title: "Chi tiết tình huống")
                     .padding(.horizontal, metrics.contentPadding)
-                    .padding(.bottom, 8)
 
                 AdaptiveGrid {
                     ForEach(Array(situations.enumerated()), id: \.element.id) { index, situation in
@@ -77,10 +83,10 @@ struct HazardResultView: View {
                     }
                 }
                 .padding(.horizontal, metrics.contentPadding)
-                .padding(.bottom, 20)
-
-                Spacer().frame(height: 32)
             }
+            .frame(maxWidth: metrics.isWide ? 1000 : .infinity)
+            .frame(maxWidth: .infinity)
+            .padding(.bottom, 32)
         }
         .safeAreaInset(edge: .bottom) {
             if !isFromHistory {

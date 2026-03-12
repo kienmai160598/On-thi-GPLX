@@ -98,44 +98,47 @@ struct BaseExamView: View {
 
         VStack(spacing: 0) {
             if metrics.isWide {
-                // iPad: side-by-side layout
-                HStack(alignment: .top, spacing: metrics.gridSpacing) {
-                    // Left: question + explanation
-                    ScrollView {
-                        VStack(alignment: .leading, spacing: 0) {
-                            QuestionCard(label: "Câu \(currentIndex + 1)", question: question, showDiemLietBadge: true)
+                // iPad: side-by-side layout with 55/45 ratio
+                GeometryReader { geo in
+                    HStack(alignment: .top, spacing: metrics.gridSpacing) {
+                        // Left: question + explanation
+                        ScrollView {
+                            VStack(alignment: .leading, spacing: 0) {
+                                QuestionCard(label: "Câu \(currentIndex + 1)", question: question, showDiemLietBadge: true)
 
-                            if !isMockExam && isRevealed && !question.tip.isEmpty {
-                                ExplanationBox(content: question.tip)
-                                    .padding(.top, 12)
-                                    .transition(.opacity.combined(with: .move(edge: .top)))
+                                if !isMockExam && isRevealed && !question.tip.isEmpty {
+                                    ExplanationBox(content: question.tip)
+                                        .padding(.top, 12)
+                                        .transition(.opacity.combined(with: .move(edge: .top)))
+                                }
+                            }
+                            .padding(metrics.contentPadding)
+                        }
+                        .frame(width: geo.size.width * 0.55)
+
+                        // Right: answers
+                        ScrollView {
+                            if isMockExam {
+                                AnswerTileList(
+                                    answers: shuffledAnswers,
+                                    selectedAnswerId: answers[currentIndex],
+                                    onSelect: { answer in
+                                        Haptics.selection()
+                                        answers[currentIndex] = answer.id
+                                    }
+                                )
+                            } else {
+                                AnswerTileList(
+                                    answers: shuffledAnswers,
+                                    selectedAnswerId: selectedAnswerId,
+                                    isConfirmed: isRevealed,
+                                    showCorrectness: true,
+                                    onSelect: { handleSimulationAnswerSelection(answer: $0) }
+                                )
                             }
                         }
                         .padding(metrics.contentPadding)
                     }
-
-                    // Right: answers
-                    ScrollView {
-                        if isMockExam {
-                            AnswerTileList(
-                                answers: shuffledAnswers,
-                                selectedAnswerId: answers[currentIndex],
-                                onSelect: { answer in
-                                    Haptics.selection()
-                                    answers[currentIndex] = answer.id
-                                }
-                            )
-                        } else {
-                            AnswerTileList(
-                                answers: shuffledAnswers,
-                                selectedAnswerId: selectedAnswerId,
-                                isConfirmed: isRevealed,
-                                showCorrectness: true,
-                                onSelect: { handleSimulationAnswerSelection(answer: $0) }
-                            )
-                        }
-                    }
-                    .padding(metrics.contentPadding)
                 }
                 .id(currentIndex)
             } else {

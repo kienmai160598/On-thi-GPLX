@@ -15,50 +15,69 @@ struct SimulationResultView: View {
     private var timedOutCount: Int { simulationResult.timedOutCount }
     private var isPassed: Bool { simulationResult.passed }
 
+    private var scoreDetails: some View {
+        VStack(spacing: 0) {
+            ScoreRow(label: "Câu đúng", value: "\(correctCount)/\(questions.count)", color: Color.appSuccess)
+            Divider().padding(.horizontal, 16)
+            ScoreRow(label: "Câu sai", value: "\(questions.count - correctCount)/\(questions.count)", color: Color.appError)
+            Divider().padding(.horizontal, 16)
+            ScoreRow(
+                label: "Hết thời gian",
+                value: "\(timedOutCount)",
+                color: timedOutCount > 0 ? Color.appWarning : Color.appSuccess
+            )
+            Divider().padding(.horizontal, 16)
+
+            let minutes = simulationResult.totalTimeUsedSeconds / 60
+            let seconds = simulationResult.totalTimeUsedSeconds % 60
+            ScoreRow(
+                label: "Thời gian",
+                value: String(format: "%02d:%02d", minutes, seconds),
+                color: Color.appTextMedium
+            )
+            Divider().padding(.horizontal, 16)
+            ScoreRow(
+                label: "Yêu cầu đạt",
+                value: "\u{2265} 70% (\(Int(Double(questions.count) * 0.7))/\(questions.count))",
+                color: Color.appTextMedium
+            )
+        }
+        .padding(.vertical, 4)
+        .glassCard()
+    }
+
     var body: some View {
         ScrollView {
-            VStack(spacing: 24) {
-                Spacer().frame(height: 8)
+            VStack(spacing: metrics.isWide ? 16 : 24) {
+                Spacer().frame(height: metrics.isWide ? 4 : 8)
 
-                // MARK: - Result Hero
-                ResultHero(
-                    isPassed: isPassed,
-                    score: correctCount,
-                    total: questions.count,
-                    subtitle: isPassed
-                        ? "Chúc mừng bạn đã vượt qua!"
-                        : "Hãy ôn tập thêm và thử lại nhé"
-                )
+                if metrics.isWide {
+                    // iPad: hero + scores side-by-side
+                    HStack(alignment: .top, spacing: metrics.gridSpacing) {
+                        ResultHero(
+                            isPassed: isPassed,
+                            score: correctCount,
+                            total: questions.count,
+                            subtitle: isPassed
+                                ? "Chúc mừng bạn đã vượt qua!"
+                                : "Hãy ôn tập thêm và thử lại nhé"
+                        )
 
-                // MARK: - Score details
-                VStack(spacing: 0) {
-                    ScoreRow(label: "Câu đúng", value: "\(correctCount)/\(questions.count)", color: Color.appSuccess)
-                    Divider().padding(.horizontal, 16)
-                    ScoreRow(label: "Câu sai", value: "\(questions.count - correctCount)/\(questions.count)", color: Color.appError)
-                    Divider().padding(.horizontal, 16)
-                    ScoreRow(
-                        label: "Hết thời gian",
-                        value: "\(timedOutCount)",
-                        color: timedOutCount > 0 ? Color.appWarning : Color.appSuccess
+                        scoreDetails
+                    }
+                } else {
+                    // iPhone: stacked
+                    ResultHero(
+                        isPassed: isPassed,
+                        score: correctCount,
+                        total: questions.count,
+                        subtitle: isPassed
+                            ? "Chúc mừng bạn đã vượt qua!"
+                            : "Hãy ôn tập thêm và thử lại nhé"
                     )
-                    Divider().padding(.horizontal, 16)
 
-                    let minutes = simulationResult.totalTimeUsedSeconds / 60
-                    let seconds = simulationResult.totalTimeUsedSeconds % 60
-                    ScoreRow(
-                        label: "Thời gian",
-                        value: String(format: "%02d:%02d", minutes, seconds),
-                        color: Color.appTextMedium
-                    )
-                    Divider().padding(.horizontal, 16)
-                    ScoreRow(
-                        label: "Yêu cầu đạt",
-                        value: "\u{2265} 70% (\(Int(Double(questions.count) * 0.7))/\(questions.count))",
-                        color: Color.appTextMedium
-                    )
+                    scoreDetails
                 }
-                .padding(.vertical, 4)
-                .glassCard()
 
                 // MARK: - Review
                 SectionTitle(title: "Xem lại đáp án")
@@ -78,7 +97,7 @@ struct SimulationResultView: View {
                 }
             }
             .padding(.horizontal, metrics.contentPadding)
-            .frame(maxWidth: metrics.isWide ? 900 : .infinity)
+            .frame(maxWidth: metrics.isWide ? 1000 : .infinity)
             .frame(maxWidth: .infinity)
             .padding(.bottom, 32)
         }
