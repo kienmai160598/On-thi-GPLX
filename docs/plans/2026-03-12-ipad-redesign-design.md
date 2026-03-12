@@ -1,121 +1,242 @@
-# iPad Redesign Design
+# iPad UI Renovation Design
 
-**Date:** 2026-03-12
-**Approach:** Adaptive Layout System (shared primitives)
+**Date:** 2026-03-12 (v2 — comprehensive overhaul)
+**Approach:** iPad-Native Redesign (Approach B)
 
 ## Goals
 
-- Multi-column grid layouts on iPad (2 cols portrait, 3 cols landscape)
-- Side-by-side question/answer layout for exam screens
-- Dashboard-style grid for result screens
-- Landscape-aware responsive breakpoints
-- Senior-friendly: large touch targets, bigger text, more spacing
+- iPad should feel native, not like a stretched iPhone
+- Persistent sidebar navigation on iPad
+- Multi-column dashboard layouts (2-col portrait, 3-col landscape)
+- 3-panel exam layout with always-visible question grid
+- Remove wasted space — no more 700pt max-width cap
+- Three-tier responsive breakpoint system
+- Refined typography and spacing for iPad screens
 
-## Core Primitives (3 new files)
+---
 
-### LayoutMetrics
+## 1. Navigation Architecture
 
-Observable environment object computed from `horizontalSizeClass` + screen width.
+### iPad (all orientations)
+```
+NavigationSplitView {
+  Sidebar (Home, Practice, Exam, Settings)
+} detail: {
+  NavigationStack { selectedTab.content }
+}
+```
 
-| Property | iPhone | iPad Portrait | iPad Landscape |
-|----------|--------|---------------|----------------|
+- Persistent sidebar with icons + labels
+- Settings moves to sidebar on iPad (frees toolbar space)
+- Sidebar is collapsible in portrait via swipe
+- Search stays in toolbar on both platforms
+
+### iPhone (unchanged)
+```
+TabView {
+  Tab("Trang chu") { NavigationStack { HomeTab() } }
+  Tab("Luyen tap") { NavigationStack { PracticeTab() } }
+  Tab("Thi thu")   { NavigationStack { ExamTab() } }
+}
+```
+
+### Exam screens
+- `fullScreenCover` continues to work for both platforms
+- Exam screens manage their own internal NavigationStack
+
+---
+
+## 2. LayoutMetrics Overhaul
+
+### Three-tier breakpoint system
+
+| Tier | Width | Use case | Columns |
+|------|-------|----------|---------|
+| `isCompact` | < 744pt | iPhone (all), iPad split-screen narrow | 1 |
+| `isMedium` | 744 - 1023pt | iPad portrait | 2 |
+| `isWide` | >= 1024pt | iPad landscape | 3 |
+
+### Metrics per tier
+
+| Property | compact | medium | wide |
+|----------|---------|--------|------|
 | `columns` | 1 | 2 | 3 |
-| `isWide` | false | true | true |
-| `gridSpacing` | 12 | 16 | 16 |
-| `contentPadding` | 20 | 28 | 28 |
-| `cardMinWidth` | — | 300 | 300 |
-| `fontScale` | 1.0 | 1.15 | 1.15 |
+| `contentPadding` | 20 | 24 | 32 |
+| `cardPadding` | 12 | 16 | 20 |
+| `gridSpacing` | 12 | 14 | 18 |
+| `rowSpacing` | 8 | 12 | 14 |
+| `buttonHeight` | 48 | 52 | 56 |
+| `answerHeight` | 48 | 54 | 60 |
+| `fontScale` | 1.0 | 1.08 | 1.15 |
+| `gridColumns` | 6 | 7 | 9 |
+| `gridCellSize` | 44 | 46 | 48 |
 
-Breakpoints by screen width:
-- < 700pt → 1 column (iPhone)
-- 700–1100pt → 2 columns (iPad portrait)
-- > 1100pt → 3 columns (iPad landscape)
+### Key changes
+- **Remove `.iPadReadable()` entirely** — content fills natural width via adaptive grids
+- `isWide` retains existing semantics (backward compat) for views not yet migrated
+- New `isMedium` enables 2-column layouts for iPad portrait
 
-### AdaptiveGrid
+---
 
-Drop-in replacement for `LazyVStack` in card-heavy screens:
-- iPhone: `LazyVStack(spacing:)`
-- iPad: `LazyVGrid(columns: adaptive(minimum: cardMinWidth), spacing:)`
-- Accepts optional `pinnedViews` for section headers
+## 3. Dashboard Layouts
 
-### SplitContent
+### HomeTab
 
-Side-by-side layout for exam/question screens:
-- iPhone: `VStack` (question top, answers below)
-- iPad: `HStack` with leading (55%) and trailing (45%) panes
-- Adjusts proportions for landscape
+**iPad landscape (3-col):**
+```
+┌──────────────┐ ┌──────────────┐ ┌──────────────┐
+│ Progress     │ │ Primary      │ │ Quick        │
+│ Overview     │ │ Action       │ │ Actions      │
+└──────────────┘ └──────────────┘ └──────────────┘
+┌──────────────┐ ┌──────────────┐ ┌──────────────┐
+│ Shortcuts    │ │ Recent       │ │ Achievements │
+│              │ │ Results      │ │              │
+└──────────────┘ └──────────────┘ └──────────────┘
+```
 
-## Senior-Friendly Adjustments
+**iPad portrait (2-col):**
+```
+┌───────────┐ ┌───────────────┐
+│ Progress  │ │ Primary       │
+│ Overview  │ │ Action        │
+└───────────┘ └───────────────┘
+┌───────────┐ ┌───────────────┐
+│ Quick     │ │ Shortcuts     │
+│ Actions   │ │               │
+└───────────┘ └───────────────┘
+┌─────────────────────────────┐
+│ Recent Results (full width) │
+└─────────────────────────────┘
+┌─────────────────────────────┐
+│ Achievements                │
+└─────────────────────────────┘
+```
 
-### Touch Targets
-- Minimum tap target: 56pt on iPad (vs 44pt standard)
-- Answer option cards: 60pt height on iPad
-- Bottom bar buttons: 56pt on iPad (vs 48pt iPhone)
-- QuestionGrid cells: 48x48pt on iPad
+### PracticeTab
+- Topic list → 2-col (portrait) / 3-col (landscape) grid of topic cards
+- Each card: icon ring + name + progress + correct/total
+- "On tap tat ca" button spans full width above grid
+- Hazard section: own column group below
 
-### Typography (iPad)
-- Body text: 16pt (vs 14pt iPhone)
-- Question text: 18pt (vs 16pt iPhone)
-- Button labels: 17pt (vs 15pt iPhone)
-- All sizes via `fontScale` multiplier in LayoutMetrics
+### ExamTab
+- Exam type cards: row on landscape, 2-col on portrait
+- Fixed exam sets: 2-col portrait, 3-col landscape grid
+- History: `AdaptiveGrid` multi-column result cards
 
-### Spacing (iPad)
-- Card internal padding: 18pt (vs 12-14pt iPhone)
-- List row spacing: 14pt (vs 8pt iPhone)
-- Answer option spacing: 14pt between choices
+---
 
-### Visual Clarity
-- Selected answer: 3pt border + stronger background tint
-- Score dots: 10pt on iPad (vs 8pt)
-- Icons/chevrons: +2pt larger on iPad
-- Expandable rows get visible "Xem chi tiết" text label alongside chevron
+## 4. 3-Panel Exam Layout (BaseExamView)
 
-### Simplified Interactions
-- No long-press or swipe gesture reliance
-- Visible text labels on all interactive elements
+### iPad Landscape — 3 panels (40/35/25 split)
+```
+┌───────────────────┬──────────────────┬───────────────────┐
+│                   │                  │  Question Grid    │
+│  Question Card    │  Answer Tiles    │  [1][2][3][4][5]  │
+│  Cau 15/30        │  A. Answer       │  [6][7][8][9][10] │
+│                   │  B. Answer       │                   │
+│  [Question text]  │  C. Answer       │  Progress:        │
+│  [Image if any]   │  D. Answer       │  Da tra loi: 14   │
+│                   │                  │  Chua: 16         │
+│  -- Explain --    │                  │  [Nop bai]        │
+├───────────────────┴──────────────────┴───────────────────┤
+│  [Prev]                 dots                  [Next]     │
+└──────────────────────────────────────────────────────────┘
+```
 
-## Screen-by-Screen Plan
+- 3rd panel replaces `ExamQuestionGridSheet` popup on landscape
+- Question grid is always visible — no sheet needed
+- Grid shows answered/unanswered/current state with color coding
+- Progress summary + submit button in the sidebar
 
-### Phase 1: Core Screens
+### iPad Portrait — 2 panels (55/45 split)
+```
+┌────────────────────┬───────────────────┐
+│  Question Card     │  Answer Tiles     │
+│  + Image           │  A. B. C. D.      │
+│  + Explanation     │                   │
+├────────────────────┴───────────────────┤
+│  [Prev]       dots        [Next]       │
+└────────────────────────────────────────┘
+```
 
-| Screen | Change |
-|--------|--------|
-| **HomeTab** | `AdaptiveGrid` for topic cards. OverviewCard full-width. ContinueLearning + RecentResults side-by-side via `SplitContent`. |
-| **PracticeTab** | `AdaptiveGrid` for topic rows (2-3 cols) |
-| **ExamTab** | `AdaptiveGrid` for exam type cards. Fixed exams use more columns. |
-| **SettingsView** | Wider cards with `iPadReadable(900)`, no grid needed |
+Grid accessed via sheet (same as current).
 
-### Phase 2: Exam & Results
+### iPhone — unchanged vertical layout
 
-| Screen | Change |
-|--------|--------|
-| **QuestionView** | `SplitContent`: question+image left, answers right. Bottom bar full width, 56pt buttons. |
-| **ExamResultView** | Score hero full-width. Stats in 2-col grid. Question review in `AdaptiveGrid`. |
-| **SimulationResultView** | Same treatment as ExamResultView |
-| **HazardResultView** | Score hero + stats full-width. Situation reviews in `AdaptiveGrid` (2 cols). |
+---
 
-### Phase 3: Secondary Screens
+## 5. Result Views
 
-| Screen | Change |
-|--------|--------|
-| **TopicDetailView** | `AdaptiveGrid` for question cards |
-| **BookmarksView** | `AdaptiveGrid` for bookmark cards |
-| **WrongAnswersView** | `AdaptiveGrid` for wrong-topic cards |
-| **QuestionSearchView** | `AdaptiveGrid` for result cards |
-| **SimulationTab** | `AdaptiveGrid` for simulation sets |
-| **Reference views** | Wider tables, `iPadReadable(900)` |
+### iPad Landscape
+```
+┌──────────────────┐  ┌──────────────────────┐
+│   Result Hero    │  │  Score Grid (2-col)  │
+│   (large ring)   │  │  Dung 28  |  Sai 2  │
+│   28/30 Dat      │  │  T.gian   |  Dat>=28 │
+│                  │  │  [Review]  [Retry]   │
+└──────────────────┘  └──────────────────────┘
+┌────────────────────────────────────────────┐
+│ Answer Review List (2-col adaptive grid)   │
+└────────────────────────────────────────────┘
+```
 
-### Unchanged
+- No 700pt cap — content fills width
+- Review list uses `AdaptiveGrid` (2-col)
+- Hero and score grid side-by-side (existing `SplitContent`)
+
+### QuestionView (Practice mode)
+- Same 3-panel logic as BaseExamView on landscape
+- 3rd panel shows topic progress sidebar instead of question grid
+
+### Reference Views
+- Remove `.iPadReadable()`, use `AdaptiveGrid` for sign cards
+- 3-col landscape, 2-col portrait
+
+### Settings
+- NavigationSplitView on iPad (list left, detail right)
+- iPhone: unchanged push navigation
+
+---
+
+## 6. Files to Modify
+
+### Core changes (new/modified)
+- `HomeView.swift` — conditional NavigationSplitView vs TabView
+- `LayoutMetrics.swift` — 3-tier breakpoints, new properties
+- `SplitContent.swift` — support 3-panel variant
+- `AdaptiveGrid.swift` — minor tweaks for new metrics
+
+### Remove `.iPadReadable()` from
+- `HomeTab.swift`
+- `PracticeTab.swift`
+- `ExamTab.swift`
+- `ExamResultView.swift`
+- `SimulationResultView.swift`
+- `HazardResultView.swift`
+- `SpeedDistanceReferenceView.swift`
+- `TrafficSignsReferenceView.swift`
+
+### Exam 3-panel
+- `BaseExamView.swift` — 3-panel layout for isWide
+- `ExamQuestionGridSheet.swift` — conditionally inline vs sheet
+
+### Dashboard multi-column
+- `HomeTab.swift` — wrap cards in adaptive grid
+- `PracticeTab.swift` — topic cards grid
+- `ExamTab.swift` — exam type cards grid
+
+### Navigation
+- `HomeView.swift` — NavigationSplitView for iPad
+- `SettingsView.swift` — move to sidebar on iPad
+
+---
+
+## 7. What Does NOT Change
 
 - iPhone layouts: completely unchanged
-- Navigation: TabView + per-tab NavigationStack stays
-- `.tabViewStyle(.sidebarAdaptable)` already handles iPad sidebar
-- HazardTestView: existing split layout aligned with shared metrics
-- Onboarding: single column is fine for a flow
-
-## Migration Notes
-
-- Replace `.iPadReadable()` with `LayoutMetrics`-driven padding on grid screens
-- Keep `.iPadReadable()` on single-column screens (Settings, References)
-- `ExamBottomBar`: wider buttons, larger touch targets on iPad
-- `QuestionGridButton` sheet: 6 columns per row on iPad (vs 5)
+- Exam flow via `fullScreenCover`
+- HazardTestView video playback
+- Onboarding flow (single column is fine)
+- Theme colors and font families
+- OrientationManager behavior
+- All business logic and data models
