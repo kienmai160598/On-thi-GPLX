@@ -29,17 +29,17 @@ struct SpeedDistanceReferenceView: View {
                     // MARK: - Alcohol Warning (always on top)
                     HStack(spacing: 14) {
                         Image(systemName: "hand.raised.fill")
-                            .font(.system(size: 22))
+                            .font(.appSans(size: 22))
                             .foregroundStyle(.white)
                             .frame(width: 48, height: 48)
                             .background(Color.appError, in: RoundedRectangle(cornerRadius: 12))
 
                         VStack(alignment: .leading, spacing: 4) {
                             Text("Nghiêm cấm tuyệt đối")
-                                .font(.system(size: 16, weight: .heavy))
+                                .font(.appSans(size: 16, weight: .bold))
                                 .foregroundStyle(Color.appError)
                             Text("Không được điều khiển xe khi có nồng độ cồn")
-                                .font(.system(size: 13))
+                                .font(.appSans(size: 13))
                                 .foregroundStyle(Color.appTextMedium)
                         }
 
@@ -143,6 +143,7 @@ struct SpeedDistanceReferenceView: View {
                     }
             }
             .padding(.horizontal, 20)
+            .iPadReadable(maxWidth: 900)
             .padding(.bottom, 20)
         }
         .screenHeader("Tốc độ & Quy tắc")
@@ -182,10 +183,10 @@ private struct RefSection<Content: View>: View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 8) {
                 Image(systemName: icon)
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(.appSans(size: 14, weight: .semibold))
                     .foregroundStyle(accentColor)
                 Text(title)
-                    .font(.system(size: 15, weight: .heavy))
+                    .font(.appSans(size: 15, weight: .bold))
                     .foregroundStyle(Color.appTextDark)
             }
 
@@ -215,15 +216,15 @@ private struct RefRow: View {
     var body: some View {
         HStack {
             Text(label)
-                .font(.system(size: 14))
+                .font(.appSans(size: 14))
                 .foregroundStyle(Color.appTextDark)
             Spacer()
             HStack(spacing: 4) {
                 Text(value)
-                    .font(.system(size: 16, weight: .heavy).monospacedDigit())
+                    .font(.appSans(size: 16, weight: .bold))
                     .foregroundStyle(accentColor)
                 Text(unit)
-                    .font(.system(size: 11, weight: .medium))
+                    .font(.appSans(size: 11))
                     .foregroundStyle(Color.appTextLight)
             }
         }
@@ -243,7 +244,7 @@ private struct RuleCard: View {
     var body: some View {
         HStack(alignment: .top, spacing: 14) {
             Image(systemName: icon)
-                .font(.system(size: 15))
+                .font(.appSans(size: 15))
                 .foregroundStyle(accentColor)
                 .frame(width: 36, height: 36)
                 .background(accentColor.opacity(0.1))
@@ -251,10 +252,10 @@ private struct RuleCard: View {
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(title)
-                    .font(.system(size: 15, weight: .bold))
+                    .font(.appSans(size: 15, weight: .bold))
                     .foregroundStyle(Color.appTextDark)
                 Text(detail)
-                    .font(.system(size: 13))
+                    .font(.appSans(size: 13))
                     .foregroundStyle(Color.appTextMedium)
                     .lineSpacing(3)
             }
@@ -275,16 +276,16 @@ private struct PenaltyRow: View {
     var body: some View {
         HStack(spacing: 14) {
             Image(systemName: icon)
-                .font(.system(size: 15))
+                .font(.appSans(size: 15))
                 .foregroundStyle(Color.appError)
                 .frame(width: 28)
 
             VStack(alignment: .leading, spacing: 3) {
                 Text(violation)
-                    .font(.system(size: 14, weight: .bold))
+                    .font(.appSans(size: 14, weight: .semibold))
                     .foregroundStyle(Color.appTextDark)
                 Text(penalty)
-                    .font(.system(size: 13))
+                    .font(.appSans(size: 13))
                     .foregroundStyle(Color.appTextMedium)
             }
 

@@ -34,6 +34,7 @@ struct TrafficSignsReferenceView: View {
                 }
             }
             .padding(.horizontal, 20)
+            .iPadReadable(maxWidth: 900)
             .padding(.bottom, 20)
         }
         .searchable(text: $searchText, prompt: "Tìm biển báo...")
@@ -94,7 +95,7 @@ private struct SignRow: View {
                     .frame(width: 48, height: 48)
                     .overlay {
                         Image(systemName: "photo")
-                            .font(.system(size: 16))
+                            .font(.appSans(size: 16))
                             .foregroundStyle(Color.appTextLight)
                     }
             }
@@ -102,7 +103,7 @@ private struct SignRow: View {
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 6) {
                     Text(sign.code)
-                        .font(.system(size: 11, weight: .bold))
+                        .font(.appSans(size: 11))
                         .foregroundStyle(sign.codeColor)
                         .padding(.horizontal, 6)
                         .padding(.vertical, 2)
@@ -110,12 +111,12 @@ private struct SignRow: View {
                         .clipShape(RoundedRectangle(cornerRadius: 4))
 
                     Text(sign.name)
-                        .font(.system(size: 14, weight: .bold))
+                        .font(.appSans(size: 14, weight: .semibold))
                         .foregroundStyle(Color.appTextDark)
                 }
 
                 Text(sign.description)
-                    .font(.system(size: 13))
+                    .font(.appSans(size: 13))
                     .foregroundStyle(Color.appTextMedium)
                     .lineSpacing(3)
             }

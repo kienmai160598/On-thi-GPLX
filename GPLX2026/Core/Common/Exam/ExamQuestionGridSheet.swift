@@ -2,6 +2,7 @@ import SwiftUI
 
 struct ExamQuestionGridSheet: View {
     @Environment(ThemeStore.self) private var themeStore
+    @Environment(LayoutMetrics.self) private var metrics
     @Environment(\.dismiss) private var dismiss
 
     let totalQuestions: Int
@@ -9,7 +10,9 @@ struct ExamQuestionGridSheet: View {
     let currentIndex: Int
     let onSelect: (Int) -> Void
 
-    private let columns = Array(repeating: GridItem(.flexible(), spacing: 10), count: 6)
+    private var columns: [GridItem] {
+        Array(repeating: GridItem(.flexible(), spacing: 10), count: metrics.gridColumns)
+    }
     private let pad: CGFloat = 20
 
     private var answeredCount: Int { answeredIndices.count }
@@ -61,9 +64,9 @@ struct ExamQuestionGridSheet: View {
 
     private func gridCell(index: Int) -> some View {
         Text("\(index + 1)")
-            .font(.system(size: 15, weight: .semibold))
+            .font(.appSans(size: 15, weight: .semibold))
             .foregroundStyle(foregroundColor(for: index))
-            .frame(maxWidth: .infinity, minHeight: 44)
+            .frame(maxWidth: .infinity, minHeight: metrics.gridCellSize)
             .background(backgroundColor(for: index))
             .clipShape(RoundedRectangle(cornerRadius: 8))
     }
@@ -87,10 +90,10 @@ struct ExamQuestionGridSheet: View {
     private func legendItem(color: Color, textColor: Color? = nil, count: Int, label: String) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             Text("\(count)")
-                .font(.system(size: 18, weight: .bold))
+                .font(.appSerif(size: 18, weight: .bold))
                 .foregroundStyle(textColor ?? color)
             Text(label)
-                .font(.system(size: 11, weight: .medium))
+                .font(.appSans(size: 11))
                 .foregroundStyle(Color.appTextMedium)
         }
     }

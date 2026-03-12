@@ -6,6 +6,7 @@ struct TopicDetailView: View {
     @Environment(\.openExam) private var openExam
     @Environment(QuestionStore.self) private var questionStore
     @Environment(ProgressStore.self) private var progressStore
+    @Environment(LayoutMetrics.self) private var metrics
 
     private var statusInfo: (label: String, color: Color) {
         if item.attempted == 0 {
@@ -37,18 +38,18 @@ struct TopicDetailView: View {
                             .animation(.spring(duration: 0.8, bounce: 0.15), value: fraction)
 
                         Image(systemName: item.topic.sfSymbol)
-                            .font(.system(size: 32))
+                            .font(.appSans(size: 32))
                             .foregroundStyle(status.color)
                     }
                     .frame(width: 100, height: 100)
 
                     VStack(spacing: 8) {
                         Text(item.topic.name)
-                            .font(.system(size: 24, weight: .heavy))
+                            .font(.appSans(size: 24, weight: .bold))
                             .foregroundStyle(Color.appTextDark)
 
                         Text(item.topic.topicDescription)
-                            .font(.system(size: 14))
+                            .font(.appSans(size: 14))
                             .foregroundStyle(Color.appTextMedium)
                             .multilineTextAlignment(.center)
                     }
@@ -71,7 +72,7 @@ struct TopicDetailView: View {
                 VStack(alignment: .leading, spacing: 10) {
                     HStack {
                         Text("Tiến độ")
-                            .font(.system(size: 16, weight: .bold))
+                            .font(.appSerif(size: 16, weight: .bold))
                             .foregroundStyle(Color.appTextDark)
                         Spacer()
                         Text("\(item.correct)/\(item.total) câu đúng")
@@ -103,7 +104,7 @@ struct TopicDetailView: View {
                     .buttonStyle(.plain)
                 }
             }
-            .padding(.horizontal, 20)
+            .padding(.horizontal, metrics.contentPadding)
             .padding(.bottom, 32)
         }
         .navigationTitle(item.topic.shortName)
@@ -112,7 +113,7 @@ struct TopicDetailView: View {
             ToolbarItem(placement: .navigationBarLeading) {
                 Button { dismiss() } label: {
                     Image(systemName: "chevron.left")
-                        .font(.system(size: 16, weight: .semibold))
+                        .font(.appSans(size: 16, weight: .semibold))
                         .foregroundStyle(Color.appTextDark)
                 }
             }

@@ -7,15 +7,12 @@ struct SettingsView: View {
     @AppStorage(AppConstants.StorageKey.themeMode) private var themeMode: String = "system"
     @AppStorage(AppConstants.StorageKey.fontSize) private var fontSize: String = "medium"
     @AppStorage(AppConstants.StorageKey.hapticsEnabled) private var hapticsEnabled: Bool = true
-    @AppStorage(AppConstants.StorageKey.backgroundAnimation) private var backgroundAnimation: String = "none"
-    @AppStorage(AppConstants.StorageKey.backgroundSpeed) private var backgroundSpeed: String = "normal"
     @AppStorage(AppConstants.StorageKey.licenseType) private var licenseType: String = "b2"
     @AppStorage(AppConstants.StorageKey.dailyReminderEnabled) private var dailyReminderEnabled: Bool = false
     @AppStorage(AppConstants.StorageKey.dailyReminderHour) private var dailyReminderHour: Int = 20
 
     @State private var showResetSheet = false
     @State private var resetToast: String?
-    @State private var showAppearanceSheet = false
     @State private var resetConfirmation: ResetAction?
     @State private var showClearCacheAlert = false
 
@@ -30,11 +27,11 @@ struct SettingsView: View {
                     VStack(spacing: 0) {
                         HStack {
                             Image(systemName: "person.text.rectangle")
-                                .font(.system(size: 16))
+                                .font(.appSans(size: 16))
                                 .foregroundStyle(themeStore.primaryColor)
                                 .frame(width: 28)
                             Text("Hạng bằng")
-                                .font(.system(size: 15))
+                                .font(.appSans(size: 15))
                             Spacer()
                             Picker("", selection: $licenseType) {
                                 ForEach(LicenseType.allCases, id: \.self) { type in
@@ -51,7 +48,7 @@ struct SettingsView: View {
 
                     if let current = LicenseType(rawValue: licenseType) {
                         Text("\(current.questionsPerExam) câu · \(current.totalTimeSeconds / 60) phút · Đạt \(current.passThreshold)")
-                            .font(.system(size: 12))
+                            .font(.appSans(size: 12))
                             .foregroundStyle(Color.appTextLight)
                             .lineSpacing(3)
                     }
@@ -62,43 +59,12 @@ struct SettingsView: View {
                 // ──────────────────────────────────────────────
 
                 settingsSection("Giao diện", subtitle: "Tuỳ chỉnh giao diện ứng dụng") {
-                    ThemeModePicker(selected: $themeMode, primaryColorKey: themeStore.primaryColorKey)
-
-                    // Primary Color
-                    settingsLabel("Màu chủ đạo")
-                    PrimaryColorPicker(selected: Bindable(themeStore).primaryColorKey)
+                    ThemeModePicker(selected: $themeMode)
 
                     // Font Size
                     settingsLabel("Cỡ chữ câu hỏi")
-                    FontSizeSlider(selected: $fontSize, primaryColorKey: themeStore.primaryColorKey)
+                    FontSizeSlider(selected: $fontSize)
                     FontSizePreview(fontSize: fontSize)
-
-                    // Background Animation — compact row that opens sheet
-                    Button { showAppearanceSheet = true } label: {
-                        HStack(spacing: 12) {
-                            Image(systemName: backgroundAnimation == "none" ? "sparkles" : "wand.and.stars")
-                                .font(.system(size: 16))
-                                .foregroundStyle(themeStore.primaryColor)
-                                .frame(width: 22)
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text("Hiệu ứng nền")
-                                    .font(.system(size: 15, weight: .semibold))
-                                    .foregroundStyle(Color.appTextDark)
-                                Text("Hoạt ảnh phía sau nội dung")
-                                    .font(.system(size: 12))
-                                    .foregroundStyle(Color.appTextMedium)
-                            }
-                            Spacer()
-                            Image(systemName: "chevron.right")
-                                .font(.system(size: 12, weight: .semibold))
-                                .foregroundStyle(Color.appTextLight)
-                        }
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 14)
-                        .glassCard()
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel("Hiệu ứng nền: \(backgroundAnimationLabel)")
 
                     // Haptics toggle
                     settingsToggle(
@@ -142,12 +108,12 @@ struct SettingsView: View {
                         if dailyReminderEnabled {
                             HStack(spacing: 14) {
                                 Image(systemName: "clock")
-                                    .font(.system(size: 18))
+                                    .font(.appSans(size: 18))
                                     .foregroundStyle(themeStore.primaryColor)
                                     .frame(width: 22)
 
                                 Text("Giờ nhắc")
-                                    .font(.system(size: 15, weight: .semibold))
+                                    .font(.appSans(size: 15, weight: .semibold))
                                     .foregroundStyle(Color.appTextDark)
 
                                 Spacer()
@@ -179,11 +145,11 @@ struct SettingsView: View {
                                 in: Date()...,
                                 displayedComponents: .date
                             )
-                            .font(.system(size: 15, weight: .semibold))
+                            .font(.appSans(size: 15, weight: .semibold))
                             .foregroundStyle(Color.appTextDark)
 
                             Text("Hiển thị đếm ngược trên trang chủ")
-                                .font(.system(size: 12))
+                                .font(.appSans(size: 12))
                                 .foregroundStyle(Color.appTextMedium)
                         }
                         .padding(.horizontal, 16)
@@ -198,11 +164,11 @@ struct SettingsView: View {
                             } label: {
                                 HStack(spacing: 12) {
                                     Image(systemName: "calendar.badge.minus")
-                                        .font(.system(size: 16))
+                                        .font(.appSans(size: 16))
                                         .foregroundStyle(Color.appError)
                                         .frame(width: 22)
                                     Text("Xoá ngày thi")
-                                        .font(.system(size: 15, weight: .semibold))
+                                        .font(.appSans(size: 15, weight: .semibold))
                                         .foregroundStyle(Color.appError)
                                     Spacer()
                                 }
@@ -224,11 +190,11 @@ struct SettingsView: View {
                                 in: 10...100,
                                 step: 10
                             )
-                            .font(.system(size: 15, weight: .semibold))
+                            .font(.appSans(size: 15, weight: .semibold))
                             .foregroundStyle(Color.appTextDark)
 
                             Text("Theo dõi tiến độ ôn tập hằng ngày")
-                                .font(.system(size: 12))
+                                .font(.appSans(size: 12))
                                 .foregroundStyle(Color.appTextMedium)
                         }
                         .padding(.horizontal, 16)
@@ -270,11 +236,11 @@ struct SettingsView: View {
                     Button { showResetSheet = true } label: {
                         HStack(spacing: 14) {
                             Image(systemName: "trash")
-                                .font(.system(size: 16))
+                                .font(.appSans(size: 16))
                                 .foregroundStyle(Color.appError)
                                 .frame(width: 22)
                             Text("Xoá tất cả dữ liệu")
-                                .font(.system(size: 15, weight: .semibold))
+                                .font(.appSans(size: 15, weight: .semibold))
                                 .foregroundStyle(Color.appError)
                             Spacer()
                         }
@@ -311,12 +277,13 @@ struct SettingsView: View {
                     .glassCard()
 
                     Text("Ứng dụng chỉ mang tính chất tham khảo và luyện tập. Đề thi chính thức do Bộ GTVT ban hành.")
-                        .font(.system(size: 12))
+                        .font(.appSans(size: 12))
                         .foregroundStyle(Color.appTextLight)
                         .lineSpacing(3)
                 }
             }
             .padding(.horizontal, 20)
+            .iPadReadable(maxWidth: 900)
             .padding(.top, 8)
             .padding(.bottom, 32)
         }
@@ -358,18 +325,10 @@ struct SettingsView: View {
         } message: {
             Text("Tất cả video đã tải sẽ bị xoá. Bạn có thể tải lại sau.")
         }
-        .sheet(isPresented: $showAppearanceSheet) {
-            BackgroundAnimationSheet(
-                selected: $backgroundAnimation,
-                speedKey: $backgroundSpeed,
-                primaryColorKey: themeStore.primaryColorKey
-            )
-            .presentationDetents([.medium])
-        }
         .overlay(alignment: .bottom) {
             if let toast = resetToast {
                 Text(toast)
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(.appSans(size: 14, weight: .semibold))
                     .foregroundStyle(.white)
                     .padding(.horizontal, 20)
                     .padding(.vertical, 12)
@@ -382,14 +341,6 @@ struct SettingsView: View {
     }
 
     // MARK: - Helpers
-
-    private var backgroundAnimationLabel: String {
-        switch backgroundAnimation {
-        case "bubbles": return "Bong bóng"
-        case "waves": return "Sóng"
-        default: return "Tắt"
-        }
-    }
 
     private var appVersion: String {
         let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
@@ -439,12 +390,12 @@ struct SettingsView: View {
         VStack(alignment: .leading, spacing: 14) {
             VStack(alignment: .leading, spacing: 4) {
                 Text(title)
-                    .font(.system(size: 20, weight: .heavy))
+                    .font(.appSans(size: 20, weight: .bold))
                     .foregroundStyle(Color.appTextDark)
 
                 if let subtitle {
                     Text(subtitle)
-                        .font(.system(size: 13))
+                        .font(.appSans(size: 13))
                         .foregroundStyle(Color.appTextMedium)
                 }
             }
@@ -456,7 +407,7 @@ struct SettingsView: View {
     @ViewBuilder
     private func settingsLabel(_ text: String) -> some View {
         Text(text)
-            .font(.system(size: 13, weight: .bold))
+            .font(.appSans(size: 13, weight: .medium))
             .foregroundStyle(Color.appTextMedium)
             .textCase(.uppercase)
             .tracking(0.5)
@@ -468,17 +419,17 @@ struct SettingsView: View {
     private func settingsToggle(iconOn: String, iconOff: String, title: String, subtitle: String, isOn: Binding<Bool>) -> some View {
         HStack(spacing: 14) {
             Image(systemName: isOn.wrappedValue ? iconOn : iconOff)
-                .font(.system(size: 18))
+                .font(.appSans(size: 18))
                 .foregroundStyle(isOn.wrappedValue ? themeStore.primaryColor : Color.appTextLight)
                 .frame(width: 22)
                 .contentTransition(.symbolEffect(.replace))
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
-                    .font(.system(size: 15, weight: .semibold))
+                    .font(.appSans(size: 15, weight: .semibold))
                     .foregroundStyle(Color.appTextDark)
                 Text(subtitle)
-                    .font(.system(size: 12))
+                    .font(.appSans(size: 12))
                     .foregroundStyle(Color.appTextMedium)
             }
 
@@ -505,20 +456,20 @@ struct SettingsView: View {
         } label: {
             HStack(spacing: 12) {
                 Image(systemName: icon)
-                    .font(.system(size: 14))
+                    .font(.appSans(size: 14))
                     .foregroundStyle(Color.appError.opacity(0.7))
                     .frame(width: 20)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(title)
-                        .font(.system(size: 14, weight: .medium))
+                        .font(.appSans(size: 14, weight: .medium))
                         .foregroundStyle(Color.appTextDark)
                     Text(subtitle)
-                        .font(.system(size: 11))
+                        .font(.appSans(size: 11))
                         .foregroundStyle(Color.appTextLight)
                 }
                 Spacer()
                 Image(systemName: "trash")
-                    .font(.system(size: 12))
+                    .font(.appSans(size: 12))
                     .foregroundStyle(Color.appError.opacity(0.6))
             }
             .padding(.horizontal, 16)
@@ -534,15 +485,15 @@ struct SettingsView: View {
     private func aboutRow(icon: String, label: String, value: String) -> some View {
         HStack(spacing: 12) {
             Image(systemName: icon)
-                .font(.system(size: 14))
+                .font(.appSans(size: 14))
                 .foregroundStyle(Color.appTextLight)
                 .frame(width: 20)
             Text(label)
-                .font(.system(size: 14))
+                .font(.appSans(size: 14))
                 .foregroundStyle(Color.appTextMedium)
             Spacer()
             Text(value)
-                .font(.system(size: 14, weight: .medium))
+                .font(.appSans(size: 14, weight: .medium))
                 .foregroundStyle(Color.appTextDark)
         }
         .padding(.horizontal, 16)
@@ -595,51 +546,11 @@ private enum ResetAction: Identifiable {
     }
 }
 
-// MARK: - Background Animation Sheet
-
-private struct BackgroundAnimationSheet: View {
-    @Binding var selected: String
-    @Binding var speedKey: String
-    var primaryColorKey: String
-    @Environment(\.dismiss) private var dismiss
-
-    var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 20) {
-                    Text("Chọn hiệu ứng nền và tốc độ hiển thị.")
-                        .font(.system(size: 13))
-                        .foregroundStyle(Color.appTextMedium)
-
-                    BackgroundAnimationPicker(
-                        selected: $selected,
-                        speedKey: $speedKey,
-                        primaryColorKey: primaryColorKey
-                    )
-                }
-                .padding(.horizontal, 20)
-                .padding(.top, 8)
-                .padding(.bottom, 32)
-            }
-            .navigationTitle("Hiệu ứng nền")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Xong") { dismiss() }
-                        .font(.system(size: 15, weight: .semibold))
-                }
-            }
-            .background(Color.scaffoldBg.ignoresSafeArea())
-        }
-    }
-}
-
 // MARK: - Font Size Slider
 
 struct FontSizeSlider: View {
     @Environment(ThemeStore.self) private var themeStore
     @Binding var selected: String
-    var primaryColorKey: String
 
     private static let steps = ["small", "medium", "large"]
 
@@ -650,7 +561,7 @@ struct FontSizeSlider: View {
     var body: some View {
         HStack(spacing: 8) {
             Text("A")
-                .font(.system(size: 13, weight: .semibold))
+                .font(.appSans(size: 13, weight: .medium))
                 .foregroundStyle(Color.appTextMedium)
                 .accessibilityLabel("Nhỏ")
 
@@ -667,7 +578,7 @@ struct FontSizeSlider: View {
             .accessibilityValue(sizeLabel)
 
             Text("A")
-                .font(.system(size: 18, weight: .bold))
+                .font(.appSerif(size: 18, weight: .bold))
                 .foregroundStyle(Color.appTextMedium)
                 .accessibilityLabel("Lớn")
         }
@@ -699,15 +610,15 @@ private struct FontSizePreview: View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 6) {
                 Image(systemName: "eye")
-                    .font(.system(size: 14))
+                    .font(.appSans(size: 14))
                     .foregroundStyle(Color.appTextLight)
                 Text("Xem trước")
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(.appSans(size: 12, weight: .medium))
                     .foregroundStyle(Color.appTextLight)
             }
 
             Text("Khi điều khiển xe trên đường mà tầm nhìn bị hạn chế, người lái xe cần giảm tốc độ và chú ý quan sát.")
-                .font(.system(size: 15 * scale))
+                .font(.appSans(size: 15 * scale))
                 .foregroundStyle(Color.appTextDark)
                 .lineSpacing(4)
         }
@@ -752,22 +663,22 @@ private struct VideoOfflineCard: View {
             VStack(alignment: .leading, spacing: 12) {
                 HStack(spacing: 8) {
                     Image(systemName: allComplete ? "checkmark.icloud.fill" : "icloud.and.arrow.down")
-                        .font(.system(size: 16))
+                        .font(.appSans(size: 16))
                         .foregroundStyle(themeStore.primaryColor)
                         .symbolRenderingMode(.hierarchical)
                     Text("Video offline")
-                        .font(.system(size: 15, weight: .bold))
+                        .font(.appSans(size: 15, weight: .bold))
                         .foregroundStyle(Color.appTextDark)
                     Spacer()
                     Text(String(format: "%.0f MB", videoCache.cacheSizeMB))
-                        .font(.system(size: 12, weight: .medium).monospacedDigit())
+                        .font(.appSans(size: 12, weight: .medium))
                         .foregroundStyle(Color.appTextLight)
                 }
 
                 VStack(alignment: .leading, spacing: 4) {
                     ProgressBarView(fraction: fraction, color: themeStore.primaryColor, height: 6)
                     Text("\(cached)/\(total) video đã tải")
-                        .font(.system(size: 13, weight: .medium).monospacedDigit())
+                        .font(.appSans(size: 13, weight: .medium))
                         .foregroundStyle(Color.appTextMedium)
                 }
 
@@ -782,7 +693,7 @@ private struct VideoOfflineCard: View {
                                 Text(videoCache.downloadSpeedMBps > 0
                                      ? String(format: "%.1f MB/s (Huỷ)", videoCache.downloadSpeedMBps)
                                      : "Đang tải... (Huỷ)")
-                                    .font(.system(size: 13, weight: .semibold))
+                                    .font(.appSans(size: 13, weight: .medium))
                                     .foregroundStyle(themeStore.primaryColor)
                             }
                             .frame(maxWidth: .infinity)
@@ -814,10 +725,10 @@ private struct VideoOfflineCard: View {
                     } label: {
                         HStack(spacing: 6) {
                             Text(showChapters ? "Ẩn chi tiết" : "Tải theo chương")
-                                .font(.system(size: 13, weight: .medium))
+                                .font(.appSans(size: 13, weight: .medium))
                                 .foregroundStyle(themeStore.primaryColor)
                             Image(systemName: showChapters ? "chevron.up" : "chevron.down")
-                                .font(.system(size: 11, weight: .semibold))
+                                .font(.appSans(size: 11))
                                 .foregroundStyle(themeStore.primaryColor)
                         }
                     }
@@ -838,16 +749,16 @@ private struct VideoOfflineCard: View {
                         HStack(spacing: 10) {
                             VStack(alignment: .leading, spacing: 2) {
                                 Text("Ch. \(chapter.id): \(chapter.name)")
-                                    .font(.system(size: 13, weight: .medium))
+                                    .font(.appSans(size: 13, weight: .medium))
                                     .foregroundStyle(Color.appTextDark)
                                     .lineLimit(1)
                                 HStack(spacing: 4) {
                                     Text("\(chCached)/\(chTotal) video")
-                                        .font(.system(size: 11, weight: .medium).monospacedDigit())
+                                        .font(.appSans(size: 11))
                                         .foregroundStyle(chComplete ? themeStore.primaryColor : Color.appTextLight)
                                     if isDownloading && videoCache.downloadSpeedMBps > 0 {
                                         Text(String(format: "· %.1f MB/s", videoCache.downloadSpeedMBps))
-                                            .font(.system(size: 11, weight: .medium).monospacedDigit())
+                                            .font(.appSans(size: 11))
                                             .foregroundStyle(themeStore.primaryColor)
                                     }
                                 }
@@ -868,11 +779,11 @@ private struct VideoOfflineCard: View {
                                         ProgressView().scaleEffect(0.65).tint(themeStore.primaryColor)
                                     } else if chComplete {
                                         Image(systemName: "checkmark.circle.fill")
-                                            .font(.system(size: 16))
+                                            .font(.appSans(size: 16))
                                             .foregroundStyle(themeStore.primaryColor)
                                     } else {
                                         Image(systemName: "icloud.and.arrow.down")
-                                            .font(.system(size: 14, weight: .medium))
+                                            .font(.appSans(size: 14, weight: .medium))
                                             .foregroundStyle(themeStore.primaryColor)
                                     }
                                 }
@@ -906,12 +817,12 @@ struct SettingsTile: View {
     var body: some View {
         HStack(spacing: 14) {
             Image(systemName: icon)
-                .font(.system(size: 18))
+                .font(.appSans(size: 18))
                 .foregroundStyle(iconColor)
                 .frame(width: 22)
 
             Text(title)
-                .font(.system(size: 15, weight: .semibold))
+                .font(.appSans(size: 15, weight: .semibold))
                 .foregroundStyle(Color.appTextDark)
 
             Spacer()

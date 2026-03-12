@@ -5,6 +5,7 @@ import SwiftUI
 struct HomeTab: View {
     @Environment(QuestionStore.self) private var questionStore
     @Environment(ProgressStore.self) private var progressStore
+    @Environment(LayoutMetrics.self) private var metrics
 
     private var greetingText: String {
         let hour = Calendar.current.component(.hour, from: Date())
@@ -27,7 +28,9 @@ struct HomeTab: View {
                 RecentResultsCard()
                 AchievementsCard()
             }
-            .padding(.horizontal, 20)
+            .padding(.horizontal, metrics.contentPadding)
+            .frame(maxWidth: metrics.isWide ? .infinity : 700)
+            .frame(maxWidth: .infinity)
             .padding(.bottom, 32)
         }
         .dailyGoalCelebration(isDone: goalDone)
@@ -38,12 +41,12 @@ struct HomeTab: View {
                 HStack(spacing: 16) {
                     NavigationLink(destination: QuestionSearchView()) {
                         Image(systemName: "magnifyingglass")
-                            .font(.system(size: 15, weight: .medium))
+                            .font(.appSans(size: 15, weight: .medium))
                             .foregroundStyle(Color.appTextDark)
                     }
                     NavigationLink(destination: SettingsView()) {
                         Image(systemName: "gearshape")
-                            .font(.system(size: 15, weight: .medium))
+                            .font(.appSans(size: 15, weight: .medium))
                             .foregroundStyle(Color.appTextDark)
                     }
                 }
@@ -82,7 +85,7 @@ private struct ProgressOverview: View {
                 // Main count
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Đã thuộc \(status.totalCorrect)/\(status.totalQuestions) câu")
-                        .font(.system(size: 15, weight: .bold))
+                        .font(.appSans(size: 15, weight: .bold))
                         .foregroundStyle(Color.appTextDark)
                         .contentTransition(.numericText())
 
@@ -97,7 +100,7 @@ private struct ProgressOverview: View {
                             Label("\(streak) ngày liên tục", systemImage: "flame.fill")
                         }
                     }
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(.appSans(size: 12, weight: .medium))
                     .foregroundStyle(themeStore.primaryColor)
                 }
 
@@ -135,20 +138,20 @@ private struct ProgressOverview: View {
     private func statRow(icon: String, label: String, value: String, status: String?, color: Color) -> some View {
         HStack(spacing: 8) {
             Image(systemName: icon)
-                .font(.system(size: 14))
+                .font(.appSans(size: 14))
                 .foregroundStyle(color)
                 .frame(width: 20)
             Text(label)
-                .font(.system(size: 15, weight: .medium))
+                .font(.appSans(size: 15, weight: .medium))
                 .foregroundStyle(Color.appTextMedium)
             Spacer()
             if let status {
                 Text(status)
-                    .font(.system(size: 13, weight: .bold))
+                    .font(.appSans(size: 13, weight: .medium))
                     .foregroundStyle(color)
             }
             Text(value)
-                .font(.system(size: 17, weight: .bold).monospacedDigit())
+                .font(.appSerif(size: 17, weight: .bold))
                 .foregroundStyle(color)
                 .contentTransition(.numericText())
         }
@@ -189,15 +192,15 @@ private struct PrimaryActionCard: View {
         } label: {
             HStack(spacing: 14) {
                 Image(systemName: "play.circle.fill")
-                    .font(.system(size: 36))
+                    .font(.appSans(size: 36))
                     .foregroundStyle(themeStore.primaryColor)
 
                 VStack(alignment: .leading, spacing: 3) {
                     Text("Tiếp tục học")
-                        .font(.system(size: 15, weight: .bold))
+                        .font(.appSans(size: 15, weight: .bold))
                         .foregroundStyle(Color.appTextDark)
                     Text("\(topicName) · Câu \(index + 1)")
-                        .font(.system(size: 14))
+                        .font(.appSans(size: 14))
                         .foregroundStyle(Color.appTextMedium)
                         .lineLimit(1)
                 }
@@ -205,7 +208,7 @@ private struct PrimaryActionCard: View {
                 Spacer(minLength: 4)
 
                 Image(systemName: "chevron.right")
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(.appSans(size: 14, weight: .semibold))
                     .foregroundStyle(Color.appTextLight)
             }
             .padding(12)
@@ -224,7 +227,7 @@ private struct PrimaryActionCard: View {
         Button { handleNudgeTap(nudge) } label: {
             HStack(spacing: 14) {
                 Image(systemName: nudge.icon)
-                    .font(.system(size: 24))
+                    .font(.appSans(size: 24))
                     .foregroundStyle(themeStore.primaryColor)
                     .symbolRenderingMode(.hierarchical)
                     .frame(width: 48, height: 48)
@@ -233,10 +236,10 @@ private struct PrimaryActionCard: View {
 
                 VStack(alignment: .leading, spacing: 3) {
                     Text("Gợi ý cho bạn")
-                        .font(.system(size: 13, weight: .semibold))
+                        .font(.appSans(size: 13, weight: .medium))
                         .foregroundStyle(Color.appTextLight)
                     Text(nudge.label)
-                        .font(.system(size: 16, weight: .bold))
+                        .font(.appSerif(size: 16, weight: .bold))
                         .foregroundStyle(Color.appTextDark)
                         .lineLimit(1)
                 }
@@ -244,7 +247,7 @@ private struct PrimaryActionCard: View {
                 Spacer(minLength: 4)
 
                 Image(systemName: "chevron.right")
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(.appSans(size: 14, weight: .semibold))
                     .foregroundStyle(Color.appTextLight)
             }
             .padding(12)
@@ -276,12 +279,16 @@ private struct QuickActionsGrid: View {
     @Environment(QuestionStore.self) private var questionStore
     @Environment(ProgressStore.self) private var progressStore
     @Environment(ThemeStore.self) private var themeStore
+    @Environment(LayoutMetrics.self) private var metrics
     @Environment(\.openExam) private var openExam
 
-    private let columns = [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)]
+    private var columns: [GridItem] {
+        Array(repeating: GridItem(.flexible(), spacing: metrics.gridSpacing),
+              count: metrics.columns == 3 ? 4 : 2)
+    }
 
     var body: some View {
-        LazyVGrid(columns: columns, spacing: 12) {
+        LazyVGrid(columns: columns, spacing: metrics.gridSpacing) {
             HomeActionCard(
                 icon: "book.fill",
                 title: "Ôn câu hỏi",
@@ -309,15 +316,15 @@ private struct QuickActionsGrid: View {
             NavigationLink(destination: WrongAnswersView()) {
                 VStack(spacing: 10) {
                     Image(systemName: "xmark.circle.fill")
-                        .font(.system(size: 28))
+                        .font(.appSans(size: 28))
                         .foregroundStyle(themeStore.primaryColor)
 
                     Text("Câu sai")
-                        .font(.system(size: 16, weight: .bold))
+                        .font(.appSerif(size: 16, weight: .bold))
                         .foregroundStyle(Color.appTextDark)
                 }
                 .frame(maxWidth: .infinity)
-                .frame(height: 110)
+                .frame(height: metrics.isWide ? 130 : 110)
                 .glassCard()
             }
             .buttonStyle(.plain)
@@ -326,6 +333,8 @@ private struct QuickActionsGrid: View {
 }
 
 private struct HomeActionCard: View {
+    @Environment(LayoutMetrics.self) private var metrics
+
     let icon: String
     let title: String
     var subtitle: String? = nil
@@ -336,21 +345,21 @@ private struct HomeActionCard: View {
         Button(action: action) {
             VStack(spacing: 10) {
                 Image(systemName: icon)
-                    .font(.system(size: 28))
+                    .font(.appSans(size: 28))
                     .foregroundStyle(color)
 
                 Text(title)
-                    .font(.system(size: 16, weight: .bold))
+                    .font(.appSerif(size: 16, weight: .bold))
                     .foregroundStyle(Color.appTextDark)
 
                 if let subtitle {
                     Text(subtitle)
-                        .font(.system(size: 14, weight: .semibold).monospacedDigit())
+                        .font(.appSans(size: 14, weight: .semibold))
                         .foregroundStyle(color)
                 }
             }
             .frame(maxWidth: .infinity)
-            .frame(height: 110)
+            .frame(height: metrics.isWide ? 130 : 110)
             .glassCard()
         }
         .buttonStyle(.plain)
@@ -397,23 +406,23 @@ private struct ShortcutsRow: View {
     private func shortcutRow(icon: String, title: String, color: Color, trailing: String? = nil) -> some View {
         HStack(spacing: 8) {
             Image(systemName: icon)
-                .font(.system(size: 16))
+                .font(.appSans(size: 16))
                 .foregroundStyle(color)
 
             Text(title)
-                .font(.system(size: 15, weight: .semibold))
+                .font(.appSans(size: 15, weight: .semibold))
                 .foregroundStyle(Color.appTextDark)
 
             Spacer()
 
             if let trailing {
                 Text(trailing)
-                    .font(.system(size: 14, weight: .bold).monospacedDigit())
+                    .font(.appSans(size: 14, weight: .semibold))
                     .foregroundStyle(themeStore.primaryColor)
             }
 
             Image(systemName: "chevron.right")
-                .font(.system(size: 12, weight: .semibold))
+                .font(.appSans(size: 12, weight: .medium))
                 .foregroundStyle(Color.appTextLight)
         }
         .padding(.horizontal, 16)
@@ -435,7 +444,7 @@ private struct RecentResultsCard: View {
         if lastExam != nil || lastSim != nil || lastHazard != nil {
             VStack(alignment: .leading, spacing: 14) {
                 Text("Kết quả gần đây")
-                    .font(.system(size: 20, weight: .heavy))
+                    .font(.appSans(size: 20, weight: .bold))
                     .foregroundStyle(Color.appTextDark)
 
                 VStack(spacing: 0) {
@@ -501,22 +510,22 @@ private struct RecentResultRow: View {
     var body: some View {
         HStack(spacing: 12) {
             Image(systemName: passed ? "checkmark.circle.fill" : "xmark.circle.fill")
-                .font(.system(size: 20))
+                .font(.appSans(size: 20))
                 .foregroundStyle(passed ? Color.appSuccess : Color.appError)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
-                    .font(.system(size: 15, weight: .semibold))
+                    .font(.appSans(size: 15, weight: .semibold))
                     .foregroundStyle(Color.appTextDark)
                 Text(Self.dateFormatter.string(from: date))
-                    .font(.system(size: 12))
+                    .font(.appSans(size: 12))
                     .foregroundStyle(Color.appTextLight)
             }
 
             Spacer(minLength: 4)
 
             Text(score)
-                .font(.system(size: 16, weight: .bold).monospacedDigit())
+                .font(.appSerif(size: 16, weight: .bold))
                 .foregroundStyle(Color.appTextDark)
 
             StatusBadge(

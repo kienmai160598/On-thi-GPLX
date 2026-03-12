@@ -5,6 +5,7 @@ struct HazardTestView: View {
     @Environment(ProgressStore.self) private var progressStore
     @Environment(HazardVideoCache.self) private var videoCache
     @Environment(ThemeStore.self) private var themeStore
+    @Environment(LayoutMetrics.self) private var metrics
     @Environment(\.dismiss) private var dismiss
     @Environment(\.horizontalSizeClass) private var sizeClass
 
@@ -106,7 +107,9 @@ struct HazardTestView: View {
             let situation = situations[currentIndex]
             let hasTapped = tapTimes[currentIndex] != nil
 
-            if isLandscape {
+            // iPad: always use split layout (enough screen space)
+            // iPhone: split in landscape, stacked in portrait
+            if isLandscape || isRegular {
                 landscapeLayout(situation: situation, hasTapped: hasTapped, geo: geo)
             } else {
                 portraitLayout(situation: situation, hasTapped: hasTapped)
@@ -123,12 +126,13 @@ struct HazardTestView: View {
 
     @ViewBuilder
     private func landscapeLayout(situation: HazardSituation, hasTapped: Bool, geo: GeometryProxy) -> some View {
+        let isLandscape = geo.size.width > geo.size.height
         let panelWidth: CGFloat = isRegular
-            ? min(geo.size.width * 0.30, 360)
+            ? min(geo.size.width * (isLandscape ? 0.28 : 0.35), 400)
             : min(geo.size.width * 0.28, 240)
-        let btnHeight: CGFloat = isRegular ? 48 : 40
-        let panelPadding: CGFloat = isRegular ? 16 : 10
-        let panelSpacing: CGFloat = isRegular ? 12 : 8
+        let btnHeight: CGFloat = isRegular ? 52 : 40
+        let panelPadding: CGFloat = isRegular ? 20 : 10
+        let panelSpacing: CGFloat = isRegular ? 14 : 8
         // Video must fit within available height
         let availableHeight = geo.size.height
         let videoWidth = geo.size.width - panelWidth
@@ -153,14 +157,14 @@ struct HazardTestView: View {
                 HStack(spacing: 8) {
                     Button { showExitDialog = true } label: {
                         Image(systemName: "xmark")
-                            .font(.system(size: isRegular ? 16 : 14, weight: .bold))
+                            .font(.appSans(size: isRegular ? 16 : 14, weight: .bold))
                             .foregroundStyle(.white)
                             .frame(width: isRegular ? 38 : 32, height: isRegular ? 38 : 32)
                             .background(Color.black.opacity(0.5), in: Circle())
                     }
 
                     Text("TH \(situation.id)  ·  \(currentIndex + 1)/\(situations.count)")
-                        .font(.system(size: isRegular ? 14 : 12, weight: .semibold).monospacedDigit())
+                        .font(.appSans(size: isRegular ? 14 : 12, weight: .semibold))
                         .foregroundStyle(.white)
                         .padding(.horizontal, isRegular ? 14 : 10)
                         .padding(.vertical, isRegular ? 7 : 5)
@@ -189,7 +193,7 @@ struct HazardTestView: View {
                                         .fill(hasTapped ? Color.appSuccess : Color.appError)
                                         .frame(width: isRegular ? 8 : 6, height: isRegular ? 8 : 6)
                                     Text(timeText)
-                                        .font(.system(size: isRegular ? 14 : 11, weight: .semibold).monospacedDigit())
+                                        .font(.appSans(size: isRegular ? 14 : 11, weight: .semibold))
                                         .foregroundStyle(Color.appTextDark)
                                 }
                             }
@@ -265,13 +269,13 @@ struct HazardTestView: View {
             // Score header
             HStack(spacing: 0) {
                 Text("\(score)")
-                    .font(.system(size: isRegular ? 36 : 28, weight: .heavy).monospacedDigit())
+                    .font(.appSans(size: isRegular ? 36 : 28, weight: .heavy))
                     .foregroundStyle(scoreColor)
                     .frame(width: isRegular ? 56 : 44)
 
                 VStack(alignment: .leading, spacing: isRegular ? 5 : 3) {
                     Text(scoreLabelFor(score))
-                        .font(.system(size: isRegular ? 15 : 12, weight: .bold))
+                        .font(.appSans(size: isRegular ? 15 : 12, weight: .bold))
                         .foregroundStyle(scoreColor)
 
                     HStack(spacing: isRegular ? 4 : 3) {
@@ -304,11 +308,11 @@ struct HazardTestView: View {
             // Tip
             HStack(alignment: .top, spacing: 6) {
                 Image(systemName: "lightbulb.fill")
-                    .font(.system(size: isRegular ? 13 : 10))
+                    .font(.appSans(size: isRegular ? 13 : 10))
                     .foregroundStyle(Color.appWarning)
                     .padding(.top, 1)
                 Text(situation.tip)
-                    .font(.system(size: isRegular ? 13 : 10))
+                    .font(.appSans(size: isRegular ? 13 : 10))
                     .foregroundStyle(Color.appTextMedium)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -355,7 +359,7 @@ struct HazardTestView: View {
     @ViewBuilder
     private func portraitLayout(situation: HazardSituation, hasTapped: Bool) -> some View {
         let hPad: CGFloat = isRegular ? 40 : 16
-        let btnHeight: CGFloat = isRegular ? 56 : 48
+        let btnHeight = metrics.buttonHeight
 
         VStack(spacing: 0) {
             // MARK: Video Player
@@ -395,7 +399,7 @@ struct HazardTestView: View {
                             .fill(hasTapped ? Color.appSuccess : Color.appError)
                             .frame(width: 6, height: 6)
                         Text(timeText)
-                            .font(.system(size: isRegular ? 14 : 12, weight: .semibold).monospacedDigit())
+                            .font(.appSans(size: isRegular ? 14 : 12, weight: .semibold))
                             .foregroundStyle(Color.appTextMedium)
                     }
 
@@ -438,7 +442,7 @@ struct HazardTestView: View {
                             ProgressView()
                                 .tint(themeStore.primaryColor)
                             Text("Đang tính điểm...")
-                                .font(.system(size: isRegular ? 15 : 13, weight: .medium))
+                                .font(.appSans(size: isRegular ? 15 : 13, weight: .medium))
                                 .foregroundStyle(Color.appTextLight)
                         }
                         .frame(maxWidth: .infinity)
@@ -520,13 +524,13 @@ struct HazardTestView: View {
     private var videoErrorOverlay: some View {
         VStack(spacing: 8) {
             Image(systemName: "exclamationmark.triangle.fill")
-                .font(.system(size: 28))
+                .font(.appSans(size: 28))
                 .foregroundStyle(Color.appError)
             Text("Không thể tải video")
-                .font(.system(size: 14, weight: .semibold))
+                .font(.appSans(size: 14, weight: .semibold))
                 .foregroundStyle(Color.appTextDark)
             Text("Kiểm tra kết nối mạng")
-                .font(.system(size: 12))
+                .font(.appSans(size: 12))
                 .foregroundStyle(Color.appTextMedium)
 
             Button {
@@ -535,9 +539,9 @@ struct HazardTestView: View {
             } label: {
                 HStack(spacing: 6) {
                     Image(systemName: "arrow.clockwise")
-                        .font(.system(size: 13, weight: .semibold))
+                        .font(.appSans(size: 13, weight: .medium))
                     Text("Thử lại")
-                        .font(.system(size: 14, weight: .semibold))
+                        .font(.appSans(size: 14, weight: .semibold))
                 }
                 .foregroundStyle(themeStore.primaryColor)
                 .padding(.horizontal, 16)
@@ -758,7 +762,7 @@ private struct HazardPlayingBar: View {
                 }
                 .foregroundStyle(Color.appError)
             }
-            .font(.system(size: 10, weight: .semibold))
+            .font(.appSans(size: 10))
             .transition(.opacity)
         }
     }
@@ -775,16 +779,16 @@ private struct HazardProgressCapsule: View {
     var body: some View {
         let content = HStack(spacing: 6) {
             Image(systemName: "play.rectangle.fill")
-                .font(.system(size: 13))
+                .font(.appSans(size: 13))
                 .foregroundStyle(themeStore.primaryColor)
             Text("TH \(situationId)")
-                .font(.system(size: 15, weight: .bold))
+                .font(.appSans(size: 15, weight: .bold))
                 .foregroundStyle(Color.appTextDark)
             Text("·")
-                .font(.system(size: 13, weight: .regular))
+                .font(.appSans(size: 13, weight: .regular))
                 .foregroundStyle(Color.appTextLight)
             Text("\(current)/\(total)")
-                .font(.system(size: 15, weight: .bold).monospacedDigit())
+                .font(.appSans(size: 15, weight: .bold))
                 .foregroundStyle(Color.appTextMedium)
                 .contentTransition(.numericText())
         }
@@ -826,11 +830,11 @@ private struct HazardDangerButton: View {
         Button(action: action) {
             let content = HStack(spacing: 10) {
                 Image(systemName: hasTapped ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
-                    .font(.system(size: compact ? 18 : 22, weight: .semibold))
+                    .font(.appSans(size: compact ? 18 : 22, weight: .semibold))
                     .contentTransition(.symbolEffect(.replace))
 
                 Text(buttonText)
-                    .font(.system(size: compact ? 15 : 17, weight: .bold))
+                    .font(.appSans(size: compact ? 15 : 17, weight: .bold))
                     .contentTransition(.numericText())
             }
             .foregroundStyle(hasTapped ? Color.appSuccess : .white)
@@ -901,11 +905,11 @@ private struct HazardScoreCard: View {
 
             HStack(alignment: .top, spacing: 8) {
                 Image(systemName: "lightbulb.fill")
-                    .font(.system(size: 13))
+                    .font(.appSans(size: 13))
                     .foregroundStyle(Color.appWarning)
                     .padding(.top, 1)
                 Text(situation.tip)
-                    .font(.system(size: 13))
+                    .font(.appSans(size: 13))
                     .foregroundStyle(Color.appTextMedium)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -933,7 +937,7 @@ private struct HazardScoreReveal: View {
     var body: some View {
         VStack(spacing: 8) {
             Text("\(displayedScore)")
-                .font(.system(size: 44, weight: .heavy).monospacedDigit())
+                .font(.appSans(size: 44, weight: .bold))
                 .foregroundStyle(displayScoreColor)
                 .contentTransition(.numericText())
 
@@ -951,7 +955,7 @@ private struct HazardScoreReveal: View {
             }
 
             Text(displayScoreLabel)
-                .font(.system(size: 13, weight: .semibold))
+                .font(.appSans(size: 13, weight: .medium))
                 .foregroundStyle(displayScoreColor)
         }
         .frame(maxWidth: .infinity)
@@ -1070,17 +1074,17 @@ private struct HazardTimeline: View {
                 Label("Muộn", systemImage: "clock.badge.xmark")
                     .foregroundStyle(Color.appError)
             }
-            .font(.system(size: 11, weight: .semibold))
+            .font(.appSans(size: 11))
 
             // Tap time info
             if let tapTime {
                 let score = situation.score(tapTime: tapTime)
                 Text("Nhấn tại \(String(format: "%.1f", tapTime))s — \(score)/5 điểm")
-                    .font(.system(size: 12, weight: .medium).monospacedDigit())
+                    .font(.appSans(size: 12, weight: .medium))
                     .foregroundStyle(Color.appTextMedium)
             } else {
                 Text("Không nhấn — 0/5 điểm")
-                    .font(.system(size: 12, weight: .medium))
+                    .font(.appSans(size: 12, weight: .medium))
                     .foregroundStyle(Color.appError)
             }
         }

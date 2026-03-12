@@ -3,6 +3,7 @@ import SwiftUI
 struct PracticeTab: View {
     @Environment(QuestionStore.self) private var questionStore
     @Environment(ProgressStore.self) private var progressStore
+    @Environment(LayoutMetrics.self) private var metrics
     @Environment(\.openExam) private var openExam
 
     var body: some View {
@@ -11,7 +12,7 @@ struct PracticeTab: View {
                 questionSection
                 hazardSection
             }
-            .padding(.horizontal, 20)
+            .padding(.horizontal, metrics.contentPadding)
             .padding(.top, 8)
             .padding(.bottom, 32)
         }
@@ -55,20 +56,20 @@ struct PracticeTab: View {
 
                             VStack(alignment: .leading, spacing: 3) {
                                 Text(item.topic.name)
-                                    .font(.system(size: 15, weight: .semibold))
+                                    .font(.appSans(size: 15, weight: .semibold))
                                     .foregroundStyle(Color.appTextDark)
                                     .lineLimit(1)
                                 Text(item.correct > 0
                                     ? "\(item.correct)/\(item.total) đúng"
                                     : "\(item.total) câu")
-                                    .font(.system(size: 13))
+                                    .font(.appSans(size: 13))
                                     .foregroundStyle(Color.appTextMedium)
                             }
 
                             Spacer(minLength: 4)
 
                             Image(systemName: "chevron.right")
-                                .font(.system(size: 12, weight: .semibold))
+                                .font(.appSans(size: 12, weight: .medium))
                                 .foregroundStyle(Color.appTextLight)
                         }
                         .padding(.horizontal, 12)
@@ -109,19 +110,19 @@ struct PracticeTab: View {
 
                             VStack(alignment: .leading, spacing: 2) {
                                 Text("Chương \(chapter.id)")
-                                    .font(.system(size: 15, weight: .bold))
+                                    .font(.appSans(size: 15, weight: .bold))
                                     .foregroundStyle(Color.appTextDark)
                                 Text(hasPractice
                                     ? "\(Int(chapterScore * 100))% · \(chapter.range.count) tình huống"
                                     : "\(chapter.name) · \(chapter.range.count) tình huống")
-                                    .font(.system(size: 13))
+                                    .font(.appSans(size: 13))
                                     .foregroundStyle(Color.appTextMedium)
                             }
 
                             Spacer(minLength: 4)
 
                             Image(systemName: "chevron.right")
-                                .font(.system(size: 12, weight: .semibold))
+                                .font(.appSans(size: 12, weight: .medium))
                                 .foregroundStyle(Color.appTextLight)
                         }
                         .padding(.horizontal, 12)

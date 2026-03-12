@@ -6,6 +6,7 @@ struct QuestionView: View {
     @Environment(ThemeStore.self) private var themeStore
     @Environment(\.dismiss) private var dismiss
     @Environment(\.openExam) private var openExam
+    @Environment(LayoutMetrics.self) private var metrics
 
     let topicKey: String
     let startIndex: Int
@@ -88,7 +89,7 @@ struct QuestionView: View {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button { dismiss() } label: {
                         Image(systemName: "chevron.left")
-                            .font(.system(size: 16, weight: .semibold))
+                            .font(.appSans(size: 16, weight: .semibold))
                             .foregroundStyle(Color.appTextDark)
                     }
                 }
@@ -106,31 +107,65 @@ struct QuestionView: View {
         let isSpecial = topicKey == AppConstants.TopicKey.diemLiet || topicKey == AppConstants.TopicKey.bookmarks || topicKey == AppConstants.TopicKey.wrongAnswers || topicKey.hasPrefix(AppConstants.TopicKey.wrongAnswers + ":")
 
         VStack(spacing: 0) {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 0) {
-                    QuestionCard(label: "Câu \(question.no):", question: question)
-                        .padding(.bottom, 20)
+            if metrics.isWide {
+                // iPad: side-by-side
+                HStack(alignment: .top, spacing: metrics.gridSpacing) {
+                    // Left: question + explanation
+                    ScrollView {
+                        VStack(alignment: .leading, spacing: 0) {
+                            QuestionCard(label: "Câu \(question.no):", question: question)
 
-                    AnswerTileList(
-                        answers: shuffledAnswers,
-                        selectedAnswerId: selectedAnswerId,
-                        isConfirmed: isConfirmed,
-                        showCorrectness: true,
-                        onSelect: { selectAnswer($0) }
-                    )
+                            if isConfirmed && !question.tip.isEmpty {
+                                ExplanationBox(content: question.tip)
+                                    .padding(.top, 12)
+                                    .transition(.opacity.combined(with: .move(edge: .top)))
+                            }
+                        }
+                        .padding(metrics.contentPadding)
+                    }
 
-                    if isConfirmed && !question.tip.isEmpty {
-                        ExplanationBox(content: question.tip)
-                            .padding(.top, 4)
-                            .transition(.opacity.combined(with: .move(edge: .top)))
+                    // Right: answers
+                    ScrollView {
+                        AnswerTileList(
+                            answers: shuffledAnswers,
+                            selectedAnswerId: selectedAnswerId,
+                            isConfirmed: isConfirmed,
+                            showCorrectness: true,
+                            onSelect: { selectAnswer($0) }
+                        )
+                        .padding(metrics.contentPadding)
                     }
                 }
-                .padding(.horizontal, 20)
-                .padding(.top, 16)
+                .id(currentIndex)
+            } else {
+                // iPhone: existing vertical layout
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 0) {
+                        QuestionCard(label: "Câu \(question.no):", question: question)
+                            .padding(.bottom, 20)
+
+                        AnswerTileList(
+                            answers: shuffledAnswers,
+                            selectedAnswerId: selectedAnswerId,
+                            isConfirmed: isConfirmed,
+                            showCorrectness: true,
+                            onSelect: { selectAnswer($0) }
+                        )
+
+                        if isConfirmed && !question.tip.isEmpty {
+                            ExplanationBox(content: question.tip)
+                                .padding(.top, 4)
+                                .transition(.opacity.combined(with: .move(edge: .top)))
+                        }
+                    }
+                    .padding(.horizontal, 20)
+                    .iPadReadable()
+                    .padding(.top, 16)
+                }
+                .id(currentIndex)
+                .transition(.opacity)
+                .animation(.easeInOut(duration: 0.3), value: currentIndex)
             }
-            .id(currentIndex)
-            .transition(.opacity)
-            .animation(.easeInOut(duration: 0.3), value: currentIndex)
 
             let tipsTopicKey = Topic.keyForTopicId(question.topic)
             let hasTips = !questionStore.memoryTips(forTopicKey: tipsTopicKey).isEmpty
@@ -180,7 +215,7 @@ struct QuestionView: View {
             ToolbarItem(placement: .navigationBarLeading) {
                 Button { dismiss() } label: {
                     Image(systemName: "chevron.left")
-                        .font(.system(size: 16, weight: .semibold))
+                        .font(.appSans(size: 16, weight: .semibold))
                         .foregroundStyle(Color.appTextDark)
                 }
             }
@@ -191,7 +226,7 @@ struct QuestionView: View {
                     progressStore.toggleBookmark(questionNo: question.no)
                 } label: {
                     Image(systemName: isBookmarked ? "bookmark.fill" : "bookmark")
-                        .font(.system(size: 16))
+                        .font(.appSans(size: 16))
                         .foregroundStyle(isBookmarked ? themeStore.primaryColor : Color.appTextDark)
                 }
             }
@@ -241,7 +276,7 @@ struct QuestionView: View {
                                 openExam(.questionView(topicKey: scopedKey, startIndex: 0))
                             } label: {
                                 Text("Luyện \(wrongCount) câu sai")
-                                    .font(.system(size: 16, weight: .semibold))
+                                    .font(.appSans(size: 16, weight: .semibold))
                                     .frame(maxWidth: .infinity)
                                     .padding(.vertical, 14)
                                     .background(Color.appWarning.opacity(0.15))
@@ -267,6 +302,7 @@ struct QuestionView: View {
                     .padding(.top, 8)
                 }
                 .padding(.horizontal, 20)
+                .iPadReadable()
                 .padding(.bottom, 32)
             }
             .screenHeader("Kết quả ôn tập")
@@ -277,7 +313,7 @@ struct QuestionView: View {
                         dismiss()
                     } label: {
                         Image(systemName: "xmark.circle.fill")
-                            .font(.system(size: 20))
+                            .font(.appSans(size: 20))
                             .symbolRenderingMode(.hierarchical)
                             .foregroundStyle(Color.appTextMedium)
                     }

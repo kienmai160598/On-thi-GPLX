@@ -11,8 +11,10 @@ struct ExamTab: View {
     @Environment(QuestionStore.self) private var questionStore
     @Environment(ProgressStore.self) private var progressStore
     @Environment(ThemeStore.self) private var themeStore
+    @Environment(LayoutMetrics.self) private var metrics
     @Environment(\.openExam) private var openExam
     @State private var filter: ExamFilter = .all
+    @State private var showFixedExams = false
     @State private var showAllExamSets = false
 
     var body: some View {
@@ -39,7 +41,7 @@ struct ExamTab: View {
                     hazardExamContent
                 }
             }
-            .padding(.horizontal, 20)
+            .padding(.horizontal, metrics.contentPadding)
             .padding(.top, 8)
             .padding(.bottom, 32)
         }
@@ -51,22 +53,25 @@ struct ExamTab: View {
 
     @ViewBuilder
     private var questionExamContent: some View {
-        ExamTypeCard(
-            icon: "doc.text.fill",
-            title: "Thi câu hỏi",
-            rules: "\(LicenseType.current.questionsPerExam) câu · \(LicenseType.current.totalTimeSeconds / 60) phút · ≥ \(LicenseType.current.passThreshold) đạt",
-            tip: "Sai điểm liệt = Trượt",
+        VStack(spacing: 0) {
+            ExamTypeCard(
+                icon: "doc.text.fill",
+                title: "Thi câu hỏi",
+                rules: "\(LicenseType.current.questionsPerExam) câu · \(LicenseType.current.totalTimeSeconds / 60) phút · ≥ \(LicenseType.current.passThreshold) đạt",
+                tip: "Sai điểm liệt = Trượt",
 
-            stats: progressStore.examHistory.isEmpty ? nil : (
-                count: progressStore.examCount,
-                avg: Int(progressStore.averageExamScore * 100),
-                best: Int(progressStore.bestExamScore * 100)
-            )
-        ) {
-            openExam(.mockExam())
+                stats: progressStore.examHistory.isEmpty ? nil : (
+                    count: progressStore.examCount,
+                    avg: Int(progressStore.averageExamScore * 100),
+                    best: Int(progressStore.bestExamScore * 100)
+                )
+            ) {
+                openExam(.mockExam())
+            }
+
+            fixedExamSets
         }
-
-        fixedExamSets
+        .glassCard()
 
         if !progressStore.examHistory.isEmpty {
             VStack(alignment: .leading, spacing: 12) {
@@ -100,6 +105,7 @@ struct ExamTab: View {
         ) {
             openExam(.simulationExam(mode: .random))
         }
+        .glassCard()
 
         if !progressStore.simulationHistory.isEmpty {
             VStack(alignment: .leading, spacing: 12) {
@@ -133,6 +139,7 @@ struct ExamTab: View {
         ) {
             openExam(.hazardTest(mode: .exam))
         }
+        .glassCard()
 
         if !progressStore.hazardHistory.isEmpty {
             VStack(alignment: .leading, spacing: 12) {
@@ -154,23 +161,24 @@ struct ExamTab: View {
     private var fixedExamSets: some View {
         let completedSets = progressStore.completedExamSets
         let completedCount = completedSets.count
-        let visibleSets = showAllExamSets ? LicenseType.current.totalExamSets : 6
 
         VStack(spacing: 0) {
+            Divider().padding(.horizontal, 12)
+
+            // Header toggle
             Button {
                 withAnimation(.easeOut(duration: 0.25)) {
-                    showAllExamSets.toggle()
+                    showFixedExams.toggle()
                 }
             } label: {
                 HStack(spacing: 8) {
-                    Text("ĐỀ THI CỐ ĐỊNH")
-                        .font(.system(size: 13, weight: .bold))
-                        .foregroundStyle(Color.appTextMedium)
-                        .tracking(0.5)
+                    Text("Đề thi cố định")
+                        .font(.appSans(size: 14, weight: .semibold))
+                        .foregroundStyle(Color.appTextDark)
 
                     if completedCount > 0 {
                         Text("\(completedCount)/\(LicenseType.current.totalExamSets)")
-                            .font(.system(size: 12, weight: .semibold).monospacedDigit())
+                            .font(.appSans(size: 12, weight: .medium))
                             .foregroundStyle(themeStore.primaryColor)
                             .padding(.horizontal, 8)
                             .padding(.vertical, 2)
@@ -180,75 +188,79 @@ struct ExamTab: View {
 
                     Spacer()
 
-                    Image(systemName: showAllExamSets ? "chevron.up" : "chevron.down")
-                        .font(.system(size: 12, weight: .semibold))
+                    Image(systemName: showFixedExams ? "chevron.up" : "chevron.down")
+                        .font(.appSans(size: 12, weight: .medium))
                         .foregroundStyle(Color.appTextLight)
                 }
-                .padding(.horizontal, 16)
+                .padding(.horizontal, 12)
                 .padding(.vertical, 12)
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
 
-            Divider().padding(.horizontal, 16)
+            // Expandable exam set list
+            if showFixedExams {
+                let visibleSets = showAllExamSets ? LicenseType.current.totalExamSets : 6
 
-            ForEach(1...visibleSets, id: \.self) { setId in
-                let isCompleted = completedSets.contains(setId)
-                let latestResult = isCompleted ? progressStore.latestResult(forExamSet: setId) : nil
+                Divider().padding(.horizontal, 12)
 
-                Button { openExam(.mockExam(examSetId: setId)) } label: {
-                    HStack(spacing: 12) {
-                        Text("Đề \(setId)")
-                            .font(.system(size: 16, weight: .semibold).monospacedDigit())
-                            .foregroundStyle(Color.appTextDark)
+                ForEach(1...visibleSets, id: \.self) { setId in
+                    let isCompleted = completedSets.contains(setId)
+                    let latestResult = isCompleted ? progressStore.latestResult(forExamSet: setId) : nil
 
-                        Spacer()
+                    Button { openExam(.mockExam(examSetId: setId)) } label: {
+                        HStack(spacing: 12) {
+                            Text("Đề \(setId)")
+                                .font(.appSans(size: 15, weight: .medium))
+                                .foregroundStyle(Color.appTextDark)
 
-                        if let result = latestResult {
-                            Text("\(result.score)/\(result.totalQuestions)")
-                                .font(.system(size: 14, weight: .medium).monospacedDigit())
-                                .foregroundStyle(themeStore.primaryColor)
+                            Spacer()
+
+                            if let result = latestResult {
+                                Text("\(result.score)/\(result.totalQuestions)")
+                                    .font(.appSans(size: 14, weight: .medium))
+                                    .foregroundStyle(themeStore.primaryColor)
+                            }
+
+                            if isCompleted {
+                                Image(systemName: "checkmark.circle.fill")
+                                    .font(.appSans(size: 16))
+                                    .foregroundStyle(themeStore.primaryColor)
+                            } else {
+                                Image(systemName: "chevron.right")
+                                    .font(.appSans(size: 12, weight: .medium))
+                                    .foregroundStyle(Color.appTextLight)
+                            }
                         }
-
-                        if isCompleted {
-                            Image(systemName: "checkmark.circle.fill")
-                                .font(.system(size: 16))
-                                .foregroundStyle(themeStore.primaryColor)
-                        } else {
-                            Image(systemName: "chevron.right")
-                                .font(.system(size: 12, weight: .semibold))
-                                .foregroundStyle(Color.appTextLight)
-                        }
-                    }
-                    .padding(.horizontal, 16)
-                    .frame(height: 50)
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-
-                if setId < visibleSets {
-                    Divider().padding(.horizontal, 16)
-                }
-            }
-
-            if !showAllExamSets {
-                Divider().padding(.horizontal, 16)
-                Button {
-                    withAnimation(.easeOut(duration: 0.25)) {
-                        showAllExamSets = true
-                    }
-                } label: {
-                    Text("Xem tất cả \(LicenseType.current.totalExamSets) đề")
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundStyle(themeStore.primaryColor)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 44)
+                        .padding(.horizontal, 12)
+                        .frame(height: 46)
                         .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+
+                    if setId < visibleSets {
+                        Divider().padding(.horizontal, 12)
+                    }
                 }
-                .buttonStyle(.plain)
+
+                if !showAllExamSets {
+                    Divider().padding(.horizontal, 12)
+                    Button {
+                        withAnimation(.easeOut(duration: 0.25)) {
+                            showAllExamSets = true
+                        }
+                    } label: {
+                        Text("Xem tất cả \(LicenseType.current.totalExamSets) đề")
+                            .font(.appSans(size: 14, weight: .semibold))
+                            .foregroundStyle(themeStore.primaryColor)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 40)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                }
             }
         }
-        .glassCard()
     }
 }
 
@@ -268,7 +280,7 @@ private struct ExamTypeCard: View {
             // Header
             HStack(spacing: 12) {
                 Image(systemName: icon)
-                    .font(.system(size: 22))
+                    .font(.appSans(size: 22))
                     .foregroundStyle(themeStore.primaryColor)
                     .frame(width: 44, height: 44)
                     .background(themeStore.primaryColor.opacity(0.12))
@@ -276,11 +288,11 @@ private struct ExamTypeCard: View {
 
                 VStack(alignment: .leading, spacing: 3) {
                     Text(title)
-                        .font(.system(size: 17, weight: .bold))
+                        .font(.appSerif(size: 17, weight: .bold))
                         .foregroundStyle(Color.appTextDark)
 
                     Text(rules)
-                        .font(.system(size: 13, weight: .medium))
+                        .font(.appSans(size: 13, weight: .medium))
                         .foregroundStyle(Color.appTextMedium)
                 }
 
@@ -290,10 +302,10 @@ private struct ExamTypeCard: View {
             // Tip
             HStack(spacing: 6) {
                 Image(systemName: "lightbulb.fill")
-                    .font(.system(size: 11))
+                    .font(.appSans(size: 11))
                     .foregroundStyle(themeStore.primaryColor)
                 Text(tip)
-                    .font(.system(size: 13))
+                    .font(.appSans(size: 13))
                     .foregroundStyle(Color.appTextLight)
             }
 
@@ -314,6 +326,5 @@ private struct ExamTypeCard: View {
             }
         }
         .padding(12)
-        .glassCard()
     }
 }

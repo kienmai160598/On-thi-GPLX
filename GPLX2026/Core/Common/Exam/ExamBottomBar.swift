@@ -5,6 +5,8 @@ import SwiftUI
 /// Unified bottom bar for all exam/learn/flashcard screens.
 /// Supports optional leading widget, main action button, and question grid.
 struct ExamBottomBar: View {
+    @Environment(LayoutMetrics.self) private var metrics
+
     let currentIndex: Int
     let totalCount: Int
     let answeredIndices: Set<Int>
@@ -30,7 +32,7 @@ struct ExamBottomBar: View {
                     Haptics.selection()
                     onPrev()
                 } label: {
-                    AppButton(icon: prevIcon, label: prevLabel, style: .secondary, height: 48)
+                    AppButton(icon: prevIcon, label: prevLabel, style: .secondary, height: metrics.buttonHeight)
                 }
                 .disabled(isPrevDisabled ?? (currentIndex == 0))
             }
@@ -39,7 +41,7 @@ struct ExamBottomBar: View {
                 Haptics.selection()
                 onNext()
             } label: {
-                AppButton(label: nextLabel, height: 48)
+                AppButton(label: nextLabel, height: metrics.buttonHeight)
             }
             .disabled(isNextDisabled)
 
@@ -51,15 +53,7 @@ struct ExamBottomBar: View {
                 onSelectIndex(index)
             }
         }
-        .padding(.horizontal, 20)
-        .padding(.bottom, bottomSafeArea)
-    }
-
-    private var bottomSafeArea: CGFloat {
-        UIApplication.shared.connectedScenes
-            .compactMap { $0 as? UIWindowScene }
-            .flatMap(\.windows)
-            .first(where: \.isKeyWindow)?
-            .safeAreaInsets.bottom ?? 0
+        .padding(.horizontal, metrics.contentPadding)
+        .padding(.vertical, 8)
     }
 }

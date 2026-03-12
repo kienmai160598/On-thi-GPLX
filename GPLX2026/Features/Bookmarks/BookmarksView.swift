@@ -3,6 +3,7 @@ import SwiftUI
 struct BookmarksView: View {
     @Environment(QuestionStore.self) private var questionStore
     @Environment(ProgressStore.self) private var progressStore
+    @Environment(LayoutMetrics.self) private var metrics
     @Environment(\.openExam) private var openExam
 
     var body: some View {
@@ -14,22 +15,22 @@ struct BookmarksView: View {
             if bookmarked.isEmpty {
                 EmptyState(icon: "bookmark.slash", message: "Chưa có câu hỏi nào được đánh dấu")
             } else {
-                VStack(alignment: .leading, spacing: 10) {
+                AdaptiveGrid(spacing: 10) {
                     ForEach(bookmarked, id: \.no) { question in
                         BookmarkQuestionCard(question: question, topicKey: AppConstants.TopicKey.bookmarks)
                     }
                 }
-                .padding(.horizontal, 20)
+                .padding(.horizontal, metrics.contentPadding)
                 .padding(.bottom, 24)
             }
         }
         .safeAreaInset(edge: .bottom) {
             if !bookmarked.isEmpty {
                 Button { openExam(.questionView(topicKey: AppConstants.TopicKey.bookmarks, startIndex: 0)) } label: {
-                    AppButton(label: "Luyện tập \(bookmarked.count) câu")
+                    AppButton(label: "Luyện tập \(bookmarked.count) câu", height: metrics.buttonHeight)
                 }
                 .buttonStyle(.plain)
-                .padding(.horizontal, 20)
+                .padding(.horizontal, metrics.contentPadding)
                 .padding(.bottom, 4)
             }
         }
@@ -49,7 +50,7 @@ private struct BookmarkQuestionCard: View {
             NumberBadge(number: question.no, color: .appPrimary)
 
             Text(question.text)
-                .font(.system(size: 14))
+                .font(.appSans(size: 14))
                 .foregroundStyle(Color.appTextDark)
                 .lineLimit(2)
                 .lineSpacing(2)
@@ -62,7 +63,7 @@ private struct BookmarkQuestionCard: View {
                     progressStore.toggleBookmark(questionNo: question.no)
                 } label: {
                     Image(systemName: "bookmark.slash.fill")
-                        .font(.system(size: 14))
+                        .font(.appSans(size: 14))
                         .foregroundStyle(Color.appTextLight)
                 }
             }

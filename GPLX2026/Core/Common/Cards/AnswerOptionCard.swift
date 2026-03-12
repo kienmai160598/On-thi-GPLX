@@ -1,6 +1,8 @@
 import SwiftUI
 
 struct AnswerOptionCard: View {
+    @Environment(LayoutMetrics.self) private var metrics
+
     let letter: String
     let text: String
     var isSelected: Bool = false
@@ -11,14 +13,14 @@ struct AnswerOptionCard: View {
         HStack(spacing: 12) {
             // Letter indicator
             Text(letter)
-                .font(.system(size: 16, weight: .heavy))
+                .font(.appSans(size: metrics.isWide ? 18 : 16, weight: .bold))
                 .foregroundStyle(letterColor)
-                .frame(width: 36, height: 36)
+                .frame(width: metrics.isWide ? 44 : 36, height: metrics.isWide ? 44 : 36)
                 .background(letterBgColor)
                 .clipShape(RoundedRectangle(cornerRadius: 8))
 
             Text(text)
-                .font(.system(size: 15 * AppFontScale.current, weight: .medium))
+                .font(.appSans(size: 15 * AppFontScale.current * metrics.fontScale, weight: .medium))
                 .foregroundStyle(Color.appTextDark)
                 .multilineTextAlignment(.leading)
                 .lineSpacing(3)
@@ -27,15 +29,15 @@ struct AnswerOptionCard: View {
 
             statusIcon
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 12)
+        .padding(.horizontal, metrics.isWide ? 16 : 12)
+        .padding(.vertical, metrics.isWide ? 16 : 12)
         .background(bgColor)
         .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
         .overlay(alignment: .leading) {
             if let borderColor = leftBorderColor {
                 RoundedRectangle(cornerRadius: 2)
                     .fill(borderColor)
-                    .frame(width: 4)
+                    .frame(width: metrics.isWide ? 5 : 4)
                     .padding(.vertical, 8)
             }
         }
@@ -87,11 +89,11 @@ struct AnswerOptionCard: View {
     private var statusIcon: some View {
         if isConfirmed && isCorrect {
             Image(systemName: "checkmark.circle.fill")
-                .font(.system(size: 18))
+                .font(.appSans(size: metrics.isWide ? 22 : 18))
                 .foregroundStyle(Color.appSuccess)
         } else if isConfirmed && isSelected && !isCorrect {
             Image(systemName: "xmark.circle.fill")
-                .font(.system(size: 18))
+                .font(.appSans(size: metrics.isWide ? 22 : 18))
                 .foregroundStyle(Color.appError)
         }
     }

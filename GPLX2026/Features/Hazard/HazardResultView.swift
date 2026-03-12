@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct HazardResultView: View {
+    @Environment(LayoutMetrics.self) private var metrics
     @Environment(ThemeStore.self) private var themeStore
     @Environment(\.popToRoot) private var popToRoot
     @Environment(\.openExam) private var openExam
@@ -18,7 +19,7 @@ struct HazardResultView: View {
 
                 // MARK: - Hero with score ring
                 HazardResultHero(result: result)
-                    .padding(.horizontal, 20)
+                    .padding(.horizontal, metrics.contentPadding)
                     .padding(.bottom, 20)
 
                 // MARK: - Score details
@@ -48,20 +49,20 @@ struct HazardResultView: View {
                 }
                 .padding(.vertical, 4)
                 .glassCard()
-                .padding(.horizontal, 20)
+                .padding(.horizontal, metrics.contentPadding)
                 .padding(.bottom, 20)
 
                 // MARK: - Score distribution
                 ScoreDistributionChart(details: result.details)
-                    .padding(.horizontal, 20)
+                    .padding(.horizontal, metrics.contentPadding)
                     .padding(.bottom, 20)
 
                 // MARK: - Review
                 SectionTitle(title: "Chi tiết tình huống")
-                    .padding(.horizontal, 20)
+                    .padding(.horizontal, metrics.contentPadding)
                     .padding(.bottom, 8)
 
-                LazyVStack(spacing: 8) {
+                AdaptiveGrid {
                     ForEach(Array(situations.enumerated()), id: \.element.id) { index, situation in
                         let detail = index < result.details.count ? result.details[index] : nil
                         let score = detail?.score ?? 0
@@ -75,7 +76,7 @@ struct HazardResultView: View {
                         )
                     }
                 }
-                .padding(.horizontal, 20)
+                .padding(.horizontal, metrics.contentPadding)
                 .padding(.bottom, 20)
 
                 Spacer().frame(height: 32)
@@ -89,20 +90,20 @@ struct HazardResultView: View {
                             Button {
                                 openExam(.hazardTest(mode: retryMode))
                             } label: {
-                                AppButton(icon: "arrow.counterclockwise", label: "Làm lại", style: .secondary, height: 48)
+                                AppButton(icon: "arrow.counterclockwise", label: "Làm lại", style: .secondary, height: metrics.buttonHeight)
                             }
 
                             Button { popToRoot() } label: {
-                                AppButton(icon: "checkmark", label: "Hoàn thành", height: 48)
+                                AppButton(icon: "checkmark", label: "Hoàn thành", height: metrics.buttonHeight)
                             }
                         }
                     } else {
                         Button { popToRoot() } label: {
-                            AppButton(icon: "checkmark", label: "Hoàn thành", height: 48)
+                            AppButton(icon: "checkmark", label: "Hoàn thành", height: metrics.buttonHeight)
                         }
                     }
                 }
-                .padding(.horizontal, 20)
+                .padding(.horizontal, metrics.contentPadding)
                 .padding(.bottom, 4)
             }
         }
@@ -141,12 +142,12 @@ private struct HazardResultHero: View {
 
                 VStack(spacing: 2) {
                     Text("\(result.totalScore)")
-                        .font(.system(size: 40, weight: .heavy).monospacedDigit())
+                        .font(.appSans(size: 40, weight: .bold))
                         .foregroundStyle(Color.appTextDark)
                         .contentTransition(.numericText())
 
                     Text("/\(result.maxScore) điểm")
-                        .font(.system(size: 14))
+                        .font(.appSans(size: 14))
                         .foregroundStyle(Color.appTextMedium)
                 }
             }
@@ -200,7 +201,7 @@ private struct ScoreDistributionChart: View {
 
         VStack(alignment: .leading, spacing: 8) {
             Text("Phân bố điểm")
-                .font(.system(size: 14, weight: .bold))
+                .font(.appSans(size: 14, weight: .semibold))
                 .foregroundStyle(Color.appTextDark)
 
             HStack(alignment: .bottom, spacing: 8) {
@@ -208,7 +209,7 @@ private struct ScoreDistributionChart: View {
                     VStack(spacing: 4) {
                         if dist[score] > 0 {
                             Text("\(dist[score])")
-                                .font(.system(size: 11, weight: .bold).monospacedDigit())
+                                .font(.appSans(size: 11))
                                 .foregroundStyle(barColor(score))
                         }
 
@@ -221,7 +222,7 @@ private struct ScoreDistributionChart: View {
                             )
 
                         Text("\(score)")
-                            .font(.system(size: 12, weight: .medium).monospacedDigit())
+                            .font(.appSans(size: 12, weight: .medium))
                             .foregroundStyle(Color.appTextMedium)
                     }
                     .frame(maxWidth: .infinity)
@@ -242,6 +243,7 @@ private struct ScoreDistributionChart: View {
 // MARK: - Review Row (Expandable)
 
 private struct HazardReviewRow: View {
+    @Environment(LayoutMetrics.self) private var metrics
     @Environment(ThemeStore.self) private var themeStore
     let index: Int
     let situation: HazardSituation
@@ -266,7 +268,7 @@ private struct HazardReviewRow: View {
                 // Summary
                 HStack(spacing: 12) {
                     Image(systemName: score > 0 ? "checkmark" : "xmark")
-                        .font(.system(size: 12, weight: .bold))
+                        .font(.appSans(size: 12, weight: .medium))
                         .foregroundStyle(statusColor)
                         .frame(width: 28, height: 28)
                         .background(statusColor.opacity(0.12))
@@ -275,21 +277,21 @@ private struct HazardReviewRow: View {
                     VStack(alignment: .leading, spacing: 4) {
                         HStack(spacing: 6) {
                             Text("TH \(situation.id)")
-                                .font(.system(size: 13, weight: .bold))
+                                .font(.appSans(size: 13, weight: .medium))
                                 .foregroundStyle(Color.appTextMedium)
 
                             Text(situation.chapterName)
-                                .font(.system(size: 11))
+                                .font(.appSans(size: 11))
                                 .foregroundStyle(Color.appTextLight)
                         }
 
                         if let tapTime {
                             Text(String(format: "Nhấn tại %.1fs", tapTime))
-                                .font(.system(size: 12))
+                                .font(.appSans(size: 12))
                                 .foregroundStyle(Color.appTextMedium)
                         } else {
                             Text("Không nhấn")
-                                .font(.system(size: 12))
+                                .font(.appSans(size: 12))
                                 .foregroundStyle(Color.appError)
                         }
                     }
@@ -300,19 +302,25 @@ private struct HazardReviewRow: View {
                         ForEach(0..<5, id: \.self) { i in
                             Circle()
                                 .fill(i < score ? themeStore.primaryColor : Color.appDivider)
-                                .frame(width: 8, height: 8)
+                                .frame(width: metrics.isWide ? 10 : 8, height: metrics.isWide ? 10 : 8)
                         }
                     }
 
                     Text("\(score)")
-                        .font(.system(size: 15, weight: .bold).monospacedDigit())
+                        .font(.appSans(size: 15, weight: .bold))
                         .foregroundStyle(statusColor)
                         .frame(width: 20)
 
                     Image(systemName: "chevron.right")
-                        .font(.system(size: 12, weight: .semibold))
+                        .font(.appSans(size: 12, weight: .medium))
                         .foregroundStyle(Color.appTextLight)
                         .rotationEffect(.degrees(isExpanded ? 90 : 0))
+
+                    if metrics.isWide {
+                        Text(isExpanded ? "Thu gọn" : "Xem chi tiết")
+                            .font(.appSans(size: 13, weight: .medium))
+                            .foregroundStyle(Color.appTextLight)
+                    }
                 }
 
                 // Expanded detail
@@ -336,11 +344,11 @@ private struct HazardReviewRow: View {
                         // Tip
                         HStack(alignment: .top, spacing: 6) {
                             Image(systemName: "lightbulb.fill")
-                                .font(.system(size: 11))
+                                .font(.appSans(size: 11))
                                 .foregroundStyle(Color.appWarning)
                                 .padding(.top, 1)
                             Text(situation.tip)
-                                .font(.system(size: 12))
+                                .font(.appSans(size: 12))
                                 .foregroundStyle(Color.appTextMedium)
                                 .fixedSize(horizontal: false, vertical: true)
                         }
@@ -407,10 +415,10 @@ private struct TimingDetail: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 1) {
             Text(label)
-                .font(.system(size: 10, weight: .medium))
+                .font(.appSans(size: 10))
                 .foregroundStyle(Color.appTextLight)
             Text(value)
-                .font(.system(size: 12, weight: .semibold).monospacedDigit())
+                .font(.appSans(size: 12, weight: .medium))
                 .foregroundStyle(Color.appTextMedium)
         }
     }

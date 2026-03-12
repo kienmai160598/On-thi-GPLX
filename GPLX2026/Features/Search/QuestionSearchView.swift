@@ -4,6 +4,7 @@ struct QuestionSearchView: View {
     @Environment(QuestionStore.self) private var questionStore
     @Environment(ProgressStore.self) private var progressStore
     @Environment(ThemeStore.self) private var themeStore
+    @Environment(LayoutMetrics.self) private var metrics
     @Environment(\.openExam) private var openExam
 
     @State private var searchText = ""
@@ -55,9 +56,9 @@ struct QuestionSearchView: View {
                 // Result count
                 if !searchText.isEmpty || selectedFilter != .all {
                     Text("\(filteredQuestions.count) câu hỏi")
-                        .font(.system(size: 13, weight: .semibold))
+                        .font(.appSans(size: 13, weight: .medium))
                         .foregroundStyle(Color.appTextLight)
-                        .padding(.horizontal, 20)
+                        .padding(.horizontal, metrics.contentPadding)
                 }
 
                 // Results
@@ -69,7 +70,7 @@ struct QuestionSearchView: View {
                         EmptyState(icon: "tray", message: "Không có câu hỏi")
                     }
                 } else {
-                    LazyVStack(spacing: 8) {
+                    AdaptiveGrid {
                         ForEach(filteredQuestions, id: \.no) { question in
                             let topicKey = Topic.keyForTopicId(question.topic)
                             let status = progressStore.answerStatus(topicKey: topicKey, questionNo: question.no)
@@ -87,7 +88,7 @@ struct QuestionSearchView: View {
                             .glassCard()
                         }
                     }
-                    .padding(.horizontal, 20)
+                    .padding(.horizontal, metrics.contentPadding)
                 }
             }
             .padding(.top, 8)
@@ -105,7 +106,7 @@ struct QuestionSearchView: View {
                     } label: {}
                 } label: {
                     Image(systemName: selectedFilter == .all ? "line.3.horizontal.decrease.circle" : "line.3.horizontal.decrease.circle.fill")
-                        .font(.system(size: 17))
+                        .font(.appSans(size: 17))
                         .foregroundStyle(selectedFilter == .all ? Color.appTextMedium : themeStore.primaryColor)
                 }
             }

@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct ExamResultView: View {
+    @Environment(LayoutMetrics.self) private var metrics
     @Environment(\.popToRoot) private var popToRoot
     @Environment(\.openExam) private var openExam
 
@@ -62,7 +63,7 @@ struct ExamResultView: View {
                 // MARK: - Review
                 SectionTitle(title: "Xem lại đáp án")
 
-                LazyVStack(spacing: 8) {
+                AdaptiveGrid {
                     ForEach(Array(questions.enumerated()), id: \.element.no) { index, question in
                         let selectedId = answers[index]
                         let isCorrect = selectedId != nil && question.answers.contains(where: { $0.id == selectedId && $0.correct })
@@ -75,7 +76,7 @@ struct ExamResultView: View {
                     }
                 }
             }
-            .padding(.horizontal, 20)
+            .padding(.horizontal, metrics.contentPadding)
             .padding(.bottom, 32)
         }
         .safeAreaInset(edge: .bottom) {
@@ -85,7 +86,7 @@ struct ExamResultView: View {
                         Button {
                             openExam(.questionView(topicKey: AppConstants.TopicKey.wrongAnswers, startIndex: 0))
                         } label: {
-                            AppButton(icon: "arrow.trianglehead.2.clockwise", label: "Luyện \(questions.count - correctCount) câu sai", style: .secondary, height: 48)
+                            AppButton(icon: "arrow.trianglehead.2.clockwise", label: "Luyện \(questions.count - correctCount) câu sai", style: .secondary, height: metrics.buttonHeight)
                         }
                     }
 
@@ -93,15 +94,15 @@ struct ExamResultView: View {
                         Button {
                             openExam(.mockExam(examSetId: examResult.examSetId))
                         } label: {
-                            AppButton(icon: "arrow.counterclockwise", label: "Thi lại", style: .secondary, height: 48)
+                            AppButton(icon: "arrow.counterclockwise", label: "Thi lại", style: .secondary, height: metrics.buttonHeight)
                         }
 
                         Button { popToRoot() } label: {
-                            AppButton(icon: "checkmark", label: "Hoàn thành", height: 48)
+                            AppButton(icon: "checkmark", label: "Hoàn thành", height: metrics.buttonHeight)
                         }
                     }
                 }
-                .padding(.horizontal, 20)
+                .padding(.horizontal, metrics.contentPadding)
                 .padding(.bottom, 4)
             }
         }
@@ -117,7 +118,7 @@ struct ExamResultView: View {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button { popToRoot() } label: {
                         Image(systemName: "checkmark")
-                            .font(.system(size: 15, weight: .semibold))
+                            .font(.appSans(size: 15, weight: .semibold))
                     }
                 }
             }

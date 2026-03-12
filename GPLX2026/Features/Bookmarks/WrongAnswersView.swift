@@ -3,6 +3,7 @@ import SwiftUI
 struct WrongAnswersView: View {
     @Environment(QuestionStore.self) private var questionStore
     @Environment(ProgressStore.self) private var progressStore
+    @Environment(LayoutMetrics.self) private var metrics
     @Environment(\.openExam) private var openExam
 
     var body: some View {
@@ -13,12 +14,12 @@ struct WrongAnswersView: View {
             if wrongByTopic.isEmpty {
                 EmptyState(icon: "checkmark.circle.fill", message: "Không có câu sai nào!", iconColor: .appSuccess)
             } else {
-                VStack(alignment: .leading, spacing: 12) {
+                AdaptiveGrid(spacing: 12) {
                     ForEach(wrongByTopic, id: \.topic.key) { group in
                         WrongTopicCard(topic: group.topic, questions: group.questions)
                     }
                 }
-                .padding(.horizontal, 20)
+                .padding(.horizontal, metrics.contentPadding)
                 .padding(.bottom, 24)
             }
         }
@@ -39,11 +40,11 @@ private struct WrongTopicCard: View {
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(topic.name)
-                    .font(.system(size: 15, weight: .bold))
+                    .font(.appSans(size: 15, weight: .bold))
                     .foregroundStyle(Color.appTextDark)
                     .lineLimit(1)
                 Text("\(questions.count) câu sai")
-                    .font(.system(size: 13, weight: .medium))
+                    .font(.appSans(size: 13, weight: .medium))
                     .foregroundStyle(Color.appError)
             }
 
