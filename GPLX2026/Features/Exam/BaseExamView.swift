@@ -4,6 +4,7 @@ struct BaseExamView: View {
     @Environment(QuestionStore.self) private var questionStore
     @Environment(ProgressStore.self) private var progressStore
     @Environment(LayoutMetrics.self) private var metrics
+    @Environment(ThemeStore.self) private var themeStore
     @Environment(\.dismiss) private var dismiss
 
     enum Mode {
@@ -98,9 +99,16 @@ struct BaseExamView: View {
 
         VStack(spacing: 0) {
             if metrics.isWide {
-                // iPad: side-by-side layout with 55/45 ratio
+                // iPad landscape: 3-panel (question / answers / grid sidebar)
                 GeometryReader { geo in
-                    HStack(alignment: .top, spacing: metrics.gridSpacing) {
+                    let pad = metrics.contentPadding
+                    let gap = metrics.gridSpacing
+                    let available = geo.size.width - pad * 2 - gap * 2
+                    let leftWidth = available * 0.40
+                    let centerWidth = available * 0.35
+                    let rightWidth = available * 0.25
+
+                    HStack(alignment: .top, spacing: gap) {
                         // Left: question + explanation
                         ScrollView {
                             VStack(alignment: .leading, spacing: 0) {
@@ -112,9 +120,65 @@ struct BaseExamView: View {
                                         .transition(.opacity.combined(with: .move(edge: .top)))
                                 }
                             }
-                            .padding(metrics.contentPadding)
+                            .padding(.vertical, pad)
                         }
-                        .frame(width: geo.size.width * 0.55)
+                        .frame(width: leftWidth)
+
+                        // Center: answers
+                        ScrollView {
+                            if isMockExam {
+                                AnswerTileList(
+                                    answers: shuffledAnswers,
+                                    selectedAnswerId: answers[currentIndex],
+                                    onSelect: { answer in
+                                        Haptics.selection()
+                                        answers[currentIndex] = answer.id
+                                    }
+                                )
+                            } else {
+                                AnswerTileList(
+                                    answers: shuffledAnswers,
+                                    selectedAnswerId: selectedAnswerId,
+                                    isConfirmed: isRevealed,
+                                    showCorrectness: true,
+                                    onSelect: { handleSimulationAnswerSelection(answer: $0) }
+                                )
+                            }
+                        }
+                        .padding(.vertical, pad)
+                        .frame(width: centerWidth)
+
+                        // Right: grid sidebar
+                        examGridSidebar
+                            .frame(width: rightWidth)
+                    }
+                    .padding(.horizontal, pad)
+                }
+                .id(currentIndex)
+            } else if metrics.isMedium {
+                // iPad portrait: 2-panel (55/45 question/answers)
+                GeometryReader { geo in
+                    let pad = metrics.contentPadding
+                    let gap = metrics.gridSpacing
+                    let available = geo.size.width - pad * 2 - gap
+                    let leftWidth = available * 0.55
+                    let rightWidth = available * 0.45
+
+                    HStack(alignment: .top, spacing: gap) {
+                        // Left: question + explanation
+                        ScrollView {
+                            VStack(alignment: .leading, spacing: 0) {
+                                QuestionCard(label: "Câu \(currentIndex + 1)", question: question, showDiemLietBadge: true)
+
+                                if !isMockExam && isRevealed && !question.tip.isEmpty {
+                                    ExplanationBox(content: question.tip)
+                                        .padding(.top, 12)
+                                        .transition(.opacity.combined(with: .move(edge: .top)))
+                                }
+                            }
+                            .padding(.vertical, pad)
+                        }
+                        .frame(width: leftWidth)
 
                         // Right: answers
                         ScrollView {
@@ -137,8 +201,10 @@ struct BaseExamView: View {
                                 )
                             }
                         }
-                        .padding(metrics.contentPadding)
+                        .padding(.vertical, pad)
+                        .frame(width: rightWidth)
                     }
+                    .padding(.horizontal, pad)
                 }
                 .id(currentIndex)
             } else {
@@ -196,6 +262,82 @@ struct BaseExamView: View {
                 }
             )
         }
+    }
+
+    // MARK: - Grid Sidebar (isWide only)
+
+    private var examGridSidebar: some View {
+        VStack(spacing: 12) {
+            // Legend
+            HStack(spacing: 12) {
+                sidebarLegendDot(color: themeStore.primaryColor, label: "Đang làm")
+                sidebarLegendDot(color: .appSuccess, label: "Đã xong")
+                sidebarLegendDot(color: Color.appTextLight.opacity(0.25), label: "Chưa làm")
+            }
+            .padding(.top, 12)
+
+            // Grid
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 6), count: 5), spacing: 6) {
+                ForEach(0..<questions.count, id: \.self) { index in
+                    Button {
+                        Haptics.selection()
+                        if !isMockExam { saveCurrentTimerState() }
+                        withAnimation(.easeOut(duration: 0.25)) {
+                            currentIndex = index
+                            if !isMockExam { restoreStateForCurrentIndex() }
+                        }
+                    } label: {
+                        Text("\(index + 1)")
+                            .font(.appSans(size: 13, weight: .semibold))
+                            .foregroundStyle(sidebarCellForeground(for: index))
+                            .frame(maxWidth: .infinity, minHeight: 36)
+                            .background(sidebarCellBackground(for: index))
+                            .clipShape(RoundedRectangle(cornerRadius: 6))
+                    }
+                }
+            }
+
+            Spacer()
+
+            // Progress text
+            Text("Đã trả lời: \(answers.count)/\(questions.count)")
+                .font(.appSans(size: 13, weight: .medium))
+                .foregroundStyle(Color.appTextMedium)
+
+            // Submit button (mock exam only)
+            if isMockExam {
+                Button {
+                    showSubmitDialog = true
+                } label: {
+                    AppButton(label: "Nộp bài", height: 44)
+                }
+            }
+        }
+        .padding(.horizontal, 8)
+        .padding(.bottom, 12)
+    }
+
+    private func sidebarLegendDot(color: Color, label: String) -> some View {
+        HStack(spacing: 4) {
+            Circle()
+                .fill(color)
+                .frame(width: 8, height: 8)
+            Text(label)
+                .font(.appSans(size: 10))
+                .foregroundStyle(Color.appTextMedium)
+        }
+    }
+
+    private func sidebarCellForeground(for index: Int) -> Color {
+        if index == currentIndex { return themeStore.onPrimaryColor }
+        if answers[index] != nil { return Color.appSuccess }
+        return Color.appTextMedium
+    }
+
+    private func sidebarCellBackground(for index: Int) -> Color {
+        if index == currentIndex { return themeStore.primaryColor }
+        if answers[index] != nil { return Color.appSuccess.opacity(0.12) }
+        return Color.appTextLight.opacity(0.25)
     }
 
     private var nextLabel: String {
