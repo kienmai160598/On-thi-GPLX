@@ -13,12 +13,12 @@ struct StudyHeatMap: View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Text("Hoạt động học tập")
-                    .font(.system(size: 20, weight: .heavy))
+                    .font(.appSans(size: 20, weight: .bold))
                     .foregroundStyle(Color.appTextDark)
                 Spacer()
                 let total = progressStore.totalActivity(lastDays: weeks * 7)
                 Text("\(total) câu · \(weeks) tuần")
-                    .font(.system(size: 13, weight: .medium))
+                    .font(.appSans(size: 13, weight: .medium))
                     .foregroundStyle(Color.appTextMedium)
             }
 
@@ -26,7 +26,7 @@ struct StudyHeatMap: View {
                 VStack(spacing: 3) {
                     ForEach(0..<7, id: \.self) { i in
                         Text(dayLabels[i])
-                            .font(.system(size: 10, weight: .medium))
+                            .font(.appSans(size: 10))
                             .foregroundStyle(Color.appTextLight)
                             .frame(width: 16, height: 14)
                     }
@@ -43,7 +43,7 @@ struct StudyHeatMap: View {
 
             HStack(spacing: 4) {
                 Text("Ít")
-                    .font(.system(size: 11))
+                    .font(.appSans(size: 11))
                     .foregroundStyle(Color.appTextLight)
                 ForEach([0.0, 0.25, 0.5, 0.75, 1.0], id: \.self) { intensity in
                     RoundedRectangle(cornerRadius: 2)
@@ -51,7 +51,7 @@ struct StudyHeatMap: View {
                         .frame(width: 10, height: 10)
                 }
                 Text("Nhiều")
-                    .font(.system(size: 11))
+                    .font(.appSans(size: 11))
                     .foregroundStyle(Color.appTextLight)
             }
         }

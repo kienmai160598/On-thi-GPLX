@@ -17,10 +17,10 @@ struct MemoryTipsView: View {
 
                     VStack(alignment: .leading, spacing: 3) {
                         Text(topic.name)
-                            .font(.system(size: 16, weight: .bold))
+                            .font(.appSerif(size: 16, weight: .bold))
                             .foregroundStyle(Color.appTextDark)
                         Text("\(tips.count) mẹo ghi nhớ")
-                            .font(.system(size: 13))
+                            .font(.appSans(size: 13))
                             .foregroundStyle(Color.appTextMedium)
                     }
 
@@ -40,6 +40,7 @@ struct MemoryTipsView: View {
                 }
             }
             .padding(.horizontal, 20)
+            .iPadReadable()
             .padding(.top, 4)
             .padding(.bottom, 24)
         }
@@ -56,10 +57,10 @@ private struct TipCard: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 8) {
                 Image(systemName: "lightbulb.fill")
-                    .font(.system(size: 14))
+                    .font(.appSans(size: 14))
                     .foregroundStyle(Color.appWarning)
                 Text(tip.title)
-                    .font(.system(size: 15, weight: .bold))
+                    .font(.appSans(size: 15, weight: .bold))
                     .foregroundStyle(Color.appTextDark)
             }
 
@@ -69,7 +70,7 @@ private struct TipCard: View {
                 .replacingOccurrences(of: "<br />", with: "\n")
                 .replacingOccurrences(of: "; ", with: ";\n")
             )
-                .font(.system(size: 14))
+                .font(.appSans(size: 14))
                 .foregroundStyle(Color.appTextMedium)
                 .lineSpacing(4)
         }

@@ -54,7 +54,7 @@ struct OnboardingView: View {
                     Button("Bỏ qua") {
                         completeOnboarding()
                     }
-                    .font(.system(size: 15, weight: .semibold))
+                    .font(.appSans(size: 15, weight: .semibold))
                     .foregroundStyle(Color.appTextMedium)
                     .padding(.trailing, 24)
                     .padding(.top, 12)
@@ -129,12 +129,12 @@ private struct LicensePickerPage: View {
             Spacer()
 
             Image(systemName: "person.text.rectangle")
-                .font(.system(size: 56))
+                .font(.appSerif(size: 56))
                 .foregroundStyle(themeStore.primaryColor)
                 .padding(.bottom, 8)
 
             Text("Chọn hạng bằng lái")
-                .font(.system(size: 28, weight: .bold))
+                .font(.appSerif(size: 28, weight: .bold))
                 .multilineTextAlignment(.center)
 
             VStack(spacing: 12) {
@@ -147,14 +147,14 @@ private struct LicensePickerPage: View {
                         HStack(spacing: 14) {
                             VStack(alignment: .leading, spacing: 4) {
                                 Text("Hạng \(type.displayName)")
-                                    .font(.system(size: 18, weight: .bold))
+                                    .font(.appSerif(size: 18, weight: .bold))
                                 Text(type.description)
-                                    .font(.system(size: 13))
+                                    .font(.appSans(size: 13))
                                     .foregroundStyle(Color.appTextMedium)
                             }
                             Spacer()
                             Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
-                                .font(.system(size: 24))
+                                .font(.appSerif(size: 24))
                                 .foregroundStyle(isSelected ? themeStore.primaryColor : Color.appTextLight)
                         }
                         .padding(16)
@@ -172,7 +172,7 @@ private struct LicensePickerPage: View {
 
             if let current = LicenseType(rawValue: selectedLicense) {
                 Text("\(current.questionsPerExam) câu · \(current.totalTimeSeconds / 60) phút · Đạt \(current.passThreshold)")
-                    .font(.system(size: 13))
+                    .font(.appSans(size: 13))
                     .foregroundStyle(Color.appTextMedium)
             }
 

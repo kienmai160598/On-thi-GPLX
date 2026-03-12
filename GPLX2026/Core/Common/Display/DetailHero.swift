@@ -15,24 +15,24 @@ struct DetailHero: View {
                     .fill(iconColor.opacity(0.1))
                     .frame(width: 96, height: 96)
                 Image(systemName: icon)
-                    .font(.system(size: 44))
+                    .font(.appSerif(size: 44))
                     .foregroundStyle(iconColor)
             }
 
             VStack(spacing: 6) {
                 Text(title)
-                    .font(.system(size: 36, weight: .heavy).monospacedDigit())
+                    .font(.appSerif(size: 36, weight: .bold))
                     .foregroundStyle(Color.appTextDark)
                     .contentTransition(.numericText())
                     .animation(.snappy, value: title)
                 Text(subtitle)
-                    .font(.system(size: 15))
+                    .font(.appSans(size: 15))
                     .foregroundStyle(Color.appTextMedium)
             }
 
             if let desc = description {
                 Text(desc)
-                    .font(.system(size: 14))
+                    .font(.appSans(size: 14))
                     .foregroundStyle(Color.appTextLight)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 20)

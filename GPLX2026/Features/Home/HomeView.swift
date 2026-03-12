@@ -32,6 +32,7 @@ struct HomeView: View {
                 .tint(accentColor)
             }
         }
+        .tabViewStyle(.sidebarAdaptable)
         .tint(accentColor)
         .environment(\.openExam) { screen in activeExam = screen }
         .fullScreenCover(item: $activeExam, onDismiss: {

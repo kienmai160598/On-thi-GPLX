@@ -21,7 +21,7 @@ struct TopicProgressRing: View {
                 .animation(.spring(duration: 0.8, bounce: 0.15), value: fraction)
 
             Text("\(Int(fraction * 100))%")
-                .font(.system(size: size * 0.24, weight: .heavy).monospacedDigit())
+                .font(.appSans(size: size * 0.24, weight: .heavy))
                 .foregroundStyle(Color.appTextDark)
                 .contentTransition(.numericText())
         }
@@ -48,7 +48,7 @@ struct TopicIconRing: View {
                 .animation(.snappy, value: fraction)
 
             Image(systemName: icon)
-                .font(.system(size: 16))
+                .font(.appSans(size: 16))
                 .foregroundStyle(color)
         }
         .frame(width: 40, height: 40)

@@ -8,11 +8,11 @@ struct RulePill: View {
     var body: some View {
         HStack(spacing: 5) {
             Image(systemName: icon)
-                .font(.system(size: 12, weight: .medium))
+                .font(.appSans(size: 12, weight: .medium))
                 .foregroundStyle(themeStore.primaryColor)
                 .symbolRenderingMode(.hierarchical)
             Text(text)
-                .font(.system(size: 13, weight: .semibold))
+                .font(.appSans(size: 13, weight: .medium))
                 .foregroundStyle(Color.appTextDark)
         }
         .frame(maxWidth: .infinity)

@@ -24,7 +24,7 @@ struct AppButton: View {
                     .foregroundStyle(isEnabled ? themeStore.onPrimaryColor : Color.appTextLight)
                     .background(
                         RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                            .fill((isEnabled ? primary : Color.appDivider).opacity(0.45))
+                            .fill(isEnabled ? primary : Color.appDivider)
                     )
                     .glassEffect(.regular.interactive(), in: .rect(cornerRadius: cornerRadius))
             } else {
@@ -52,10 +52,10 @@ struct AppButton: View {
         HStack(spacing: 6) {
             if let icon {
                 Image(systemName: icon)
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(.appSans(size: 14, weight: .semibold))
             }
             Text(label)
-                .font(.system(size: 15, weight: .bold))
+                .font(.appSans(size: 15, weight: .bold))
         }
         .frame(maxWidth: .infinity)
         .frame(height: height)

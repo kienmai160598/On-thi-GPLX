@@ -34,7 +34,7 @@ struct ProgressRing: View {
                 .animation(.snappy, value: fraction)
 
             Text("\(current)")
-                .font(.system(size: 14, weight: .bold))
+                .font(.appSans(size: 14, weight: .semibold))
                 .foregroundStyle(Color.appTextDark)
                 .contentTransition(.numericText())
                 .animation(.snappy, value: current)

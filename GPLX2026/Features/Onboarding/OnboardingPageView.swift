@@ -18,13 +18,13 @@ struct OnboardingPageView: View {
             heroArea
 
             Text(page.title)
-                .font(.system(size: 32, weight: .heavy))
+                .font(.appSerif(size: 32, weight: .bold))
                 .multilineTextAlignment(.center)
                 .foregroundStyle(Color.appTextDark)
                 .padding(.top, 44)
 
             Text(page.subtitle)
-                .font(.system(size: 16))
+                .font(.appSans(size: 16))
                 .multilineTextAlignment(.center)
                 .foregroundStyle(Color.appTextMedium)
                 .lineSpacing(4)
@@ -58,12 +58,12 @@ struct OnboardingPageView: View {
 
             if page.id == 5 {
                 Image(systemName: page.icon)
-                    .font(.system(size: 88))
+                    .font(.appSerif(size: 88))
                     .foregroundStyle(themeStore.primaryColor)
                     .symbolEffect(.breathe, isActive: true)
             } else {
                 Image(systemName: page.icon)
-                    .font(.system(size: 88))
+                    .font(.appSerif(size: 88))
                     .foregroundStyle(themeStore.primaryColor)
                     .symbolEffect(.bounce, value: bouncetrigger)
                     .onAppear { bouncetrigger += 1 }
@@ -79,10 +79,10 @@ struct OnboardingPageView: View {
 
             HStack(spacing: 8) {
                 Image(systemName: "exclamationmark.triangle.fill")
-                    .font(.system(size: 14))
+                    .font(.appSans(size: 14))
                     .foregroundStyle(Color.appError)
                 Text("Sai câu điểm liệt = Trượt ngay")
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(.appSans(size: 14, weight: .semibold))
                     .foregroundStyle(Color.appError)
             }
             .padding(.top, 4)
@@ -92,7 +92,7 @@ struct OnboardingPageView: View {
     private func examPartRow(icon: String, part: String, name: String, detail: String, color: Color) -> some View {
         HStack(spacing: 14) {
             Image(systemName: icon)
-                .font(.system(size: 22))
+                .font(.appSerif(size: 22))
                 .foregroundStyle(color)
                 .frame(width: 44, height: 44)
                 .background(color.opacity(0.12))
@@ -101,14 +101,14 @@ struct OnboardingPageView: View {
             VStack(alignment: .leading, spacing: 3) {
                 HStack(spacing: 6) {
                     Text(part)
-                        .font(.system(size: 13, weight: .semibold))
+                        .font(.appSans(size: 13, weight: .medium))
                         .foregroundStyle(Color.appTextMedium)
                     Text(name)
-                        .font(.system(size: 16, weight: .bold))
+                        .font(.appSerif(size: 16, weight: .bold))
                         .foregroundStyle(Color.appTextDark)
                 }
                 Text(detail)
-                    .font(.system(size: 13))
+                    .font(.appSans(size: 13))
                     .foregroundStyle(Color.appTextLight)
             }
 
@@ -136,13 +136,13 @@ struct OnboardingPageView: View {
                     .frame(width: 80, height: 80)
 
                 Image(systemName: icon)
-                    .font(.system(size: 40))
+                    .font(.appSerif(size: 40))
                     .foregroundStyle(themeStore.primaryColor)
                     .symbolEffect(.wiggle, options: .repeating.speed(0.5), isActive: true)
             }
 
             Text(label)
-                .font(.system(size: 14, weight: .semibold))
+                .font(.appSans(size: 14, weight: .semibold))
                 .foregroundStyle(Color.appTextMedium)
         }
     }

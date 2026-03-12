@@ -27,7 +27,7 @@ struct PrimaryColorPicker: View {
                             .frame(height: 48)
 
                         Text(item.label)
-                            .font(.system(size: 11, weight: isSelected ? .bold : .medium))
+                            .font(.appSans(size: 11, weight: isSelected ? .bold : .medium))
                             .foregroundStyle(isSelected ? Color.appTextDark : Color.appTextLight)
                     }
                     .frame(maxWidth: .infinity)

@@ -8,11 +8,11 @@ struct ScoreRow: View {
     var body: some View {
         HStack {
             Text(label)
-                .font(.system(size: 15, weight: .medium))
+                .font(.appMono(size: 15, weight: .medium))
                 .foregroundStyle(Color.appTextMedium)
             Spacer()
             Text(value)
-                .font(.system(size: 15, weight: .bold))
+                .font(.appMono(size: 15, weight: .bold))
                 .foregroundStyle(color)
                 .contentTransition(.numericText())
                 .animation(.snappy, value: value)

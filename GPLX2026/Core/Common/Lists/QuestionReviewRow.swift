@@ -41,7 +41,7 @@ struct QuestionReviewRow: View {
                 HStack(alignment: .top, spacing: 12) {
                     if showStatusIcon {
                         Image(systemName: statusIcon)
-                            .font(.system(size: 12, weight: .bold))
+                            .font(.appSans(size: 12, weight: .medium))
                             .foregroundStyle(statusColor)
                             .frame(width: 28, height: 28)
                             .background(statusColor.opacity(0.12))
@@ -51,7 +51,7 @@ struct QuestionReviewRow: View {
                     VStack(alignment: .leading, spacing: 4) {
                         HStack(spacing: 6) {
                             Text("Câu \(question.no)")
-                                .font(.system(size: 13, weight: .bold))
+                                .font(.appSans(size: 13, weight: .medium))
                                 .foregroundStyle(Color.appTextMedium)
 
                             if question.isDiemLiet {
@@ -64,7 +64,7 @@ struct QuestionReviewRow: View {
                         }
 
                         Text(question.text)
-                            .font(.system(size: 14))
+                            .font(.appSans(size: 14))
                             .foregroundStyle(Color.appTextDark)
                             .lineLimit(isExpanded ? nil : 2)
                             .lineSpacing(2)
@@ -72,7 +72,7 @@ struct QuestionReviewRow: View {
 
                         if !isExpanded && status == .wrong {
                             Text("Đáp án: \(correctAnswer.text)")
-                                .font(.system(size: 12, weight: .medium))
+                                .font(.appSans(size: 12, weight: .medium))
                                 .foregroundStyle(Color.appSuccess)
                                 .lineLimit(1)
                         }
@@ -81,7 +81,7 @@ struct QuestionReviewRow: View {
                     Spacer(minLength: 4)
 
                     Image(systemName: "chevron.right")
-                        .font(.system(size: 12, weight: .semibold))
+                        .font(.appSans(size: 12, weight: .medium))
                         .foregroundStyle(Color.appTextLight)
                         .rotationEffect(.degrees(isExpanded ? 90 : 0))
                         .animation(.easeOut(duration: 0.2), value: isExpanded)
@@ -92,11 +92,11 @@ struct QuestionReviewRow: View {
                         ForEach(question.answers, id: \.id) { answer in
                             HStack(alignment: .top, spacing: 8) {
                                 Image(systemName: answerIcon(answer))
-                                    .font(.system(size: 14))
+                                    .font(.appSans(size: 14))
                                     .foregroundStyle(answerColor(answer))
 
                                 Text(answer.text)
-                                    .font(.system(size: 13, weight: answer.correct ? .semibold : .regular))
+                                    .font(.appSans(size: 13, weight: answer.correct ? .semibold : .regular))
                                     .foregroundStyle(answerColor(answer))
                                     .lineSpacing(2)
                                     .multilineTextAlignment(.leading)
@@ -112,9 +112,9 @@ struct QuestionReviewRow: View {
                             Button(action: onNavigate) {
                                 HStack(spacing: 6) {
                                     Image(systemName: "pencil.line")
-                                        .font(.system(size: 12))
+                                        .font(.appSans(size: 12))
                                     Text("Luyện câu này")
-                                        .font(.system(size: 13, weight: .semibold))
+                                        .font(.appSans(size: 13, weight: .medium))
                                 }
                                 .foregroundStyle(themeStore.primaryColor)
                                 .padding(.top, 4)

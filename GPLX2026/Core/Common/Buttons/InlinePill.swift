@@ -23,7 +23,7 @@ struct InlinePill: View {
 
     private var pillText: some View {
         Text(label)
-            .font(.system(size: 13, weight: .bold))
+            .font(.appSans(size: 13, weight: .medium))
             .padding(.horizontal, 16)
             .padding(.vertical, 8)
     }

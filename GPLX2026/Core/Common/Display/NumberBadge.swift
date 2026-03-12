@@ -10,7 +10,7 @@ struct NumberBadge: View {
 
     var body: some View {
         Text("\(number)")
-            .font(.system(size: fontSize, weight: .bold))
+            .font(.appMono(size: fontSize, weight: .bold))
             .foregroundStyle(color)
             .frame(width: size, height: size)
             .background(color.opacity(0.1))

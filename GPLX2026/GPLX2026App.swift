@@ -132,20 +132,18 @@ struct GPLX2026App: App {
                         .environment(questionStore)
                         .environment(progressStore)
                         .environment(hazardVideoCache)
-                        .environment(themeStore)
-                        .environment(layoutMetrics)
                         .task {
                             questionStore.loadQuestions()
                         }
                         .transition(.opacity)
                 } else {
                     OnboardingView()
-                        .environment(themeStore)
-                        .environment(layoutMetrics)
                         .transition(.opacity)
                 }
             }
             .trackLayoutMetrics()
+            .environment(themeStore)
+            .environment(layoutMetrics)
             .animation(.easeInOut(duration: 0.5), value: hasCompletedOnboarding)
             .preferredColorScheme(colorScheme)
             .animation(.easeInOut(duration: 0.3), value: themeMode)

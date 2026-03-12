@@ -23,7 +23,7 @@ struct ScoreTrendCard: View {
         if !allData.isEmpty {
             VStack(alignment: .leading, spacing: 14) {
                 Text("Xu hướng điểm")
-                    .font(.system(size: 20, weight: .heavy))
+                    .font(.appSans(size: 20, weight: .bold))
                     .foregroundStyle(Color.appTextDark)
 
                 Chart(allData) { point in
@@ -49,7 +49,7 @@ struct ScoreTrendCard: View {
                             .foregroundStyle(Color.appDivider.opacity(0.3))
                         AxisValueLabel {
                             Text("\(value.as(Int.self) ?? 0)%")
-                                .font(.system(size: 10))
+                                .font(.appSans(size: 10))
                                 .foregroundStyle(Color.appTextLight)
                         }
                     }
@@ -59,7 +59,7 @@ struct ScoreTrendCard: View {
                         AxisGridLine()
                             .foregroundStyle(Color.appDivider.opacity(0.2))
                         AxisValueLabel(format: .dateTime.day().month(.abbreviated))
-                            .font(.system(size: 10))
+                            .font(.appSans(size: 10))
                             .foregroundStyle(Color.appTextLight)
                     }
                 }

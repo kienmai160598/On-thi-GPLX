@@ -18,13 +18,13 @@ struct ActivityCalendarCard: View {
         VStack(alignment: .leading, spacing: 14) {
             HStack {
                 Text("Hoạt động học")
-                    .font(.system(size: 20, weight: .heavy))
+                    .font(.appSans(size: 20, weight: .bold))
                     .foregroundStyle(Color.appTextDark)
 
                 Spacer()
 
                 Text("\(totalLast30) câu / 30 ngày")
-                    .font(.system(size: 13, weight: .semibold))
+                    .font(.appSans(size: 13, weight: .medium))
                     .foregroundStyle(Color.appTextMedium)
             }
 
@@ -33,7 +33,7 @@ struct ActivityCalendarCard: View {
                 VStack(spacing: cellSpacing) {
                     ForEach(0..<7, id: \.self) { day in
                         Text(dayLabels[day])
-                            .font(.system(size: 9, weight: .medium))
+                            .font(.appSans(size: 9))
                             .foregroundStyle(Color.appTextLight)
                             .frame(width: 16, height: cellSize)
                     }
@@ -46,7 +46,7 @@ struct ActivityCalendarCard: View {
             // Legend
             HStack(spacing: 4) {
                 Text("Ít")
-                    .font(.system(size: 10))
+                    .font(.appSans(size: 10))
                     .foregroundStyle(Color.appTextLight)
                 ForEach(0..<5, id: \.self) { level in
                     RoundedRectangle(cornerRadius: 2)
@@ -54,7 +54,7 @@ struct ActivityCalendarCard: View {
                         .frame(width: 10, height: 10)
                 }
                 Text("Nhiều")
-                    .font(.system(size: 10))
+                    .font(.appSans(size: 10))
                     .foregroundStyle(Color.appTextLight)
             }
         }

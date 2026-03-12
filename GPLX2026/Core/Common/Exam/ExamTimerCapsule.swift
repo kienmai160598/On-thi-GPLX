@@ -9,10 +9,10 @@ struct ExamTimerCapsule: View {
     var body: some View {
         let content = HStack(spacing: 6) {
             Image(systemName: "timer")
-                .font(.system(size: 14))
+                .font(.appMono(size: 14))
                 .foregroundStyle(isUrgent ? Color.appError : Color.appTextMedium)
             Text(text)
-                .font(.system(size: 16, weight: .bold).monospacedDigit())
+                .font(.appMono(size: 16, weight: .bold))
                 .foregroundStyle(isUrgent ? Color.appError : Color.appTextDark)
         }
         .padding(.horizontal, 14)

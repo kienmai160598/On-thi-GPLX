@@ -42,27 +42,11 @@ extension Color {
         })
     }
 
-    // ── Primary (dynamic) ────────────────────────────────────────────────
+    // ── Primary ────────────────────────────────────────────────────────────
 
-    static var appPrimary: Color {
-        primaryColor(for: UserDefaults.standard.string(forKey: AppConstants.StorageKey.primaryColor) ?? "default")
-    }
-
-    static var appOnPrimary: Color {
-        let key = UserDefaults.standard.string(forKey: AppConstants.StorageKey.primaryColor) ?? "default"
-        if key == "default" { return adaptive(light: 0xFAFAFA, dark: 0x1A1A1A) }
-        return .white
-    }
-
-    static let primaryDark = adaptive(light: 0x0A0A0A, dark: 0xFFFFFF)
-
-    static func primaryColor(for key: String) -> Color {
-        switch key {
-        case "blue":   return Color(red: 0/255, green: 122/255, blue: 255/255)   // #007AFF
-        case "indigo": return Color(red: 88/255, green: 86/255, blue: 214/255)   // #5856D6
-        default:       return adaptive(light: 0x27272A, dark: 0xE4E4E7)          // Zinc-800/200
-        }
-    }
+    static let appPrimary   = adaptive(light: 0xD4714E, dark: 0xE8956F)  // Warm terracotta
+    static let appOnPrimary = Color.white
+    static let primaryDark  = adaptive(light: 0x0A0A0A, dark: 0xFFFFFF)
 
     // ── Text ───────────────────────────────────────────────────────────
 
@@ -76,11 +60,11 @@ extension Color {
 
     // ── Background ─────────────────────────────────────────────────────
 
-    static let scaffoldBg    = adaptive(light: 0xF8F6F1, dark: 0x0A0A0A)
+    static let scaffoldBg    = adaptive(light: 0xEEECE6, dark: 0x2F2B26)
     static let appScaffoldBg = scaffoldBg
     static let appBgColor    = scaffoldBg
-    static let cardBg        = adaptive(light: 0xFFFFFF, dark: 0x171717)
-    static let statsBg       = adaptive(light: 0xF5F5F5, dark: 0x0F0F0F)
+    static let cardBg        = adaptive(light: 0xFAF9F7, dark: 0x3D3935)
+    static let statsBg       = adaptive(light: 0xF0EDE8, dark: 0x2F2B26)
 
     // ── Semantic ───────────────────────────────────────────────────────
 
@@ -109,6 +93,24 @@ extension Color {
 
     static let diemLietBg    = adaptive(light: 0xFEF2F2, dark: 0x1C1010)
     static let diemLietBadge = appError
+}
+
+// MARK: - GlassContainer (re-injects @Observable environments)
+
+@available(iOS 26.0, *)
+private struct GlassContainerModifier: ViewModifier {
+    @Environment(LayoutMetrics.self) private var metrics
+    @Environment(QuestionStore.self) private var questionStore
+    @Environment(ProgressStore.self) private var progressStore
+    @Environment(ThemeStore.self) private var themeStore
+
+    func body(content: Content) -> some View {
+        GlassEffectContainer { content }
+            .environment(metrics)
+            .environment(questionStore)
+            .environment(progressStore)
+            .environment(themeStore)
+    }
 }
 
 // MARK: - GlassCard ViewModifier
@@ -148,10 +150,17 @@ extension View {
     @ViewBuilder
     func glassContainer() -> some View {
         if #available(iOS 26.0, *) {
-            GlassEffectContainer { self }
+            // GlassEffectContainer strips @Observable environments — re-inject via modifier
+            modifier(GlassContainerModifier())
         } else {
             self
         }
+    }
+
+    /// Constrain content to readable width on iPad (centered)
+    func iPadReadable(maxWidth: CGFloat = 700) -> some View {
+        frame(maxWidth: maxWidth)
+            .frame(maxWidth: .infinity)
     }
 }
 
@@ -252,7 +261,7 @@ struct SectionRow: View {
         Button(action: action) {
             HStack(spacing: 14) {
                 Image(systemName: icon)
-                    .font(.system(size: 20))
+                    .font(.appSans(size: 20))
                     .foregroundStyle(filledIcon ? .white : color)
                     .frame(width: 44, height: 44)
                     .background(filledIcon ? color : color.opacity(0.12))
@@ -260,17 +269,17 @@ struct SectionRow: View {
 
                 VStack(alignment: .leading, spacing: 3) {
                     Text(title)
-                        .font(.system(size: 16, weight: .bold))
+                        .font(.appSerif(size: 16, weight: .bold))
                         .foregroundStyle(Color.appTextDark)
                     Text(subtitle)
-                        .font(.system(size: 13))
+                        .font(.appSans(size: 13))
                         .foregroundStyle(Color.appTextMedium)
                 }
 
                 Spacer(minLength: 4)
 
                 Image(systemName: "chevron.right")
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(.appSans(size: 12, weight: .medium))
                     .foregroundStyle(Color.appTextLight)
             }
             .padding(.horizontal, 12)

@@ -4,7 +4,6 @@ import SwiftUI
 
 struct ThemeModePicker: View {
     @Binding var selected: String
-    var primaryColorKey: String
 
     private static let modes: [(key: String, label: String, icon: String)] = [
         ("system", "Hệ thống", "circle.lefthalf.filled"),
@@ -12,7 +11,7 @@ struct ThemeModePicker: View {
         ("dark", "Tối", "moon.fill"),
     ]
 
-    private var accentColor: Color { Color.primaryColor(for: primaryColorKey) }
+    private var accentColor: Color { .appPrimary }
 
     var body: some View {
         HStack(spacing: 10) {
@@ -27,10 +26,10 @@ struct ThemeModePicker: View {
                 } label: {
                     VStack(spacing: 8) {
                         Image(systemName: mode.icon)
-                            .font(.system(size: 22))
+                            .font(.appSans(size: 22))
                             .foregroundStyle(isSelected ? accentColor : Color.appTextMedium)
                         Text(mode.label)
-                            .font(.system(size: 13, weight: isSelected ? .bold : .medium))
+                            .font(.appSans(size: 13, weight: isSelected ? .bold : .medium))
                             .foregroundStyle(isSelected ? accentColor : Color.appTextMedium)
                     }
                     .frame(maxWidth: .infinity)

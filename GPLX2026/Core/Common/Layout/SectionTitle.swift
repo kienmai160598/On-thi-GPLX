@@ -5,7 +5,7 @@ struct SectionTitle: View {
 
     var body: some View {
         Text(title)
-            .font(.system(size: 13, weight: .bold))
+            .font(.appSerif(size: 13, weight: .medium))
             .foregroundStyle(Color.appTextMedium)
             .textCase(.uppercase)
             .tracking(0.5)

@@ -78,6 +78,7 @@ struct WeakTopicsView: View {
                 }
             }
             .padding(.horizontal, 20)
+            .iPadReadable()
             .padding(.bottom, 24)
         }
         .screenHeader("Phân tích điểm yếu")
@@ -104,27 +105,27 @@ private struct TopicAccuracyRow: View {
                     .stroke(accentColor, style: StrokeStyle(lineWidth: 3, lineCap: .round))
                     .rotationEffect(.degrees(-90))
                 Image(systemName: item.topic.sfSymbol)
-                    .font(.system(size: 16))
+                    .font(.appSans(size: 16))
                     .foregroundStyle(accentColor)
             }
             .frame(width: 44, height: 44)
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(item.topic.name)
-                    .font(.system(size: 15, weight: .semibold))
+                    .font(.appSans(size: 15, weight: .semibold))
                     .foregroundStyle(Color.appTextDark)
 
                 Text(item.attempted > 0
                     ? "\(item.correct)/\(item.attempted) đúng · \(Int(item.accuracy * 100))%"
                     : "0/\(item.total) câu · Chưa bắt đầu")
-                    .font(.system(size: 13))
+                    .font(.appSans(size: 13))
                     .foregroundStyle(Color.appTextMedium)
             }
 
             Spacer(minLength: 4)
 
             Text("Ôn tập")
-                .font(.system(size: 13, weight: .semibold))
+                .font(.appSans(size: 13, weight: .medium))
                 .foregroundStyle(themeStore.primaryColor)
         }
         .padding(.horizontal, 16)

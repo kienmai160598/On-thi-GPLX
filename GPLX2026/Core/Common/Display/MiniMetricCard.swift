@@ -13,11 +13,11 @@ struct MiniMetricCard: View {
                 ForEach(Array(stats.enumerated()), id: \.offset) { _, stat in
                     HStack {
                         Text(stat.label)
-                            .font(.system(size: 14, weight: .medium))
+                            .font(.appMono(size: 14, weight: .medium))
                             .foregroundStyle(Color.appTextMedium)
                         Spacer()
                         Text(stat.value)
-                            .font(.system(size: 16, weight: .bold).monospacedDigit())
+                            .font(.appMono(size: 16, weight: .bold))
                             .foregroundStyle(Color.appTextDark)
                             .contentTransition(.numericText())
                     }

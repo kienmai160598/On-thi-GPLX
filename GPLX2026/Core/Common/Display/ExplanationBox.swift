@@ -18,14 +18,14 @@ struct ExplanationBox: View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 6) {
                 Image(systemName: "lightbulb.fill")
-                    .font(.system(size: 12))
+                    .font(.appSans(size: 12))
                     .foregroundStyle(Color.appWarning)
                 Text(label)
-                    .font(.system(size: labelFontSize, weight: .bold))
+                    .font(.appSans(size: labelFontSize, weight: .bold))
                     .foregroundStyle(Color.appTextDark)
             }
             Text(formattedContent)
-                .font(.system(size: contentFontSize))
+                .font(.appSans(size: contentFontSize))
                 .foregroundStyle(Color.appTextMedium)
                 .lineSpacing(4)
                 .multilineTextAlignment(.leading)

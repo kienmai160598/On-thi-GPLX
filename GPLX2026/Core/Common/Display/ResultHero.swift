@@ -25,11 +25,11 @@ struct ResultHero: View {
 
                 VStack(spacing: 2) {
                     Text("\(score)")
-                        .font(.system(size: 44, weight: .heavy).monospacedDigit())
+                        .font(.appSerif(size: 44, weight: .bold))
                         .foregroundStyle(Color.appTextDark)
                         .contentTransition(.numericText())
                     Text("/\(total) c\u{00E2}u")
-                        .font(.system(size: 14))
+                        .font(.appSans(size: 14))
                         .foregroundStyle(Color.appTextMedium)
                 }
             }
@@ -42,7 +42,7 @@ struct ResultHero: View {
             )
 
             Text(subtitle)
-                .font(.system(size: 15))
+                .font(.appSans(size: 15))
                 .foregroundStyle(Color.appTextMedium)
                 .multilineTextAlignment(.center)
         }

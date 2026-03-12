@@ -12,7 +12,7 @@ struct QuestionCard: View {
         VStack(alignment: .leading, spacing: 14) {
             HStack(spacing: 8) {
                 Text(label)
-                    .font(.system(size: 14, weight: .bold))
+                    .font(.appSans(size: 14, weight: .semibold))
                     .foregroundStyle(themeStore.primaryColor)
 
                 if showDiemLietBadge && question.isDiemLiet {
@@ -21,7 +21,7 @@ struct QuestionCard: View {
             }
 
             Text(question.text)
-                .font(.system(size: 17 * fontScale, weight: .semibold))
+                .font(.appSans(size: 17 * fontScale, weight: .semibold))
                 .foregroundStyle(Color.appTextDark)
                 .lineSpacing(5)
 

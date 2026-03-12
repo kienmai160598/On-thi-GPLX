@@ -9,12 +9,12 @@ struct StatItem: View {
     var body: some View {
         VStack(spacing: 4) {
             Text(value)
-                .font(.system(size: valueFontSize, weight: .heavy))
+                .font(.appMono(size: valueFontSize, weight: .heavy))
                 .foregroundStyle(valueColor)
                 .contentTransition(.numericText())
                 .animation(.snappy, value: value)
             Text(label)
-                .font(.system(size: 12, weight: .medium))
+                .font(.appMono(size: 12, weight: .medium))
                 .foregroundStyle(Color.appTextMedium)
         }
         .frame(maxWidth: .infinity)

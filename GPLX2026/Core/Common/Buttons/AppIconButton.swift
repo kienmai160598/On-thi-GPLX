@@ -19,7 +19,7 @@ struct AppIconButton: View {
 
     private var iconContent: some View {
         Image(systemName: icon)
-            .font(.system(size: 16, weight: .semibold))
+            .font(.appSans(size: 16, weight: .semibold))
             .foregroundStyle(themeStore.primaryColor)
             .frame(width: size, height: size)
     }

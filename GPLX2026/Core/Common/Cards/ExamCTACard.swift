@@ -26,7 +26,7 @@ struct ExamCTACard: View {
             }
 
             Text(tip)
-                .font(.system(size: 13))
+                .font(.appSans(size: 13))
                 .foregroundStyle(Color.appTextMedium)
                 .lineSpacing(3)
         }

@@ -18,13 +18,13 @@ struct ListItemCard<Trailing: View>: View {
 
             VStack(alignment: .leading, spacing: 3) {
                 Text(title)
-                    .font(.system(size: 15, weight: .bold))
+                    .font(.appSans(size: 15, weight: .bold))
                     .foregroundStyle(Color.appTextDark)
                     .lineLimit(1)
 
                 if let subtitle {
                     Text(subtitle)
-                        .font(.system(size: 13, weight: .medium))
+                        .font(.appSans(size: 13, weight: .medium))
                         .foregroundStyle(Color.appTextMedium)
                         .lineLimit(1)
                 }

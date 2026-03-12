@@ -3,8 +3,6 @@ import SwiftUI
 struct BackgroundAnimationPicker: View {
     @Binding var selected: String
     @Binding var speedKey: String
-    var primaryColorKey: String
-
     private static let styles: [(key: String, label: String, icon: String)] = [
         ("none", "Tắt", "xmark"),
         ("bubbles", "Bong bóng", "bubbles.and.sparkles"),
@@ -17,7 +15,7 @@ struct BackgroundAnimationPicker: View {
         ("fast", "Nhanh"),
     ]
 
-    private var accentColor: Color { Color.primaryColor(for: primaryColorKey) }
+    private var accentColor: Color { .appPrimary }
     private let columns = Array(repeating: GridItem(.flexible(), spacing: 12), count: 3)
 
     var body: some View {
@@ -35,10 +33,10 @@ struct BackgroundAnimationPicker: View {
                     } label: {
                         VStack(spacing: 6) {
                             Image(systemName: option.icon)
-                                .font(.system(size: 20))
+                                .font(.appSans(size: 20))
                                 .foregroundStyle(isSelected ? accentColor : Color.appTextMedium)
                             Text(option.label)
-                                .font(.system(size: 10, weight: isSelected ? .bold : .medium))
+                                .font(.appSans(size: 10, weight: isSelected ? .bold : .medium))
                                 .foregroundStyle(isSelected ? accentColor : Color.appTextMedium)
                                 .lineLimit(1)
                         }
@@ -61,7 +59,7 @@ struct BackgroundAnimationPicker: View {
             if selected != "none" {
                 HStack(spacing: 8) {
                     Image(systemName: "gauge.with.dots.needle.33percent")
-                        .font(.system(size: 13))
+                        .font(.appSans(size: 13))
                         .foregroundStyle(Color.appTextLight)
 
                     ForEach(Self.speeds, id: \.key) { speed in
@@ -74,7 +72,7 @@ struct BackgroundAnimationPicker: View {
                             }
                         } label: {
                             Text(speed.label)
-                                .font(.system(size: 12, weight: isActive ? .bold : .medium))
+                                .font(.appSans(size: 12, weight: isActive ? .bold : .medium))
                                 .foregroundStyle(isActive ? accentColor : Color.appTextMedium)
                                 .frame(maxWidth: .infinity)
                                 .frame(height: 32)

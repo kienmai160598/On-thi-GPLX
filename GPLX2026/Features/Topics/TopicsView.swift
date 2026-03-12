@@ -37,6 +37,7 @@ struct TopicsView: View {
                 }
             }
             .padding(.horizontal, 20)
+            .iPadReadable()
             .padding(.bottom, 24)
         }
         .onAppear {
@@ -112,17 +113,17 @@ private struct TopicCard: View {
 
                     VStack(alignment: .leading, spacing: 3) {
                         Text(topic.name)
-                            .font(.system(size: 16, weight: .heavy))
+                            .font(.appSans(size: 16, weight: .bold))
                             .foregroundStyle(Color.appTextDark)
 
                         HStack(spacing: 8) {
                             Text("\(progress.correct)/\(progress.total) đã đúng")
-                                .font(.system(size: 12, weight: .medium))
+                                .font(.appSans(size: 12, weight: .medium))
                                 .foregroundStyle(Color.appTextMedium)
 
                             if progress.wrong > 0 {
                                 Text("· \(progress.wrong) sai")
-                                    .font(.system(size: 12, weight: .bold))
+                                    .font(.appSans(size: 12, weight: .medium))
                                     .foregroundStyle(Color.appError)
                             }
                         }
@@ -131,7 +132,7 @@ private struct TopicCard: View {
                     Spacer(minLength: 4)
 
                     Text("\(Int(fraction * 100))%")
-                        .font(.system(size: 15, weight: .bold).monospacedDigit())
+                        .font(.appSans(size: 15, weight: .bold))
                         .foregroundStyle(fraction >= 1.0 ? Color.appSuccess : Color.appTextMedium)
                 }
             }
@@ -193,7 +194,7 @@ private struct QuestionNumberCell: View {
 
     var body: some View {
         Text("\(number)")
-            .font(.system(size: 13, weight: status == .unanswered ? .medium : .bold).monospacedDigit())
+            .font(.appSans(size: 13, weight: status == .unanswered ? .medium : .bold))
             .foregroundStyle(fgColor)
             .frame(maxWidth: .infinity)
             .frame(height: 40)

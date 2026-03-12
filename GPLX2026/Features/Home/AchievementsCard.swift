@@ -18,13 +18,13 @@ struct AchievementsCard: View {
             VStack(alignment: .leading, spacing: 14) {
                 HStack {
                     Text("Thành tích")
-                        .font(.system(size: 20, weight: .heavy))
+                        .font(.appSans(size: 20, weight: .bold))
                         .foregroundStyle(Color.appTextDark)
 
                     Spacer()
 
                     Text("\(unlocked.count)/\(all.count)")
-                        .font(.system(size: 14, weight: .bold).monospacedDigit())
+                        .font(.appSans(size: 14, weight: .semibold))
                         .foregroundStyle(themeStore.primaryColor)
                 }
 
@@ -58,12 +58,12 @@ private struct AchievementBadge: View {
                     .frame(width: 52, height: 52)
 
                 Image(systemName: achievement.icon)
-                    .font(.system(size: 22))
+                    .font(.appSans(size: 22))
                     .foregroundStyle(isUnlocked ? themeStore.primaryColor : Color.appTextLight.opacity(0.5))
             }
 
             Text(achievement.title)
-                .font(.system(size: 11, weight: .semibold))
+                .font(.appSans(size: 11))
                 .foregroundStyle(isUnlocked ? Color.appTextDark : Color.appTextLight)
                 .lineLimit(1)
         }

@@ -8,10 +8,10 @@ struct SectionHeader: View {
     var body: some View {
         HStack(spacing: 8) {
             Image(systemName: icon)
-                .font(.system(size: 16))
+                .font(.appSans(size: 16))
                 .foregroundStyle(color)
             Text(title)
-                .font(.system(size: 16, weight: .heavy))
+                .font(.appSans(size: 16, weight: .bold))
                 .foregroundStyle(Color.appTextDark)
         }
     }
