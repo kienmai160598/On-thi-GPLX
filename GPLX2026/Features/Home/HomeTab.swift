@@ -20,18 +20,33 @@ struct HomeTab: View {
         let goalDone = progressStore.todayProgress.done >= progressStore.todayProgress.goal
 
         ScrollView {
-            VStack(spacing: 20) {
-                ProgressOverview()
-                PrimaryActionCard()
-                QuickActionsGrid()
-                ShortcutsRow()
-                RecentResultsCard()
-                AchievementsCard()
+            if metrics.isCompact {
+                VStack(spacing: 20) {
+                    ProgressOverview()
+                    PrimaryActionCard()
+                    QuickActionsGrid()
+                    ShortcutsRow()
+                    RecentResultsCard()
+                    AchievementsCard()
+                }
+                .padding(.horizontal, metrics.contentPadding)
+                .padding(.bottom, 32)
+            } else {
+                LazyVGrid(
+                    columns: Array(repeating: GridItem(.flexible(), spacing: metrics.gridSpacing),
+                                   count: metrics.columns),
+                    spacing: metrics.gridSpacing
+                ) {
+                    ProgressOverview()
+                    PrimaryActionCard()
+                    QuickActionsGrid()
+                    ShortcutsRow()
+                    RecentResultsCard()
+                    AchievementsCard()
+                }
+                .padding(.horizontal, metrics.contentPadding)
+                .padding(.bottom, 32)
             }
-            .padding(.horizontal, metrics.contentPadding)
-            .frame(maxWidth: metrics.isWide ? .infinity : 700)
-            .frame(maxWidth: .infinity)
-            .padding(.bottom, 32)
         }
         .dailyGoalCelebration(isDone: goalDone)
         .glassContainer()
@@ -44,10 +59,12 @@ struct HomeTab: View {
                             .font(.appSans(size: 15, weight: .medium))
                             .foregroundStyle(Color.appTextDark)
                     }
-                    NavigationLink(destination: SettingsView()) {
-                        Image(systemName: "gearshape")
-                            .font(.appSans(size: 15, weight: .medium))
-                            .foregroundStyle(Color.appTextDark)
+                    if metrics.isCompact {
+                        NavigationLink(destination: SettingsView()) {
+                            Image(systemName: "gearshape")
+                                .font(.appSans(size: 15, weight: .medium))
+                                .foregroundStyle(Color.appTextDark)
+                        }
                     }
                 }
             }
