@@ -270,6 +270,7 @@ struct ExamTab: View {
 
 private struct ExamTypeCard: View {
     @Environment(ThemeStore.self) private var themeStore
+    @Environment(LayoutMetrics.self) private var metrics
     let icon: String
     let title: String
     let rules: String
@@ -324,7 +325,7 @@ private struct ExamTypeCard: View {
 
             // Start button
             Button(action: action) {
-                AppButton(icon: "play.fill", label: "Bắt đầu", height: 48)
+                AppButton(icon: "play.fill", label: "Bắt đầu", height: metrics.buttonHeight)
             }
         }
         .padding(12)

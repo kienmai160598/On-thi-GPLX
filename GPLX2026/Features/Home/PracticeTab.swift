@@ -37,7 +37,7 @@ struct PracticeTab: View {
             Button {
                 openExam(.questionView(topicKey: AppConstants.TopicKey.allQuestions, startIndex: 0))
             } label: {
-                AppButton(icon: "play.fill", label: "Ôn tập \(totalCount) câu", height: 48)
+                AppButton(icon: "play.fill", label: "Ôn tập \(totalCount) câu", height: metrics.buttonHeight)
             }
 
             // Topic list with color-coded progress rings

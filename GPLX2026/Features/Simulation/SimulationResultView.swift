@@ -78,6 +78,8 @@ struct SimulationResultView: View {
                 }
             }
             .padding(.horizontal, metrics.contentPadding)
+            .frame(maxWidth: metrics.isWide ? 900 : .infinity)
+            .frame(maxWidth: .infinity)
             .padding(.bottom, 32)
         }
         .safeAreaInset(edge: .bottom) {

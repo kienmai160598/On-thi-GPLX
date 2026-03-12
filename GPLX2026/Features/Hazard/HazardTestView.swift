@@ -130,7 +130,7 @@ struct HazardTestView: View {
         let panelWidth: CGFloat = isRegular
             ? min(geo.size.width * (isLandscape ? 0.28 : 0.35), 400)
             : min(geo.size.width * 0.28, 240)
-        let btnHeight: CGFloat = isRegular ? 52 : 40
+        let btnHeight: CGFloat = metrics.buttonHeight
         let panelPadding: CGFloat = isRegular ? 20 : 10
         let panelSpacing: CGFloat = isRegular ? 14 : 8
         // Video must fit within available height
@@ -261,7 +261,7 @@ struct HazardTestView: View {
         let score = situation.score(tapTime: tapTimes[currentIndex] ?? nil)
         let scoreColor: Color = score >= 4 ? .appSuccess : score >= 2 ? .appWarning : .appError
         let sectionPad: CGFloat = isRegular ? 14 : 10
-        let btnHeight: CGFloat = isRegular ? 48 : 36
+        let btnHeight: CGFloat = metrics.buttonHeight
         let btnSpacing: CGFloat = isRegular ? 10 : 6
 
         // Score summary card

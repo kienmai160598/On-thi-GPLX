@@ -199,7 +199,7 @@ struct QuestionView: View {
                 },
                 leadingWidget: !isSpecial && hasTips ? AnyView(
                     NavigationLink(destination: MemoryTipsView(topicKey: tipsTopicKey)) {
-                        AppIconButton(icon: "lightbulb", size: 48)
+                        AppIconButton(icon: "lightbulb", size: metrics.buttonHeight)
                     }
                 ) : nil
             )

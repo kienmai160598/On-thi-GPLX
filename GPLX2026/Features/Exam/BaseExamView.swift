@@ -3,6 +3,7 @@ import SwiftUI
 struct BaseExamView: View {
     @Environment(QuestionStore.self) private var questionStore
     @Environment(ProgressStore.self) private var progressStore
+    @Environment(LayoutMetrics.self) private var metrics
     @Environment(\.dismiss) private var dismiss
 
     enum Mode {
@@ -96,40 +97,84 @@ struct BaseExamView: View {
         let shuffledAnswers = question.shuffledAnswers
 
         VStack(spacing: 0) {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 0) {
-                    QuestionCard(label: "Câu \(currentIndex + 1)", question: question, showDiemLietBadge: true)
-                        .padding(.bottom, 20)
+            if metrics.isWide {
+                // iPad: side-by-side layout
+                HStack(alignment: .top, spacing: metrics.gridSpacing) {
+                    // Left: question + explanation
+                    ScrollView {
+                        VStack(alignment: .leading, spacing: 0) {
+                            QuestionCard(label: "Câu \(currentIndex + 1)", question: question, showDiemLietBadge: true)
 
-                    if isMockExam {
-                        AnswerTileList(
-                            answers: shuffledAnswers,
-                            selectedAnswerId: answers[currentIndex],
-                            onSelect: { answer in
-                                Haptics.selection()
-                                answers[currentIndex] = answer.id
+                            if !isMockExam && isRevealed && !question.tip.isEmpty {
+                                ExplanationBox(content: question.tip)
+                                    .padding(.top, 12)
+                                    .transition(.opacity.combined(with: .move(edge: .top)))
                             }
-                        )
-                    } else {
-                        AnswerTileList(
-                            answers: shuffledAnswers,
-                            selectedAnswerId: selectedAnswerId,
-                            isConfirmed: isRevealed,
-                            showCorrectness: true,
-                            onSelect: { handleSimulationAnswerSelection(answer: $0) }
-                        )
+                        }
+                        .padding(metrics.contentPadding)
+                    }
 
-                        if isRevealed && !question.tip.isEmpty {
-                            ExplanationBox(content: question.tip)
-                                .padding(.top, 4)
-                                .transition(.opacity.combined(with: .move(edge: .top)))
+                    // Right: answers
+                    ScrollView {
+                        if isMockExam {
+                            AnswerTileList(
+                                answers: shuffledAnswers,
+                                selectedAnswerId: answers[currentIndex],
+                                onSelect: { answer in
+                                    Haptics.selection()
+                                    answers[currentIndex] = answer.id
+                                }
+                            )
+                        } else {
+                            AnswerTileList(
+                                answers: shuffledAnswers,
+                                selectedAnswerId: selectedAnswerId,
+                                isConfirmed: isRevealed,
+                                showCorrectness: true,
+                                onSelect: { handleSimulationAnswerSelection(answer: $0) }
+                            )
                         }
                     }
+                    .padding(metrics.contentPadding)
                 }
-                .padding(.horizontal, 20)
-                .padding(.top, 16)
+                .id(currentIndex)
+            } else {
+                // iPhone: vertical layout
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 0) {
+                        QuestionCard(label: "Câu \(currentIndex + 1)", question: question, showDiemLietBadge: true)
+                            .padding(.bottom, 20)
+
+                        if isMockExam {
+                            AnswerTileList(
+                                answers: shuffledAnswers,
+                                selectedAnswerId: answers[currentIndex],
+                                onSelect: { answer in
+                                    Haptics.selection()
+                                    answers[currentIndex] = answer.id
+                                }
+                            )
+                        } else {
+                            AnswerTileList(
+                                answers: shuffledAnswers,
+                                selectedAnswerId: selectedAnswerId,
+                                isConfirmed: isRevealed,
+                                showCorrectness: true,
+                                onSelect: { handleSimulationAnswerSelection(answer: $0) }
+                            )
+
+                            if isRevealed && !question.tip.isEmpty {
+                                ExplanationBox(content: question.tip)
+                                    .padding(.top, 4)
+                                    .transition(.opacity.combined(with: .move(edge: .top)))
+                            }
+                        }
+                    }
+                    .padding(.horizontal, metrics.contentPadding)
+                    .padding(.top, 16)
+                }
+                .id(currentIndex)
             }
-            .id(currentIndex)
 
             ExamBottomBar(
                 currentIndex: currentIndex,
