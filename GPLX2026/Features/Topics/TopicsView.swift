@@ -37,7 +37,6 @@ struct TopicsView: View {
                 }
             }
             .padding(.horizontal, 20)
-            .iPadReadable()
             .padding(.bottom, 24)
         }
         .onAppear {

@@ -40,7 +40,6 @@ struct MemoryTipsView: View {
                 }
             }
             .padding(.horizontal, 20)
-            .iPadReadable()
             .padding(.top, 4)
             .padding(.bottom, 24)
         }

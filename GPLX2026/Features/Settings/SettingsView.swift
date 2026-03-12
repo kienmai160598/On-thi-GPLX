@@ -3,7 +3,6 @@ import SwiftUI
 struct SettingsView: View {
     @Environment(QuestionStore.self) private var questionStore
     @Environment(ProgressStore.self) private var progressStore
-    @Environment(HazardVideoCache.self) private var videoCache
     @Environment(ThemeStore.self) private var themeStore
     @AppStorage(AppConstants.StorageKey.themeMode) private var themeMode: String = "system"
     @AppStorage(AppConstants.StorageKey.fontSize) private var fontSize: String = "medium"
@@ -15,8 +14,6 @@ struct SettingsView: View {
     @State private var showResetSheet = false
     @State private var resetToast: String?
     @State private var resetConfirmation: ResetAction?
-    @State private var showClearCacheAlert = false
-
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 28) {
@@ -206,14 +203,6 @@ struct SettingsView: View {
                 }
 
                 // ──────────────────────────────────────────────
-                // MARK: - Video offline
-                // ──────────────────────────────────────────────
-
-                settingsSection("Video tình huống", subtitle: "Tải video để xem không cần mạng") {
-                    VideoOfflineCard(videoCache: videoCache, showClearAlert: $showClearCacheAlert)
-                }
-
-                // ──────────────────────────────────────────────
                 // MARK: - Dữ liệu (Data)
                 // ──────────────────────────────────────────────
 
@@ -247,7 +236,6 @@ struct SettingsView: View {
                         }
                         .padding(.horizontal, 16)
                         .padding(.vertical, 14)
-                        .background(Color.appError.opacity(0.05))
                         .glassCard()
                     }
                     .buttonStyle(.plain)
@@ -284,7 +272,6 @@ struct SettingsView: View {
                 }
             }
             .padding(.horizontal, 20)
-            .iPadReadable(maxWidth: 900)
             .padding(.top, 8)
             .padding(.bottom, 32)
         }
@@ -316,16 +303,6 @@ struct SettingsView: View {
         } message: {
             Text(resetConfirmation?.message ?? "")
         }
-        .alert("Xoá cache video?", isPresented: $showClearCacheAlert) {
-            Button("Huỷ", role: .cancel) {}
-            Button("Xoá", role: .destructive) {
-                videoCache.clearCache()
-                Haptics.notification(.success)
-                showToast("Đã xoá cache video")
-            }
-        } message: {
-            Text("Tất cả video đã tải sẽ bị xoá. Bạn có thể tải lại sau.")
-        }
         .overlay(alignment: .bottom) {
             if let toast = resetToast {
                 Text(toast)
@@ -334,7 +311,6 @@ struct SettingsView: View {
                     .padding(.horizontal, 20)
                     .padding(.vertical, 12)
                     .background(Color.appSuccess, in: Capsule())
-                    .shadow(color: .black.opacity(0.15), radius: 10, y: 4)
                     .padding(.bottom, 20)
                     .transition(.move(edge: .bottom).combined(with: .opacity))
             }
@@ -648,7 +624,7 @@ enum AppFontScale {
 
 // MARK: - Video Offline Card
 
-private struct VideoOfflineCard: View {
+struct VideoOfflineCard: View {
     @Environment(ThemeStore.self) private var themeStore
     let videoCache: HazardVideoCache
     @Binding var showClearAlert: Bool
@@ -667,7 +643,7 @@ private struct VideoOfflineCard: View {
                         .font(.appSans(size: 16))
                         .foregroundStyle(themeStore.primaryColor)
                         .symbolRenderingMode(.hierarchical)
-                    Text("Video offline")
+                    Text("Video ngoại tuyến")
                         .font(.appSans(size: 15, weight: .bold))
                         .foregroundStyle(Color.appTextDark)
                     Spacer()
