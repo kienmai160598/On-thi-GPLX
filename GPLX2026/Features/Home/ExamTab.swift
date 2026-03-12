@@ -42,6 +42,8 @@ struct ExamTab: View {
                 }
             }
             .padding(.horizontal, metrics.contentPadding)
+            .frame(maxWidth: metrics.isWide ? 900 : .infinity)
+            .frame(maxWidth: .infinity)
             .padding(.top, 8)
             .padding(.bottom, 32)
         }

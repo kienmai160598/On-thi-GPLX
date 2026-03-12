@@ -19,7 +19,7 @@ struct HistoryRow: View {
         ) {
             StatusBadge(
                 text: passed ? "Đạt" : "Trượt",
-                color: .appPrimary,
+                color: passed ? .appSuccess : .appError,
                 fontSize: 10
             )
         }

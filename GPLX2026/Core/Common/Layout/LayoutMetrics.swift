@@ -1,17 +1,16 @@
 import SwiftUI
-import UIKit
 
 @Observable
 @MainActor
 final class LayoutMetrics {
     var horizontalSizeClass: UserInterfaceSizeClass? = .compact
+    var windowWidth: CGFloat = 0
 
     var isWide: Bool { horizontalSizeClass == .regular }
 
     var columns: Int {
         guard isWide else { return 1 }
-        let width = UIScreen.main.bounds.width
-        if width > 1100 { return 3 }
+        if windowWidth > 1100 { return 3 }
         return 2
     }
 
@@ -34,10 +33,16 @@ struct LayoutMetricsReader: ViewModifier {
     @Environment(\.horizontalSizeClass) private var sizeClass
 
     func body(content: Content) -> some View {
-        content
-            .onChange(of: sizeClass, initial: true) { _, newValue in
-                metrics.horizontalSizeClass = newValue
-            }
+        GeometryReader { geo in
+            content
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .onChange(of: sizeClass, initial: true) { _, newValue in
+                    metrics.horizontalSizeClass = newValue
+                }
+                .onChange(of: geo.size.width, initial: true) { _, newWidth in
+                    metrics.windowWidth = newWidth
+                }
+        }
     }
 }
 

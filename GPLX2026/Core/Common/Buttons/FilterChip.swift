@@ -15,9 +15,9 @@ struct FilterChip: View {
 
     private var chipText: some View {
         Text(label)
-            .font(.system(size: 13, weight: isSelected ? .bold : .medium))
-            .padding(.horizontal, 14)
-            .padding(.vertical, 8)
+            .font(.appSans(size: 13, weight: isSelected ? .bold : .medium))
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
     }
 
     @ViewBuilder
