@@ -3,8 +3,11 @@ import SwiftUI
 struct PracticeTab: View {
     @Environment(QuestionStore.self) private var questionStore
     @Environment(ProgressStore.self) private var progressStore
+    @Environment(HazardVideoCache.self) private var videoCache
     @Environment(LayoutMetrics.self) private var metrics
     @Environment(\.openExam) private var openExam
+
+    @State private var showClearCacheAlert = false
 
     var body: some View {
         ScrollView {
@@ -13,8 +16,6 @@ struct PracticeTab: View {
                 hazardSection
             }
             .padding(.horizontal, metrics.contentPadding)
-            .frame(maxWidth: metrics.isWide ? 900 : .infinity)
-            .frame(maxWidth: .infinity)
             .padding(.top, 8)
             .padding(.bottom, 32)
         }
@@ -40,9 +41,9 @@ struct PracticeTab: View {
                 AppButton(icon: "play.fill", label: "Ôn tập \(totalCount) câu", height: metrics.buttonHeight)
             }
 
-            // Topic list with color-coded progress rings
-            VStack(spacing: 0) {
-                ForEach(Array(topicStats.enumerated()), id: \.element.topic.id) { index, item in
+            // Topic grid with color-coded progress rings
+            AdaptiveGrid {
+                ForEach(topicStats, id: \.topic.id) { item in
                     let topicAccuracy = item.total > 0 ? Double(item.correct) / Double(item.total) : 0
                     let ringColor = topicRingColor(accuracy: topicAccuracy, attempted: item.correct > 0)
 
@@ -79,13 +80,9 @@ struct PracticeTab: View {
                         .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
-
-                    if index < topicStats.count - 1 {
-                        Divider().padding(.leading, 68)
-                    }
+                    .glassCard()
                 }
             }
-            .glassCard()
         }
     }
 
@@ -96,9 +93,9 @@ struct PracticeTab: View {
         VStack(alignment: .leading, spacing: 12) {
             SectionTitle(title: "Tình huống nguy hiểm")
 
-            // Chapter list with progress rings
-            VStack(spacing: 0) {
-                ForEach(Array(HazardSituation.chapters.enumerated()), id: \.element.id) { index, chapter in
+            // Chapter grid with progress rings
+            AdaptiveGrid {
+                ForEach(HazardSituation.chapters, id: \.id) { chapter in
                     let chapterScore = progressStore.chapterAverageScore(chapterId: chapter.id)
                     let hasPractice = progressStore.chapterHasPractice(chapterId: chapter.id)
 
@@ -132,13 +129,20 @@ struct PracticeTab: View {
                         .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
-
-                    if index < HazardSituation.chapters.count - 1 {
-                        Divider().padding(.leading, 68)
-                    }
+                    .glassCard()
                 }
             }
-            .glassCard()
+
+            VideoOfflineCard(videoCache: videoCache, showClearAlert: $showClearCacheAlert)
+        }
+        .alert("Xoá cache video?", isPresented: $showClearCacheAlert) {
+            Button("Huỷ", role: .cancel) {}
+            Button("Xoá", role: .destructive) {
+                videoCache.clearCache()
+                Haptics.notification(.success)
+            }
+        } message: {
+            Text("Tất cả video đã tải sẽ bị xoá. Bạn có thể tải lại sau.")
         }
     }
 
