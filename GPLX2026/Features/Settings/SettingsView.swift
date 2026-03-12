@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct SettingsView: View {
+    @Environment(QuestionStore.self) private var questionStore
     @Environment(ProgressStore.self) private var progressStore
     @Environment(HazardVideoCache.self) private var videoCache
     @Environment(ThemeStore.self) private var themeStore
@@ -95,7 +96,7 @@ struct SettingsView: View {
                                 Task {
                                     let granted = await NotificationManager.requestPermission()
                                     if granted {
-                                        NotificationManager.scheduleDailyReminder(hour: dailyReminderHour)
+                                        NotificationManager.scheduleDailyReminder(hour: dailyReminderHour, progressStore: progressStore, questionStore: questionStore)
                                     } else {
                                         dailyReminderEnabled = false
                                     }
@@ -130,7 +131,7 @@ struct SettingsView: View {
                             .padding(.vertical, 14)
                             .glassCard()
                             .onChange(of: dailyReminderHour) {
-                                NotificationManager.scheduleDailyReminder(hour: dailyReminderHour)
+                                NotificationManager.scheduleDailyReminder(hour: dailyReminderHour, progressStore: progressStore, questionStore: questionStore)
                             }
                         }
 
