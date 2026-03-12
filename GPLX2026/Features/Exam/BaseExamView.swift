@@ -273,6 +273,8 @@ struct BaseExamView: View {
                 questions = questionStore.randomSimulationQuestions(count: 20)
             case .fullPractice:
                 questions = questionStore.allSimulationQuestions()
+            case .examSet(let setId):
+                questions = questionStore.simulationSetQuestions(setId: setId)
             }
             remainingSeconds = AppConstants.Simulation.scenarioTimeSeconds
             startScenarioTimer()
@@ -426,6 +428,10 @@ struct BaseExamView: View {
         )
         simulationResult = result
         progressStore.recordSimulationResult(result)
+
+        if case .simulation(let simMode) = mode, case .examSet(let setId) = simMode {
+            progressStore.addCompletedSimulationSet(setId)
+        }
 
         navigateToResult = true
     }

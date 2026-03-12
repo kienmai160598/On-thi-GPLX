@@ -6,6 +6,7 @@ struct SimulationExamView: View {
     enum Mode {
         case random
         case fullPractice
+        case examSet(Int)
     }
 
     var body: some View {

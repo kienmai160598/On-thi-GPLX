@@ -16,6 +16,8 @@ struct ExamTab: View {
     @State private var filter: ExamFilter = .all
     @State private var showFixedExams = false
     @State private var showAllExamSets = false
+    @State private var showFixedSimSets = false
+    @State private var showFixedHazardSets = false
 
     var body: some View {
         ScrollView {
@@ -93,19 +95,23 @@ struct ExamTab: View {
 
     @ViewBuilder
     private var simulationExamContent: some View {
-        ExamTypeCard(
-            icon: "photo.on.rectangle.fill",
-            title: "Thi sa hình",
-            rules: "20 câu · 60s/câu · ≥ 70%",
-            tip: "Chú ý biển báo và vạch kẻ đường",
+        VStack(spacing: 0) {
+            ExamTypeCard(
+                icon: "photo.on.rectangle.fill",
+                title: "Thi sa hình",
+                rules: "20 câu · 60s/câu · ≥ 70%",
+                tip: "Chú ý biển báo và vạch kẻ đường",
 
-            stats: progressStore.simulationHistory.isEmpty ? nil : (
-                count: progressStore.simulationExamCount,
-                avg: Int(progressStore.averageSimulationScore * 100),
-                best: Int(progressStore.bestSimulationScore * 100)
-            )
-        ) {
-            openExam(.simulationExam(mode: .random))
+                stats: progressStore.simulationHistory.isEmpty ? nil : (
+                    count: progressStore.simulationExamCount,
+                    avg: Int(progressStore.averageSimulationScore * 100),
+                    best: Int(progressStore.bestSimulationScore * 100)
+                )
+            ) {
+                openExam(.simulationExam(mode: .random))
+            }
+
+            fixedSimSets
         }
         .glassCard()
 
@@ -127,19 +133,23 @@ struct ExamTab: View {
 
     @ViewBuilder
     private var hazardExamContent: some View {
-        ExamTypeCard(
-            icon: "play.rectangle.fill",
-            title: "Thi tình huống",
-            rules: "10 video · Nhấn nhanh · ≥ 35/50",
-            tip: "Nhấn sớm khi thấy nguy hiểm",
+        VStack(spacing: 0) {
+            ExamTypeCard(
+                icon: "play.rectangle.fill",
+                title: "Thi tình huống",
+                rules: "10 video · Nhấn nhanh · ≥ 35/50",
+                tip: "Nhấn sớm khi thấy nguy hiểm",
 
-            stats: progressStore.hazardHistory.isEmpty ? nil : (
-                count: progressStore.hazardExamCount,
-                avg: Int(progressStore.averageHazardScore * 100),
-                best: progressStore.bestHazardScore * 100 / 50
-            )
-        ) {
-            openExam(.hazardTest(mode: .exam))
+                stats: progressStore.hazardHistory.isEmpty ? nil : (
+                    count: progressStore.hazardExamCount,
+                    avg: Int(progressStore.averageHazardScore * 100),
+                    best: progressStore.bestHazardScore * 100 / 50
+                )
+            ) {
+                openExam(.hazardTest(mode: .exam))
+            }
+
+            fixedHazardSets
         }
         .glassCard()
 
@@ -260,6 +270,170 @@ struct ExamTab: View {
                             .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
+                }
+            }
+        }
+    }
+
+    // MARK: - Fixed Simulation Sets
+
+    @ViewBuilder
+    private var fixedSimSets: some View {
+        let totalSets = questionStore.totalSimulationSets
+        if totalSets > 0 {
+        let completedSets = progressStore.completedSimulationSets
+        let completedCount = completedSets.count
+
+        VStack(spacing: 0) {
+            Divider().padding(.horizontal, 12)
+
+            Button {
+                withAnimation(.easeOut(duration: 0.25)) { showFixedSimSets.toggle() }
+            } label: {
+                HStack(spacing: 8) {
+                    Text("Đề thi cố định")
+                        .font(.appSans(size: 14, weight: .semibold))
+                        .foregroundStyle(Color.appTextDark)
+
+                    if completedCount > 0 {
+                        Text("\(completedCount)/\(totalSets)")
+                            .font(.appSans(size: 12, weight: .medium))
+                            .foregroundStyle(themeStore.primaryColor)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 2)
+                            .background(themeStore.primaryColor.opacity(0.1))
+                            .clipShape(Capsule())
+                    }
+
+                    Spacer()
+
+                    Image(systemName: showFixedSimSets ? "chevron.up" : "chevron.down")
+                        .font(.appSans(size: 12, weight: .medium))
+                        .foregroundStyle(Color.appTextLight)
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 12)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+
+            if showFixedSimSets {
+                Divider().padding(.horizontal, 12)
+
+                ForEach(1...totalSets, id: \.self) { setId in
+                    let isCompleted = completedSets.contains(setId)
+
+                    Button { openExam(.simulationExam(mode: .examSet(setId))) } label: {
+                        HStack(spacing: 12) {
+                            Text("Đề \(setId)")
+                                .font(.appSans(size: 15, weight: .medium))
+                                .foregroundStyle(Color.appTextDark)
+
+                            Spacer()
+
+                            if isCompleted {
+                                Image(systemName: "checkmark.circle.fill")
+                                    .font(.appSans(size: 16))
+                                    .foregroundStyle(themeStore.primaryColor)
+                            } else {
+                                Image(systemName: "chevron.right")
+                                    .font(.appSans(size: 12, weight: .medium))
+                                    .foregroundStyle(Color.appTextLight)
+                            }
+                        }
+                        .padding(.horizontal, 12)
+                        .frame(height: 46)
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+
+                    if setId < totalSets {
+                        Divider().padding(.horizontal, 12)
+                    }
+                }
+            }
+        }
+        }
+    }
+
+    // MARK: - Fixed Hazard Sets
+
+    @ViewBuilder
+    private var fixedHazardSets: some View {
+        let totalSets = HazardSituation.all.count / AppConstants.Hazard.situationsPerExam
+        let completedSets = progressStore.completedHazardSets
+        let completedCount = completedSets.count
+
+        VStack(spacing: 0) {
+            Divider().padding(.horizontal, 12)
+
+            Button {
+                withAnimation(.easeOut(duration: 0.25)) { showFixedHazardSets.toggle() }
+            } label: {
+                HStack(spacing: 8) {
+                    Text("Đề thi cố định")
+                        .font(.appSans(size: 14, weight: .semibold))
+                        .foregroundStyle(Color.appTextDark)
+
+                    if completedCount > 0 {
+                        Text("\(completedCount)/\(totalSets)")
+                            .font(.appSans(size: 12, weight: .medium))
+                            .foregroundStyle(themeStore.primaryColor)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 2)
+                            .background(themeStore.primaryColor.opacity(0.1))
+                            .clipShape(Capsule())
+                    }
+
+                    Spacer()
+
+                    Image(systemName: showFixedHazardSets ? "chevron.up" : "chevron.down")
+                        .font(.appSans(size: 12, weight: .medium))
+                        .foregroundStyle(Color.appTextLight)
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 12)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+
+            if showFixedHazardSets {
+                Divider().padding(.horizontal, 12)
+
+                ForEach(1...totalSets, id: \.self) { setId in
+                    let isCompleted = completedSets.contains(setId)
+
+                    Button { openExam(.hazardTest(mode: .examSet(setId))) } label: {
+                        HStack(spacing: 12) {
+                            Text("Đề \(setId)")
+                                .font(.appSans(size: 15, weight: .medium))
+                                .foregroundStyle(Color.appTextDark)
+
+                            Text("TH \((setId - 1) * 10 + 1)-\(setId * 10)")
+                                .font(.appSans(size: 12))
+                                .foregroundStyle(Color.appTextLight)
+
+                            Spacer()
+
+                            if isCompleted {
+                                Image(systemName: "checkmark.circle.fill")
+                                    .font(.appSans(size: 16))
+                                    .foregroundStyle(themeStore.primaryColor)
+                            } else {
+                                Image(systemName: "chevron.right")
+                                    .font(.appSans(size: 12, weight: .medium))
+                                    .foregroundStyle(Color.appTextLight)
+                            }
+                        }
+                        .padding(.horizontal, 12)
+                        .frame(height: 46)
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+
+                    if setId < totalSets {
+                        Divider().padding(.horizontal, 12)
+                    }
                 }
             }
         }

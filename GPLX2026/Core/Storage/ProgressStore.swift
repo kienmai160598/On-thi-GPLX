@@ -17,6 +17,8 @@ final class ProgressStore {
         static let bookmarks          = "bookmarks"
         static let wrongAnswers       = "wrong_answers"
         static let completedExamSets  = "completed_exam_sets"
+        static let completedSimSets   = "completed_sim_sets"
+        static let completedHazardSets = "completed_hazard_sets"
         static let simulationHistory  = "simulation_history"
         static let hazardHistory      = "hazard_history"
         static let streakCount        = "streak_count"
@@ -38,6 +40,8 @@ final class ProgressStore {
     private var _bookmarksCache: Set<Int>?
     private var _wrongAnswersCache: Set<Int>?
     private var _completedExamSetsCache: Set<Int>?
+    private var _completedSimSetsCache: Set<Int>?
+    private var _completedHazardSetsCache: Set<Int>?
     private var _streakCountCache: Int?
     private var _lastStudyDateCache: String??   // outer nil = not loaded
     private var _lastTopicKeyCache: String??    // outer nil = not loaded
@@ -316,6 +320,58 @@ final class ProgressStore {
         examHistory.first { $0.examSetId == setId }
     }
 
+    // MARK: - Completed simulation sets
+
+    var completedSimulationSets: Set<Int> {
+        if let cached = _completedSimSetsCache { return cached }
+        guard let data = defaults.data(forKey: Keys.completedSimSets) else {
+            _completedSimSetsCache = []
+            return []
+        }
+        do {
+            let list = try JSONDecoder().decode([Int].self, from: data)
+            let result = Set(list)
+            _completedSimSetsCache = result
+            return result
+        } catch {
+            _completedSimSetsCache = []
+            return []
+        }
+    }
+
+    func addCompletedSimulationSet(_ id: Int) {
+        var current = completedSimulationSets
+        current.insert(id)
+        _completedSimSetsCache = current
+        saveIntSet(current, forKey: Keys.completedSimSets)
+    }
+
+    // MARK: - Completed hazard sets
+
+    var completedHazardSets: Set<Int> {
+        if let cached = _completedHazardSetsCache { return cached }
+        guard let data = defaults.data(forKey: Keys.completedHazardSets) else {
+            _completedHazardSetsCache = []
+            return []
+        }
+        do {
+            let list = try JSONDecoder().decode([Int].self, from: data)
+            let result = Set(list)
+            _completedHazardSetsCache = result
+            return result
+        } catch {
+            _completedHazardSetsCache = []
+            return []
+        }
+    }
+
+    func addCompletedHazardSet(_ id: Int) {
+        var current = completedHazardSets
+        current.insert(id)
+        _completedHazardSetsCache = current
+        saveIntSet(current, forKey: Keys.completedHazardSets)
+    }
+
     // MARK: - Streak
 
     var streakCount: Int {
@@ -438,11 +494,13 @@ final class ProgressStore {
 
     func clearSimulationHistory() {
         defaults.removeObject(forKey: Keys.simulationHistory)
+        defaults.removeObject(forKey: Keys.completedSimSets)
         invalidateCaches()
     }
 
     func clearHazardHistory() {
         defaults.removeObject(forKey: Keys.hazardHistory)
+        defaults.removeObject(forKey: Keys.completedHazardSets)
         invalidateCaches()
     }
 

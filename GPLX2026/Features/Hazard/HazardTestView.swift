@@ -15,6 +15,7 @@ struct HazardTestView: View {
         case exam
         case practice
         case chapter(Int)
+        case examSet(Int)
     }
 
     // MARK: - State
@@ -583,6 +584,11 @@ struct HazardTestView: View {
             situations = HazardSituation.all
         case .chapter(let chapterId):
             situations = HazardSituation.all.filter { $0.chapter == chapterId }
+        case .examSet(let setId):
+            let perSet = AppConstants.Hazard.situationsPerExam
+            let startIndex = (setId - 1) * perSet
+            let endIndex = min(startIndex + perSet, HazardSituation.all.count)
+            situations = Array(HazardSituation.all[startIndex..<endIndex])
         }
         playerState = PlayerState()
     }
@@ -639,6 +645,11 @@ struct HazardTestView: View {
         )
         hazardResult = result
         progressStore.recordHazardResult(result)
+
+        if case .examSet(let setId) = mode {
+            progressStore.addCompletedHazardSet(setId)
+        }
+
         navigateToResult = true
     }
 

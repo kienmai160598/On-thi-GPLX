@@ -205,6 +205,23 @@ final class QuestionStore {
         simulationQuestions
     }
 
+    /// Total number of fixed simulation exam sets (20 questions per set).
+    var totalSimulationSets: Int {
+        let pool = simulationQuestions
+        guard !pool.isEmpty else { return 0 }
+        return max(1, pool.count / 20)
+    }
+
+    /// Fixed simulation exam set questions. Each set takes a slice of 20.
+    func simulationSetQuestions(setId: Int) -> [Question] {
+        let pool = simulationQuestions
+        let perSet = 20
+        let startIndex = (setId - 1) * perSet
+        let endIndex = min(startIndex + perSet, pool.count)
+        guard startIndex < pool.count else { return [] }
+        return Array(pool[startIndex..<endIndex])
+    }
+
     /// Look up questions by their `no` values, preserving order.
     func questions(byNos nos: [Int]) -> [Question] {
         let lookup = Dictionary(uniqueKeysWithValues: allQuestions.map { ($0.no, $0) })
