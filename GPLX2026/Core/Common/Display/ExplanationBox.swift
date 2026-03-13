@@ -31,6 +31,6 @@ struct ExplanationBox: View {
                 .multilineTextAlignment(.leading)
         }
         .padding(12)
-        .glassCard()
+        .glassCard(interactive: false)
     }
 }

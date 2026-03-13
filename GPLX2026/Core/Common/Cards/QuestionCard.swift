@@ -30,6 +30,6 @@ struct QuestionCard: View {
             }
         }
         .padding(12)
-        .glassCard()
+        .glassCard(interactive: false)
     }
 }

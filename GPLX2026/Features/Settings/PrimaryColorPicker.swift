@@ -58,7 +58,6 @@ struct PrimaryColorPicker: View {
                     if isSelected {
                         shape
                             .strokeBorder(.white, lineWidth: 2.5)
-                            .shadow(color: item.color.opacity(0.5), radius: 6)
                     }
                 }
         }

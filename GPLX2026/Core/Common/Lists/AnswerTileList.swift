@@ -8,23 +8,30 @@ struct AnswerTileList: View {
     let onSelect: (Answer) -> Void
 
     var body: some View {
-        ForEach(Array(answers.enumerated()), id: \.element.id) { index, answer in
-            let letter = ["A", "B", "C", "D"][min(index, 3)]
-            let isSelected = selectedAnswerId == answer.id
+        VStack(spacing: 0) {
+            ForEach(Array(answers.enumerated()), id: \.element.id) { index, answer in
+                let letter = ["A", "B", "C", "D"][min(index, 3)]
+                let isSelected = selectedAnswerId == answer.id
 
-            Button {
-                onSelect(answer)
-            } label: {
-                AnswerOptionCard(
-                    letter: letter,
-                    text: answer.text,
-                    isSelected: isSelected,
-                    isConfirmed: showCorrectness ? isConfirmed : false,
-                    isCorrect: answer.correct
-                )
+                if index > 0 {
+                    Divider().padding(.horizontal, 12)
+                }
+
+                Button {
+                    onSelect(answer)
+                } label: {
+                    AnswerOptionCard(
+                        letter: letter,
+                        text: answer.text,
+                        isSelected: isSelected,
+                        isConfirmed: showCorrectness ? isConfirmed : false,
+                        isCorrect: answer.correct
+                    )
+                }
+                .buttonStyle(.plain)
+                .disabled(showCorrectness && isConfirmed)
             }
-            .disabled(showCorrectness && isConfirmed)
-            .padding(.bottom, 8)
         }
+        .glassCard()
     }
 }

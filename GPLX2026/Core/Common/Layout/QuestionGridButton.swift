@@ -1,6 +1,8 @@
 import SwiftUI
 
 struct QuestionGridButton: View {
+    @Environment(LayoutMetrics.self) private var metrics
+
     let current: Int
     let total: Int
     let answeredIndices: Set<Int>
@@ -23,7 +25,7 @@ struct QuestionGridButton: View {
                 onSelect(index)
                 showGrid = false
             }
-            .presentationDetents([.medium, .large])
+            .presentationDetents(metrics.isWide ? [.large] : [.medium, .large])
             .presentationDragIndicator(.visible)
             .presentationBackground(Material.ultraThinMaterial)
         }

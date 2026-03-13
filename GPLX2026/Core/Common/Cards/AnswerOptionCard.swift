@@ -30,9 +30,9 @@ struct AnswerOptionCard: View {
             statusIcon
         }
         .padding(.horizontal, metrics.isWide ? 16 : 12)
-        .padding(.vertical, metrics.isWide ? 16 : 12)
+        .padding(.vertical, metrics.isWide ? 14 : 12)
+        .frame(maxWidth: .infinity, alignment: .leading)
         .background(bgColor)
-        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
         .overlay(alignment: .leading) {
             if let borderColor = leftBorderColor {
                 RoundedRectangle(cornerRadius: 2)
@@ -41,7 +41,7 @@ struct AnswerOptionCard: View {
                     .padding(.vertical, 8)
             }
         }
-        .glassCard()
+        .contentShape(Rectangle())
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(letter). \(text)")
         .accessibilityValue(accessibilityStatus)
