@@ -48,14 +48,7 @@ struct HazardTestView: View {
                 testContent
             }
         }
-        .background {
-            ZStack {
-                Color.scaffoldBg.ignoresSafeArea()
-                AnimatedBackground()
-            }
-        }
-        .navigationBarBackButtonHidden(true)
-        .navigationBarTitleDisplayMode(.inline)
+        .screenHeaderStyle(titleDisplayMode: .inline, hideBackButton: true)
         .toolbarVisibility(isCurrentlyLandscape ? .hidden : .visible, for: .navigationBar)
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
@@ -120,6 +113,19 @@ struct HazardTestView: View {
             geo.size.width > geo.size.height
         } action: { isLandscape in
             isCurrentlyLandscape = isLandscape
+        }
+        .overlay(alignment: .topLeading) {
+            if isCurrentlyLandscape {
+                Button { showExitDialog = true } label: {
+                    Image(systemName: "xmark")
+                        .font(.appSans(size: 16, weight: .bold))
+                        .foregroundStyle(.white)
+                        .frame(width: 44, height: 44)
+                        .background(.ultraThinMaterial, in: Circle())
+                }
+                .padding(.leading, 16)
+                .padding(.top, 8)
+            }
         }
     }
 
@@ -335,11 +341,13 @@ struct HazardTestView: View {
                 }
             }
 
-            Button {
-                Haptics.selection()
-                retryCurrent()
-            } label: {
-                AppButton(icon: "arrow.counterclockwise", label: "Xem lại", style: .secondary, height: btnHeight)
+            if isPractice {
+                Button {
+                    Haptics.selection()
+                    retryCurrent()
+                } label: {
+                    AppButton(icon: "arrow.counterclockwise", label: "Xem lại", style: .secondary, height: btnHeight)
+                }
             }
 
             Button {
@@ -463,11 +471,13 @@ struct HazardTestView: View {
                         }
                     }
 
-                    Button {
-                        Haptics.selection()
-                        retryCurrent()
-                    } label: {
-                        AppButton(icon: "arrow.counterclockwise", label: "Xem lại", style: .secondary, height: btnHeight)
+                    if isPractice {
+                        Button {
+                            Haptics.selection()
+                            retryCurrent()
+                        } label: {
+                            AppButton(icon: "arrow.counterclockwise", label: "Xem lại", style: .secondary, height: btnHeight)
+                        }
                     }
 
                     Button {
@@ -771,7 +781,7 @@ private struct HazardPlayingBar: View {
                 }
                 .foregroundStyle(Color.appError)
             }
-            .font(.appSans(size: 10))
+            .font(.appSans(size: 12))
             .transition(.opacity)
         }
     }
@@ -804,14 +814,9 @@ private struct HazardProgressCapsule: View {
         .padding(.horizontal, 14)
         .padding(.vertical, 6)
 
-        if #available(iOS 26.0, *) {
-            content
-                .glassEffect(.regular.interactive(), in: .capsule)
-        } else {
-            content
-                .background(Color.appDivider.opacity(0.3))
-                .clipShape(Capsule())
-        }
+        content
+            .background(Color.appDivider.opacity(0.3))
+            .clipShape(Capsule())
     }
 }
 
@@ -1074,7 +1079,7 @@ private struct HazardTimeline: View {
                 Label("Muộn", systemImage: "clock.badge.xmark")
                     .foregroundStyle(Color.appError)
             }
-            .font(.appSans(size: 11))
+            .font(.appSans(size: 12))
 
             // Tap time info
             if let tapTime {
@@ -1155,9 +1160,35 @@ struct HazardVideoPlayer: UIViewControllerRepresentable {
         var timeObserver: Any?
         var statusObservation: NSKeyValueObservation?
         var bufferObservation: NSKeyValueObservation?
+        var bufferTimeout: DispatchWorkItem?
+
+        /// How long the player may stall (no playable buffer) before we give up
+        /// and show the retry overlay instead of spinning indefinitely.
+        private let bufferTimeoutInterval: TimeInterval = 20
 
         init(parent: HazardVideoPlayer) {
             self.parent = parent
+        }
+
+        /// Arm a timer that flips to the error state if playback is still
+        /// stalled after `bufferTimeoutInterval`. Re-armed whenever buffering
+        /// resumes, cancelled once playback can keep up. Always called on the
+        /// main thread (representable callbacks / `.main` queue observers).
+        func scheduleBufferTimeout() {
+            bufferTimeout?.cancel()
+            let work = DispatchWorkItem { [weak self] in
+                guard let self else { return }
+                if self.player?.currentItem?.isPlaybackLikelyToKeepUp != true {
+                    self.parent.state.hasError = true
+                }
+            }
+            bufferTimeout = work
+            DispatchQueue.main.asyncAfter(deadline: .now() + bufferTimeoutInterval, execute: work)
+        }
+
+        func cancelBufferTimeout() {
+            bufferTimeout?.cancel()
+            bufferTimeout = nil
         }
 
         func setup(player: AVPlayer) {
@@ -1170,6 +1201,7 @@ struct HazardVideoPlayer: UIViewControllerRepresentable {
                 queue: .main
             ) { [weak self] _ in
                 self?.parent.state.isFinished = true
+                self?.cancelBufferTimeout()
             }
 
             errorObserver = NotificationCenter.default.addObserver(
@@ -1178,6 +1210,7 @@ struct HazardVideoPlayer: UIViewControllerRepresentable {
                 queue: .main
             ) { [weak self] _ in
                 self?.parent.state.hasError = true
+                self?.cancelBufferTimeout()
             }
 
             let interval = CMTime(seconds: 0.1, preferredTimescale: 600)
@@ -1190,21 +1223,35 @@ struct HazardVideoPlayer: UIViewControllerRepresentable {
             }
 
             bufferObservation = player.currentItem?.observe(\.isPlaybackLikelyToKeepUp, options: [.new]) { [weak self] item, _ in
+                let isKeepUp = item.isPlaybackLikelyToKeepUp
+                nonisolated(unsafe) let coordinator = self
                 Task { @MainActor in
-                    self?.parent.state.isBuffering = !item.isPlaybackLikelyToKeepUp
+                    coordinator?.parent.state.isBuffering = !isKeepUp
+                    if isKeepUp {
+                        coordinator?.cancelBufferTimeout()
+                    } else {
+                        coordinator?.scheduleBufferTimeout()
+                    }
                 }
             }
 
             statusObservation = player.currentItem?.observe(\.status, options: [.new]) { [weak self] item, _ in
                 if item.status == .failed {
+                    nonisolated(unsafe) let coordinator = self
                     Task { @MainActor in
-                        self?.parent.state.hasError = true
+                        coordinator?.parent.state.hasError = true
+                        coordinator?.cancelBufferTimeout()
                     }
                 }
             }
+
+            // Cover the initial-load case: if the very first buffer never
+            // becomes ready (offline / dead URL), surface the retry overlay.
+            scheduleBufferTimeout()
         }
 
         func cleanup(player: AVPlayer?) {
+            cancelBufferTimeout()
             if let endObserver { NotificationCenter.default.removeObserver(endObserver) }
             if let errorObserver { NotificationCenter.default.removeObserver(errorObserver) }
             if let timeObserver, let player { player.removeTimeObserver(timeObserver) }
@@ -1218,6 +1265,7 @@ struct HazardVideoPlayer: UIViewControllerRepresentable {
         }
 
         deinit {
+            bufferTimeout?.cancel()
             if let timeObserver, let player { player.removeTimeObserver(timeObserver) }
             if let endObserver { NotificationCenter.default.removeObserver(endObserver) }
             if let errorObserver { NotificationCenter.default.removeObserver(errorObserver) }

@@ -13,8 +13,13 @@ final class HazardVideoCache {
     private(set) var isDownloadingAll = false
     private(set) var downloadSpeedMBps: Double = 0
     private(set) var downloadingChapters: Set<Int> = []
+    private(set) var isPausedAll = false
+    private(set) var pausedChapters: Set<Int> = []
     private(set) var cachedCount: Int = 0
     private(set) var cacheSizeMB: Double = 0
+    /// Situations whose most recent download attempt failed (network/server/cert).
+    /// Surfaced to the UI so failures aren't silent; cleared on retry or success.
+    private(set) var failedIds: Set<Int> = []
     private var cachedIds: Set<Int> = []
     private var activeTasks: [Int: URLSessionTask] = [:]
 
@@ -121,6 +126,7 @@ final class HazardVideoCache {
 
     func downloadChapter(_ chapterId: Int) async {
         ensureStatsLoaded()
+        pausedChapters.remove(chapterId)
         downloadingChapters.insert(chapterId)
         let uncached = HazardSituation.all
             .filter { $0.chapter == chapterId && localURL(for: $0) == nil }
@@ -132,10 +138,15 @@ final class HazardVideoCache {
 
         downloadingChapters.remove(chapterId)
         resetSpeedIfIdle()
-        Haptics.notification(.success)
+        if !pausedChapters.contains(chapterId) {
+            let chapterIds = Set(HazardSituation.all.filter { $0.chapter == chapterId }.map(\.id))
+            let chapterFailed = !failedIds.isDisjoint(with: chapterIds)
+            Haptics.notification(chapterFailed ? .warning : .success)
+        }
     }
 
-    func cancelChapter(_ chapterId: Int) {
+    func pauseChapter(_ chapterId: Int) {
+        pausedChapters.insert(chapterId)
         downloadingChapters.remove(chapterId)
         let chapterSituations = HazardSituation.all.filter { $0.chapter == chapterId }
         for s in chapterSituations {
@@ -143,11 +154,13 @@ final class HazardVideoCache {
                 task.cancel()
             }
         }
+        resetSpeedIfIdle()
     }
 
     func downloadVideo(for situation: HazardSituation) async {
         guard localURL(for: situation) == nil else { return }
         downloadProgress[situation.id] = 0
+        failedIds.remove(situation.id)
 
         do {
             let tempURL: URL = try await withCheckedThrowingContinuation { continuation in
@@ -182,7 +195,10 @@ final class HazardVideoCache {
         } catch {
             activeTasks.removeValue(forKey: situation.id)
             downloadProgress.removeValue(forKey: situation.id)
+            // A user-initiated pause/cancel isn't a real failure — only flag
+            // genuine errors (no network, server 404, cert pin mismatch, …).
             if (error as NSError).code != NSURLErrorCancelled {
+                failedIds.insert(situation.id)
                 Self.logger.error("Failed to download video \(situation.id): \(error.localizedDescription)")
             }
         }
@@ -190,20 +206,51 @@ final class HazardVideoCache {
 
     func downloadAll() async {
         ensureStatsLoaded()
+        isPausedAll = false
         isDownloadingAll = true
         let uncached = HazardSituation.all.filter { localURL(for: $0) == nil }
 
-        for situation in uncached {
-            guard isDownloadingAll else { break }
-            await downloadVideo(for: situation)
+        // Download up to 4 videos concurrently to saturate the connection without
+        // overwhelming it. We add tasks in batches: once 4 are in flight we wait
+        // for one to finish before adding the next, keeping the window at most 4.
+        await withTaskGroup(of: Void.self) { group in
+            var inFlight = 0
+            for situation in uncached {
+                guard isDownloadingAll else { break }
+
+                group.addTask {
+                    await self.downloadVideo(for: situation)
+                }
+                inFlight += 1
+
+                // When the window is full, drain one slot before continuing.
+                if inFlight >= 4 {
+                    await group.next()
+                    inFlight -= 1
+                }
+            }
         }
 
         isDownloadingAll = false
         resetSpeedIfIdle()
-        Haptics.notification(.success)
+        if !isPausedAll {
+            Haptics.notification(failedIds.isEmpty ? .success : .warning)
+        }
+    }
+
+    func pauseAll() {
+        isPausedAll = true
+        isDownloadingAll = false
+        activeTasks.values.forEach { $0.cancel() }
+        activeTasks.removeAll()
+        downloadProgress.removeAll()
+        downloadingChapters.removeAll()
+        resetSpeedIfIdle()
     }
 
     func cancelAll() {
+        isPausedAll = false
+        pausedChapters.removeAll()
         activeTasks.values.forEach { $0.cancel() }
         activeTasks.removeAll()
         downloadProgress.removeAll()
@@ -217,8 +264,11 @@ final class HazardVideoCache {
         try? FileManager.default.createDirectory(at: Self.cacheDir, withIntermediateDirectories: true)
         downloadProgress.removeAll()
         cachedIds.removeAll()
+        failedIds.removeAll()
         cachedCount = 0
         cacheSizeMB = 0
+        isPausedAll = false
+        pausedChapters.removeAll()
     }
 
     // MARK: - Speed tracking
@@ -250,6 +300,14 @@ final class HazardVideoCache {
 
 // MARK: - Shared Download Delegate
 
+// Thread-safety contract for @unchecked Sendable:
+// URLSessionDelegate callbacks arrive on an arbitrary background thread (the
+// session's delegateQueue). All mutable state — `progressHandlers` and
+// `continuations` — is exclusively accessed inside `lock.withLock { … }`,
+// which serialises every read and write. The closures stored in
+// `progressHandlers` are themselves `@Sendable`, so they are safe to call
+// from any thread. No mutable state is ever touched without the lock, making
+// the @unchecked Sendable conformance correct by construction.
 private final class SharedDownloadDelegate: NSObject, URLSessionDownloadDelegate, @unchecked Sendable {
     private let lock = NSLock()
     private var progressHandlers: [Int: @Sendable (Int64, Int64, Int64) -> Void] = [:]
@@ -289,5 +347,18 @@ private final class SharedDownloadDelegate: NSObject, URLSessionDownloadDelegate
             lock.withLock { continuations.removeValue(forKey: id) }?.resume(throwing: error)
         }
         lock.withLock { _ = progressHandlers.removeValue(forKey: id) }
+    }
+
+    func urlSession(
+        _ session: URLSession,
+        didReceive challenge: URLAuthenticationChallenge,
+        completionHandler: @escaping (URLSession.AuthChallengeDisposition, URLCredential?) -> Void
+    ) {
+        if CertificatePinner.validate(challenge: challenge),
+           let trust = challenge.protectionSpace.serverTrust {
+            completionHandler(.useCredential, URLCredential(trust: trust))
+        } else {
+            completionHandler(.cancelAuthenticationChallenge, nil)
+        }
     }
 }

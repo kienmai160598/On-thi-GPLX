@@ -89,19 +89,13 @@ struct HazardResultView: View {
         .safeAreaInset(edge: .bottom) {
             if !isFromHistory {
                 VStack(spacing: 10) {
-                    if let retryMode {
-                        HStack(spacing: 10) {
-                            Button {
-                                openExam(.hazardTest(mode: retryMode))
-                            } label: {
-                                AppButton(icon: "arrow.counterclockwise", label: "Làm lại", style: .secondary, height: metrics.buttonHeight)
-                            }
-
-                            Button { popToRoot() } label: {
-                                AppButton(icon: "checkmark", label: "Hoàn thành", height: metrics.buttonHeight)
-                            }
+                    HStack(spacing: 10) {
+                        Button {
+                            openExam(.hazardTest(mode: retryMode ?? .practice))
+                        } label: {
+                            AppButton(icon: "arrow.counterclockwise", label: "Làm lại", style: .secondary, height: metrics.buttonHeight)
                         }
-                    } else {
+
                         Button { popToRoot() } label: {
                             AppButton(icon: "checkmark", label: "Hoàn thành", height: metrics.buttonHeight)
                         }
@@ -111,8 +105,7 @@ struct HazardResultView: View {
                 .padding(.bottom, 4)
             }
         }
-        .navigationBarBackButtonHidden(!isFromHistory)
-        .screenHeader(isFromHistory ? "Chi tiết tình huống" : "Kết quả tình huống")
+        .screenHeader(isFromHistory ? "Chi tiết tình huống" : "Kết quả tình huống", hideBackButton: !isFromHistory)
         .onAppear {
             if !isFromHistory {
                 ReviewHelper.requestIfFirstPass(passed: result.passed)
@@ -167,7 +160,8 @@ private struct HazardResultHero: View {
         .padding(.vertical, 24)
         .glassCard()
         .onAppear {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            Task { @MainActor in
+                try? await Task.sleep(for: .milliseconds(300))
                 animateRing = true
             }
         }
@@ -213,7 +207,7 @@ private struct ScoreDistributionChart: View {
                     VStack(spacing: 4) {
                         if dist[score] > 0 {
                             Text("\(dist[score])")
-                                .font(.appSans(size: 11))
+                                .font(.appSans(size: 12))
                                 .foregroundStyle(barColor(score))
                         }
 
@@ -237,7 +231,8 @@ private struct ScoreDistributionChart: View {
         .padding(12)
         .glassCard()
         .onAppear {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+            Task { @MainActor in
+                try? await Task.sleep(for: .milliseconds(200))
                 animate = true
             }
         }
@@ -285,7 +280,7 @@ private struct HazardReviewRow: View {
                                 .foregroundStyle(Color.appTextMedium)
 
                             Text(situation.chapterName)
-                                .font(.appSans(size: 11))
+                                .font(.appSans(size: 12))
                                 .foregroundStyle(Color.appTextLight)
                         }
 
@@ -348,7 +343,7 @@ private struct HazardReviewRow: View {
                         // Tip
                         HStack(alignment: .top, spacing: 6) {
                             Image(systemName: "lightbulb.fill")
-                                .font(.appSans(size: 11))
+                                .font(.appSans(size: 12))
                                 .foregroundStyle(Color.appWarning)
                                 .padding(.top, 1)
                             Text(situation.tip)
@@ -419,10 +414,10 @@ private struct TimingDetail: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 1) {
             Text(label)
-                .font(.appSans(size: 10))
+                .font(.appSans(size: 12))
                 .foregroundStyle(Color.appTextLight)
             Text(value)
-                .font(.appSans(size: 12, weight: .medium))
+                .font(.appSans(size: 13, weight: .medium))
                 .foregroundStyle(Color.appTextMedium)
         }
     }

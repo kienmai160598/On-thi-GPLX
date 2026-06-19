@@ -14,7 +14,7 @@ struct HazardSituation: Codable, Identifiable {
         String(format: "th%03d", id)
     }
 
-    private static let fallbackURL = URL(string: "https://gmec.vn")!
+    private static let fallbackURL = URL(string: "https://gmec.vn") ?? URL(fileURLWithPath: "")
 
     var videoURL: URL {
         URL(string: "https://gmec.vn/videos/\(videoFileName).mp4") ?? Self.fallbackURL
