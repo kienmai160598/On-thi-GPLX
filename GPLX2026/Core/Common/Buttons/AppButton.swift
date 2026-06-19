@@ -22,11 +22,7 @@ struct AppButton: View {
             if style == .primary {
                 buttonContent
                     .foregroundStyle(isEnabled ? themeStore.onPrimaryColor : Color.appTextLight)
-                    .background(
-                        RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                            .fill(isEnabled ? primary : Color.appDivider)
-                    )
-                    .glassEffect(.regular.interactive(), in: .rect(cornerRadius: cornerRadius))
+                    .glassEffect(.regular.interactive().tint(isEnabled ? primary : Color.appDivider), in: .rect(cornerRadius: cornerRadius))
             } else {
                 buttonContent
                     .foregroundStyle(isEnabled ? primary : Color.appTextLight)

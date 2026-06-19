@@ -78,7 +78,6 @@ struct WeakTopicsView: View {
                 }
             }
             .padding(.horizontal, 20)
-            .iPadReadable()
             .padding(.bottom, 24)
         }
         .screenHeader("Phân tích điểm yếu")

@@ -33,19 +33,31 @@ struct ExamTab: View {
                     }
                 }
 
+                // Exam type cards in adaptive grid
+                AdaptiveGrid(spacing: 16) {
+                    if filter == .all || filter == .questions {
+                        questionExamCard
+                    }
+                    if filter == .all || filter == .simulation {
+                        simulationExamCard
+                    }
+                    if filter == .all || filter == .hazard {
+                        hazardExamCard
+                    }
+                }
+
+                // History sections below the grid
                 if filter == .all || filter == .questions {
-                    questionExamContent
+                    questionHistory
                 }
                 if filter == .all || filter == .simulation {
-                    simulationExamContent
+                    simulationHistory
                 }
                 if filter == .all || filter == .hazard {
-                    hazardExamContent
+                    hazardHistory
                 }
             }
             .padding(.horizontal, metrics.contentPadding)
-            .frame(maxWidth: metrics.isWide ? 900 : .infinity)
-            .frame(maxWidth: .infinity)
             .padding(.top, 8)
             .padding(.bottom, 32)
         }
@@ -53,10 +65,9 @@ struct ExamTab: View {
         .screenHeader("Thi thử")
     }
 
-    // MARK: - Question Exam Content
+    // MARK: - Exam Type Cards (grid items)
 
-    @ViewBuilder
-    private var questionExamContent: some View {
+    private var questionExamCard: some View {
         VStack(spacing: 0) {
             ExamTypeCard(
                 icon: "doc.text.fill",
@@ -76,25 +87,9 @@ struct ExamTab: View {
             fixedExamSets
         }
         .glassCard()
-
-        if !progressStore.examHistory.isEmpty {
-            VStack(alignment: .leading, spacing: 12) {
-                SectionTitle(title: "Lịch sử câu hỏi")
-                HistoryList(
-                    results: Array(progressStore.examHistory.prefix(5)),
-                    scoreText: { "\($0.score)/\($0.totalQuestions) đúng" },
-                    passed: \.passed,
-                    date: \.date,
-                    destination: { ExamHistoryDetailView(result: $0) }
-                )
-            }
-        }
     }
 
-    // MARK: - Simulation Exam Content
-
-    @ViewBuilder
-    private var simulationExamContent: some View {
+    private var simulationExamCard: some View {
         VStack(spacing: 0) {
             ExamTypeCard(
                 icon: "photo.on.rectangle.fill",
@@ -114,25 +109,9 @@ struct ExamTab: View {
             fixedSimSets
         }
         .glassCard()
-
-        if !progressStore.simulationHistory.isEmpty {
-            VStack(alignment: .leading, spacing: 12) {
-                SectionTitle(title: "Lịch sử sa hình")
-                HistoryList(
-                    results: Array(progressStore.simulationHistory.prefix(5)),
-                    scoreText: { "\($0.score)/\($0.totalScenarios) đúng" },
-                    passed: \.passed,
-                    date: \.date,
-                    destination: { SimulationHistoryDetailView(result: $0) }
-                )
-            }
-        }
     }
 
-    // MARK: - Hazard Exam Content
-
-    @ViewBuilder
-    private var hazardExamContent: some View {
+    private var hazardExamCard: some View {
         VStack(spacing: 0) {
             ExamTypeCard(
                 icon: "play.rectangle.fill",
@@ -152,7 +131,44 @@ struct ExamTab: View {
             fixedHazardSets
         }
         .glassCard()
+    }
 
+    // MARK: - History Sections
+
+    @ViewBuilder
+    private var questionHistory: some View {
+        if !progressStore.examHistory.isEmpty {
+            VStack(alignment: .leading, spacing: 12) {
+                SectionTitle(title: "Lịch sử câu hỏi")
+                HistoryList(
+                    results: Array(progressStore.examHistory.prefix(5)),
+                    scoreText: { "\($0.score)/\($0.totalQuestions) đúng" },
+                    passed: \.passed,
+                    date: \.date,
+                    destination: { ExamHistoryDetailView(result: $0) }
+                )
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var simulationHistory: some View {
+        if !progressStore.simulationHistory.isEmpty {
+            VStack(alignment: .leading, spacing: 12) {
+                SectionTitle(title: "Lịch sử sa hình")
+                HistoryList(
+                    results: Array(progressStore.simulationHistory.prefix(5)),
+                    scoreText: { "\($0.score)/\($0.totalScenarios) đúng" },
+                    passed: \.passed,
+                    date: \.date,
+                    destination: { SimulationHistoryDetailView(result: $0) }
+                )
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var hazardHistory: some View {
         if !progressStore.hazardHistory.isEmpty {
             VStack(alignment: .leading, spacing: 12) {
                 SectionTitle(title: "Lịch sử tình huống")

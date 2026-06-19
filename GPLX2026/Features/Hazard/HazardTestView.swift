@@ -512,8 +512,6 @@ struct HazardTestView: View {
                 .animation(.spring(duration: 0.35, bounce: 0.15), value: hasTapped)
             }
         }
-        .frame(maxWidth: isRegular ? 700 : .infinity)
-        .frame(maxWidth: .infinity)
         .id("\(currentIndex)-\(restartToken)")
         .animation(.spring(duration: 0.35, bounce: 0.15), value: playerState.isFinished && scoreRevealed)
         .animation(.easeOut(duration: 0.2), value: currentIndex)
@@ -855,12 +853,10 @@ private struct HazardDangerButton: View {
 
             if #available(iOS 26.0, *) {
                 content
-                    .background(
-                        RoundedRectangle(cornerRadius: 18)
-                            .fill(hasTapped ? Color.appSuccess.opacity(0.15) : Color.appError.opacity(countdown ? 0.4 : 0.85))
+                    .glassEffect(
+                        .regular.interactive().tint(hasTapped ? Color.appSuccess.opacity(0.15) : Color.appError.opacity(countdown ? 0.4 : 0.85)),
+                        in: .rect(cornerRadius: 18)
                     )
-                    .clipShape(RoundedRectangle(cornerRadius: 18))
-                    .glassEffect(.regular.interactive(), in: .rect(cornerRadius: 18))
             } else {
                 content
                     .background(hasTapped ? Color.appSuccess.opacity(0.15) : Color.appError.opacity(countdown ? 0.4 : 1.0))
@@ -871,12 +867,6 @@ private struct HazardDangerButton: View {
         .disabled(isDisabled)
         .accessibilityLabel(hasTapped ? "Đã phát hiện nguy hiểm" : "Nhấn khi phát hiện nguy hiểm")
         .accessibilityHint(hasTapped ? "" : "Nhấn nhanh khi thấy tình huống nguy hiểm trong video")
-        // Pulsing red glow when active (not yet tapped)
-        .shadow(
-            color: isDisabled ? .clear : Color.appError.opacity(isPulsing ? 0.55 : 0.15),
-            radius: isPulsing ? 18 : 6,
-            y: isPulsing ? 4 : 2
-        )
         .scaleEffect(hasTapped ? 0.97 : 1.0)
         .animation(.spring(duration: 0.35, bounce: 0.3), value: hasTapped)
         .animation(.easeOut(duration: 0.3), value: countdown)
@@ -1060,7 +1050,6 @@ private struct HazardTimeline: View {
                         Circle()
                             .fill(Color.white)
                             .frame(width: 14, height: 14)
-                            .shadow(color: .black.opacity(0.2), radius: 3, y: 1)
                             .overlay(
                                 Circle()
                                     .fill(markerColor)

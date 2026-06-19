@@ -157,11 +157,6 @@ extension View {
         }
     }
 
-    /// Constrain content to readable width on iPad (centered)
-    func iPadReadable(maxWidth: CGFloat = 700) -> some View {
-        frame(maxWidth: maxWidth)
-            .frame(maxWidth: .infinity)
-    }
 }
 
 // MARK: - Exam Screen Routing

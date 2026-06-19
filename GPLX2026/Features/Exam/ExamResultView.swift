@@ -48,10 +48,10 @@ struct ExamResultView: View {
 
     var body: some View {
         ScrollView {
-            VStack(spacing: metrics.isWide ? 16 : 24) {
-                Spacer().frame(height: metrics.isWide ? 4 : 8)
+            VStack(spacing: metrics.isIPadLayout ? 16 : 24) {
+                Spacer().frame(height: metrics.isIPadLayout ? 4 : 8)
 
-                if metrics.isWide {
+                if metrics.isIPadLayout {
                     // iPad: hero + scores side-by-side
                     HStack(alignment: .top, spacing: metrics.gridSpacing) {
                         ResultHero(
@@ -96,8 +96,6 @@ struct ExamResultView: View {
                 }
             }
             .padding(.horizontal, metrics.contentPadding)
-            .frame(maxWidth: metrics.isWide ? 1000 : .infinity)
-            .frame(maxWidth: .infinity)
             .padding(.bottom, 32)
         }
         .safeAreaInset(edge: .bottom) {

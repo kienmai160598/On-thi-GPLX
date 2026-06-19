@@ -108,33 +108,90 @@ struct QuestionView: View {
 
         VStack(spacing: 0) {
             if metrics.isWide {
-                // iPad: side-by-side
-                HStack(alignment: .top, spacing: metrics.gridSpacing) {
-                    // Left: question + explanation
-                    ScrollView {
-                        VStack(alignment: .leading, spacing: 0) {
-                            QuestionCard(label: "Câu \(question.no):", question: question)
+                // iPad landscape: 3-panel (question / answers / topic progress sidebar)
+                GeometryReader { geo in
+                    let pad = metrics.contentPadding
+                    let gap = metrics.gridSpacing
+                    let available = geo.size.width - pad * 2 - gap * 2
+                    let leftWidth = available * 0.40
+                    let centerWidth = available * 0.35
+                    let rightWidth = available * 0.25
 
-                            if isConfirmed && !question.tip.isEmpty {
-                                ExplanationBox(content: question.tip)
-                                    .padding(.top, 12)
-                                    .transition(.opacity.combined(with: .move(edge: .top)))
+                    HStack(alignment: .top, spacing: gap) {
+                        // Left: question + explanation
+                        ScrollView {
+                            VStack(alignment: .leading, spacing: 0) {
+                                QuestionCard(label: "Câu \(question.no):", question: question)
+
+                                if isConfirmed && !question.tip.isEmpty {
+                                    ExplanationBox(content: question.tip)
+                                        .padding(.top, 12)
+                                        .transition(.opacity.combined(with: .move(edge: .top)))
+                                }
                             }
+                            .padding(.vertical, pad)
                         }
-                        .padding(metrics.contentPadding)
-                    }
+                        .frame(width: leftWidth)
 
-                    // Right: answers
-                    ScrollView {
-                        AnswerTileList(
-                            answers: shuffledAnswers,
-                            selectedAnswerId: selectedAnswerId,
-                            isConfirmed: isConfirmed,
-                            showCorrectness: true,
-                            onSelect: { selectAnswer($0) }
-                        )
-                        .padding(metrics.contentPadding)
+                        // Center: answers
+                        ScrollView {
+                            AnswerTileList(
+                                answers: shuffledAnswers,
+                                selectedAnswerId: selectedAnswerId,
+                                isConfirmed: isConfirmed,
+                                showCorrectness: true,
+                                onSelect: { selectAnswer($0) }
+                            )
+                            .padding(.vertical, pad)
+                        }
+                        .frame(width: centerWidth)
+
+                        // Right: topic progress sidebar
+                        topicProgressSidebar(allQuestions: allQuestions)
+                            .frame(width: rightWidth)
                     }
+                    .padding(.horizontal, pad)
+                }
+                .id(currentIndex)
+            } else if metrics.isMedium {
+                // iPad portrait: 2-panel (55/45 question/answers)
+                GeometryReader { geo in
+                    let pad = metrics.contentPadding
+                    let gap = metrics.gridSpacing
+                    let available = geo.size.width - pad * 2 - gap
+                    let leftWidth = available * 0.55
+                    let rightWidth = available * 0.45
+
+                    HStack(alignment: .top, spacing: gap) {
+                        // Left: question + explanation
+                        ScrollView {
+                            VStack(alignment: .leading, spacing: 0) {
+                                QuestionCard(label: "Câu \(question.no):", question: question)
+
+                                if isConfirmed && !question.tip.isEmpty {
+                                    ExplanationBox(content: question.tip)
+                                        .padding(.top, 12)
+                                        .transition(.opacity.combined(with: .move(edge: .top)))
+                                }
+                            }
+                            .padding(.vertical, pad)
+                        }
+                        .frame(width: leftWidth)
+
+                        // Right: answers
+                        ScrollView {
+                            AnswerTileList(
+                                answers: shuffledAnswers,
+                                selectedAnswerId: selectedAnswerId,
+                                isConfirmed: isConfirmed,
+                                showCorrectness: true,
+                                onSelect: { selectAnswer($0) }
+                            )
+                            .padding(.vertical, pad)
+                        }
+                        .frame(width: rightWidth)
+                    }
+                    .padding(.horizontal, pad)
                 }
                 .id(currentIndex)
             } else {
@@ -159,7 +216,6 @@ struct QuestionView: View {
                         }
                     }
                     .padding(.horizontal, 20)
-                    .iPadReadable()
                     .padding(.top, 16)
                 }
                 .id(currentIndex)
@@ -248,25 +304,46 @@ struct QuestionView: View {
 
         NavigationStack {
             ScrollView {
-                VStack(spacing: 24) {
-                    Spacer().frame(height: 8)
+                VStack(spacing: metrics.isIPadLayout ? 16 : 24) {
+                    Spacer().frame(height: metrics.isIPadLayout ? 4 : 8)
 
-                    ResultHero(
-                        isPassed: pct >= 70,
-                        score: correctCount,
-                        total: totalCount,
-                        subtitle: pct >= 70
-                            ? "Chúc mừng! Bạn đã hoàn thành \(pct)% câu hỏi"
-                            : "Bạn đã hoàn thành \(pct)% — hãy ôn thêm nhé"
-                    )
+                    if metrics.isIPadLayout {
+                        HStack(alignment: .top, spacing: metrics.gridSpacing) {
+                            ResultHero(
+                                isPassed: pct >= 70,
+                                score: correctCount,
+                                total: totalCount,
+                                subtitle: pct >= 70
+                                    ? "Chúc mừng! Bạn đã hoàn thành \(pct)% câu hỏi"
+                                    : "Bạn đã hoàn thành \(pct)% — hãy ôn thêm nhé"
+                            )
 
-                    VStack(spacing: 0) {
-                        ScoreRow(label: "Câu đúng", value: "\(correctCount)/\(totalCount)", color: Color.appSuccess)
-                        Divider().padding(.horizontal, 16)
-                        ScoreRow(label: "Câu sai", value: "\(wrongCount)/\(totalCount)", color: Color.appError)
+                            VStack(spacing: 0) {
+                                ScoreRow(label: "Câu đúng", value: "\(correctCount)/\(totalCount)", color: Color.appSuccess)
+                                Divider().padding(.horizontal, 16)
+                                ScoreRow(label: "Câu sai", value: "\(wrongCount)/\(totalCount)", color: Color.appError)
+                            }
+                            .padding(.vertical, 4)
+                            .glassCard()
+                        }
+                    } else {
+                        ResultHero(
+                            isPassed: pct >= 70,
+                            score: correctCount,
+                            total: totalCount,
+                            subtitle: pct >= 70
+                                ? "Chúc mừng! Bạn đã hoàn thành \(pct)% câu hỏi"
+                                : "Bạn đã hoàn thành \(pct)% — hãy ôn thêm nhé"
+                        )
+
+                        VStack(spacing: 0) {
+                            ScoreRow(label: "Câu đúng", value: "\(correctCount)/\(totalCount)", color: Color.appSuccess)
+                            Divider().padding(.horizontal, 16)
+                            ScoreRow(label: "Câu sai", value: "\(wrongCount)/\(totalCount)", color: Color.appError)
+                        }
+                        .padding(.vertical, 4)
+                        .glassCard()
                     }
-                    .padding(.vertical, 4)
-                    .glassCard()
 
                     VStack(spacing: 12) {
                         if wrongCount > 0 {
@@ -289,20 +366,19 @@ struct QuestionView: View {
                             showResultSheet = false
                             resetQuiz()
                         } label: {
-                            AppButton(label: "Làm lại", height: 48)
+                            AppButton(label: "Làm lại", height: metrics.buttonHeight)
                         }
 
                         Button {
                             showResultSheet = false
                             dismiss()
                         } label: {
-                            AppButton(label: "Hoàn thành", style: .secondary, height: 48)
+                            AppButton(label: "Hoàn thành", style: .secondary, height: metrics.buttonHeight)
                         }
                     }
                     .padding(.top, 8)
                 }
-                .padding(.horizontal, 20)
-                .iPadReadable()
+                .padding(.horizontal, metrics.contentPadding)
                 .padding(.bottom, 32)
             }
             .screenHeader("Kết quả ôn tập")
@@ -319,6 +395,83 @@ struct QuestionView: View {
                     }
                 }
             }
+        }
+    }
+
+    // MARK: - Topic Progress Sidebar (isWide only)
+
+    @ViewBuilder
+    private func topicProgressSidebar(allQuestions: [Question]) -> some View {
+        let answered = answeredIndices(for: allQuestions)
+
+        VStack(spacing: 12) {
+            // Topic name + progress
+            VStack(spacing: 4) {
+                Text(topicName)
+                    .font(.appSans(size: 14, weight: .semibold))
+                    .foregroundStyle(Color.appTextDark)
+                    .lineLimit(2)
+                    .multilineTextAlignment(.center)
+
+                Text("Câu \(currentIndex + 1)/\(allQuestions.count)")
+                    .font(.appSans(size: 12, weight: .medium))
+                    .foregroundStyle(Color.appTextMedium)
+            }
+            .padding(.top, 12)
+
+            // Legend
+            HStack(spacing: 12) {
+                sidebarLegendDot(color: themeStore.primaryColor, label: "Đang làm")
+                sidebarLegendDot(color: .appSuccess, label: "Đã xong")
+                sidebarLegendDot(color: Color.appTextLight.opacity(0.25), label: "Chưa làm")
+            }
+
+            // Grid
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 6), count: 5), spacing: 6) {
+                ForEach(0..<allQuestions.count, id: \.self) { index in
+                    Button {
+                        Haptics.selection()
+                        withAnimation(.easeOut(duration: 0.25)) {
+                            currentIndex = index
+                            selectedAnswerId = nil
+                            isConfirmed = false
+                            canAdvance = true
+                        }
+                    } label: {
+                        let isCurrent = index == currentIndex
+                        let isAnswered = answered.contains(index)
+                        Text("\(index + 1)")
+                            .font(.appSans(size: 13, weight: .semibold))
+                            .foregroundStyle(
+                                isCurrent ? themeStore.onPrimaryColor :
+                                isAnswered ? Color.appSuccess :
+                                Color.appTextMedium
+                            )
+                            .frame(maxWidth: .infinity, minHeight: 36)
+                            .background(
+                                isCurrent ? themeStore.primaryColor :
+                                isAnswered ? Color.appSuccess.opacity(0.12) :
+                                Color.appTextLight.opacity(0.25)
+                            )
+                            .clipShape(RoundedRectangle(cornerRadius: 6))
+                    }
+                }
+            }
+
+            Spacer()
+        }
+        .padding(.horizontal, 8)
+        .padding(.bottom, 12)
+    }
+
+    private func sidebarLegendDot(color: Color, label: String) -> some View {
+        HStack(spacing: 4) {
+            Circle()
+                .fill(color)
+                .frame(width: 8, height: 8)
+            Text(label)
+                .font(.appSans(size: 10))
+                .foregroundStyle(Color.appTextMedium)
         }
     }
 
