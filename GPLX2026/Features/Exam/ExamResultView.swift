@@ -125,8 +125,7 @@ struct ExamResultView: View {
                 .padding(.bottom, 4)
             }
         }
-        .navigationBarBackButtonHidden(!isFromHistory)
-        .screenHeader(isFromHistory ? "Chi tiết bài thi" : "Kết quả thi")
+        .screenHeader(isFromHistory ? "Chi tiết bài thi" : "Kết quả thi", hideBackButton: !isFromHistory)
         .onAppear {
             if !isFromHistory {
                 ReviewHelper.requestIfFirstPass(passed: examResult.passed)

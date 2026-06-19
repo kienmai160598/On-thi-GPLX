@@ -54,7 +54,8 @@ extension ProgressStore {
             if dateA == nil && dateB == nil { return a < b }
 
             // Both reviewed → oldest first
-            return dateA! < dateB!
+            guard let dA = dateA, let dB = dateB else { return false }
+            return dA < dB
         }
     }
 
@@ -75,7 +76,7 @@ extension ProgressStore {
             result[String(entry.key)] = entry.value.timeIntervalSince1970
         }
         if let data = try? JSONEncoder().encode(raw) {
-            defaults.set(data, forKey: Self.reviewDatesKey)
+            safeWrite { $0.set(data, forKey: Self.reviewDatesKey) }
         }
         _reviewDatesCache = dates
     }

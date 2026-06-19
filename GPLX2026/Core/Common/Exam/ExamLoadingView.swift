@@ -9,7 +9,7 @@ struct ExamLoadingView: View {
             ProgressView()
                 .tint(themeStore.primaryColor)
             Text("Đang tạo đề thi...")
-                .font(.subheadline)
+                .font(.appSans(size: 15))
                 .foregroundStyle(Color.appTextMedium)
                 .padding(.top, 8)
         }

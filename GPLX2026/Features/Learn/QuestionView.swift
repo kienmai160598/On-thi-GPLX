@@ -17,6 +17,7 @@ struct QuestionView: View {
     @State private var correctCount = 0
     @State private var answeredInSession: Set<Int> = []
     @State private var showResultSheet = false
+    @State private var showExitConfirmation = false
     @State private var canAdvance = true
     @State private var sessionQuestions: [Question] = []
 
@@ -77,14 +78,7 @@ struct QuestionView: View {
     @ViewBuilder
     private var emptyState: some View {
         EmptyState(icon: "text.page.slash", message: "Không có câu hỏi")
-            .navigationBarTitleDisplayMode(.inline)
-            .navigationBarBackButtonHidden(true)
-            .background {
-                ZStack {
-                    Color.scaffoldBg.ignoresSafeArea()
-                    AnimatedBackground()
-                }
-            }
+            .screenHeader(topicName, titleDisplayMode: .inline, hideBackButton: true)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button { dismiss() } label: {
@@ -106,7 +100,7 @@ struct QuestionView: View {
         let isLast = currentIndex + 1 >= allQuestions.count
         let isSpecial = topicKey == AppConstants.TopicKey.diemLiet || topicKey == AppConstants.TopicKey.bookmarks || topicKey == AppConstants.TopicKey.wrongAnswers || topicKey.hasPrefix(AppConstants.TopicKey.wrongAnswers + ":")
 
-        VStack(spacing: 0) {
+        Group {
             if metrics.isWide {
                 // iPad landscape: 3-panel (question / answers / topic progress sidebar)
                 GeometryReader { geo in
@@ -222,7 +216,8 @@ struct QuestionView: View {
                 .transition(.opacity)
                 .animation(.easeInOut(duration: 0.3), value: currentIndex)
             }
-
+        }
+        .safeAreaInset(edge: .bottom) {
             let tipsTopicKey = Topic.keyForTopicId(question.topic)
             let hasTips = !questionStore.memoryTips(forTopicKey: tipsTopicKey).isEmpty
 
@@ -260,16 +255,16 @@ struct QuestionView: View {
                 ) : nil
             )
         }
-        .background {
-            ZStack {
-                Color.scaffoldBg.ignoresSafeArea()
-                AnimatedBackground()
-            }
-        }
-        .navigationBarBackButtonHidden(true)
+        .screenHeaderStyle(titleDisplayMode: .inline, hideBackButton: true)
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
-                Button { dismiss() } label: {
+                Button {
+                    if answeredInSession.isEmpty {
+                        dismiss()
+                    } else {
+                        showExitConfirmation = true
+                    }
+                } label: {
                     Image(systemName: "chevron.left")
                         .font(.appSans(size: 16, weight: .semibold))
                         .foregroundStyle(Color.appTextDark)
@@ -286,6 +281,12 @@ struct QuestionView: View {
                         .foregroundStyle(isBookmarked ? themeStore.primaryColor : Color.appTextDark)
                 }
             }
+        }
+        .alert("Thoát ôn tập?", isPresented: $showExitConfirmation) {
+            Button("Tiếp tục", role: .cancel) {}
+            Button("Thoát", role: .destructive) { dismiss() }
+        } message: {
+            Text("Tiến trình đã được lưu tự động.")
         }
         .fullScreenCover(isPresented: $showResultSheet) {
             studyResultSheet(totalCount: allQuestions.count)
@@ -423,7 +424,7 @@ struct QuestionView: View {
             HStack(spacing: 12) {
                 sidebarLegendDot(color: themeStore.primaryColor, label: "Đang làm")
                 sidebarLegendDot(color: .appSuccess, label: "Đã xong")
-                sidebarLegendDot(color: Color.appTextLight.opacity(0.25), label: "Chưa làm")
+                sidebarLegendDot(color: Color.appDisabled, label: "Chưa làm")
             }
 
             // Grid
@@ -451,7 +452,7 @@ struct QuestionView: View {
                             .background(
                                 isCurrent ? themeStore.primaryColor :
                                 isAnswered ? Color.appSuccess.opacity(0.12) :
-                                Color.appTextLight.opacity(0.25)
+                                Color.appDisabled
                             )
                             .clipShape(RoundedRectangle(cornerRadius: 6))
                     }
@@ -470,7 +471,7 @@ struct QuestionView: View {
                 .fill(color)
                 .frame(width: 8, height: 8)
             Text(label)
-                .font(.appSans(size: 10))
+                .font(.appSans(size: 12))
                 .foregroundStyle(Color.appTextMedium)
         }
     }

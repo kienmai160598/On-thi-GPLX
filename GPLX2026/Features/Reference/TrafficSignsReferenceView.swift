@@ -104,7 +104,7 @@ private struct SignRow: View {
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 6) {
                     Text(sign.code)
-                        .font(.appSans(size: 11))
+                        .font(.appSans(size: 12))
                         .foregroundStyle(sign.codeColor)
                         .padding(.horizontal, 6)
                         .padding(.vertical, 2)

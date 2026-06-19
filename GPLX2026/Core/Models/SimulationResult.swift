@@ -1,4 +1,7 @@
 import Foundation
+import os
+
+private let logger = Logger(subsystem: "com.gplx2026", category: "SimulationResult")
 
 // MARK: - SimulationResult
 
@@ -58,7 +61,9 @@ struct SimulationResult: Codable, Identifiable {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         id = (try? c.decode(UUID.self, forKey: .id)) ?? UUID()
         let dateString = try c.decode(String.self, forKey: .date)
-        date = DateFormatters.iso8601.date(from: dateString) ?? Date()
+        let parsedDate = DateFormatters.iso8601.date(from: dateString)
+        if parsedDate == nil { logger.warning("SimulationResult: unparseable date '\(dateString)', using current date") }
+        date = parsedDate ?? Date()
         score = try c.decode(Int.self, forKey: .score)
         totalScenarios = try c.decode(Int.self, forKey: .totalScenarios)
         totalTimeUsedSeconds = try c.decode(Int.self, forKey: .totalTimeUsedSeconds)

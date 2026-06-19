@@ -224,7 +224,7 @@ private struct RefRow: View {
                     .font(.appSans(size: 16, weight: .bold))
                     .foregroundStyle(accentColor)
                 Text(unit)
-                    .font(.appSans(size: 11))
+                    .font(.appSans(size: 12))
                     .foregroundStyle(Color.appTextLight)
             }
         }

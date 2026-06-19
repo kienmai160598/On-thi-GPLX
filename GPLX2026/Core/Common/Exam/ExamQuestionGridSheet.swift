@@ -55,7 +55,7 @@ struct ExamQuestionGridSheet: View {
         HStack(spacing: 20) {
             legendItem(color: .appPrimary, count: 1, label: "Đang làm")
             legendItem(color: .appSuccess, count: answeredCount, label: "Đã xong")
-            legendItem(color: Color.appTextLight.opacity(0.25), textColor: .appTextMedium, count: unansweredCount, label: "Chưa làm")
+            legendItem(color: Color.appDisabled, textColor: .appTextMedium, count: unansweredCount, label: "Chưa làm")
             Spacer()
         }
     }
@@ -82,7 +82,7 @@ struct ExamQuestionGridSheet: View {
     private func backgroundColor(for index: Int) -> Color {
         if index == currentIndex { return themeStore.primaryColor }
         if answeredIndices.contains(index) { return Color.appSuccess.opacity(0.12) }
-        return Color.appTextLight.opacity(0.25)
+        return Color.appDisabled
     }
 
     // MARK: - Legend Item
@@ -93,7 +93,7 @@ struct ExamQuestionGridSheet: View {
                 .font(.appSerif(size: 18, weight: .bold))
                 .foregroundStyle(textColor ?? color)
             Text(label)
-                .font(.appSans(size: 11))
+                .font(.appSans(size: 12))
                 .foregroundStyle(Color.appTextMedium)
         }
     }

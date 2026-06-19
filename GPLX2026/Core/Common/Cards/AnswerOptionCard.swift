@@ -32,16 +32,8 @@ struct AnswerOptionCard: View {
         .padding(.horizontal, metrics.isWide ? 16 : 12)
         .padding(.vertical, metrics.isWide ? 14 : 12)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(bgColor)
-        .overlay(alignment: .leading) {
-            if let borderColor = leftBorderColor {
-                RoundedRectangle(cornerRadius: 2)
-                    .fill(borderColor)
-                    .frame(width: metrics.isWide ? 5 : 4)
-                    .padding(.vertical, 8)
-            }
-        }
-        .contentShape(Rectangle())
+        .background(bgColor, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .glassCard()
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(letter). \(text)")
         .accessibilityValue(accessibilityStatus)
@@ -57,8 +49,8 @@ struct AnswerOptionCard: View {
     }
 
     private var letterColor: Color {
-        if isConfirmed && isCorrect { return .white }
-        if isConfirmed && isSelected && !isCorrect { return .white }
+        if isConfirmed && isCorrect { return .appOnPrimary }
+        if isConfirmed && isSelected && !isCorrect { return .appOnPrimary }
         if isSelected { return .appPrimary }
         return .appTextMedium
     }
@@ -67,22 +59,15 @@ struct AnswerOptionCard: View {
         if isConfirmed && isCorrect { return .appSuccess }
         if isConfirmed && isSelected && !isCorrect { return .appError }
         if isSelected { return .appPrimary.opacity(0.12) }
-        return .appDivider.opacity(0.5)
+        return .appDivider.opacity(0.4)
     }
 
     private var bgColor: Color {
-        if isSelected && !isConfirmed { return .appPrimary.opacity(0.06) }
+        if isSelected && !isConfirmed { return .appPrimary.opacity(0.10) }
         guard isConfirmed else { return .clear }
         if isCorrect { return .appSuccess.opacity(0.10) }
         if isSelected && !isCorrect { return .appError.opacity(0.10) }
         return .clear
-    }
-
-    private var leftBorderColor: Color? {
-        guard isConfirmed else { return nil }
-        if isCorrect { return .appSuccess }
-        if isSelected && !isCorrect { return .appError }
-        return nil
     }
 
     @ViewBuilder

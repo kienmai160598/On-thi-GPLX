@@ -126,8 +126,7 @@ struct SimulationResultView: View {
                 .padding(.bottom, 4)
             }
         }
-        .navigationBarBackButtonHidden(!isFromHistory)
-        .screenHeader(isFromHistory ? "Chi tiết mô phỏng" : "Kết quả mô phỏng")
+        .screenHeader(isFromHistory ? "Chi tiết mô phỏng" : "Kết quả mô phỏng", hideBackButton: !isFromHistory)
         .onAppear {
             if !isFromHistory {
                 ReviewHelper.requestIfFirstPass(passed: simulationResult.passed)

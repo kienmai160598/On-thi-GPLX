@@ -36,7 +36,7 @@ struct BackgroundAnimationPicker: View {
                                 .font(.appSans(size: 20))
                                 .foregroundStyle(isSelected ? accentColor : Color.appTextMedium)
                             Text(option.label)
-                                .font(.appSans(size: 10, weight: isSelected ? .bold : .medium))
+                                .font(.appSans(size: 12, weight: isSelected ? .bold : .medium))
                                 .foregroundStyle(isSelected ? accentColor : Color.appTextMedium)
                                 .lineLimit(1)
                         }

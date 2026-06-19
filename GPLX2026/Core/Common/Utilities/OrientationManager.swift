@@ -20,7 +20,8 @@ final class OrientationManager {
             let prefs = UIWindowScene.GeometryPreferences.iOS(interfaceOrientations: .landscapeRight)
             windowScene.requestGeometryUpdate(prefs) { _ in }
         }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(500))
             self.allowedOrientations = .allButUpsideDown
         }
     }
@@ -32,7 +33,8 @@ final class OrientationManager {
             let prefs = UIWindowScene.GeometryPreferences.iOS(interfaceOrientations: .portrait)
             windowScene.requestGeometryUpdate(prefs) { _ in }
         }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(500))
             self.allowedOrientations = .allButUpsideDown
         }
     }
