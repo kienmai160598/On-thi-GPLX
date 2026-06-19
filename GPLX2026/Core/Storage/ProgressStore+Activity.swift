@@ -22,11 +22,11 @@ extension ProgressStore {
         var activity = studyActivity
         activity[today, default: 0] += 1
         // Keep only last 120 days
-        let cutoff = Calendar.current.date(byAdding: .day, value: -120, to: Date())!
+        let cutoff = Calendar.current.date(byAdding: .day, value: -120, to: Date()) ?? Date()
         let cutoffStr = Self.activityDateString(from: cutoff)
         activity = activity.filter { $0.key >= cutoffStr }
         if let data = try? JSONEncoder().encode(activity) {
-            defaults.set(data, forKey: Self.activityKey)
+            safeWrite { $0.set(data, forKey: Self.activityKey) }
         }
         _studyActivityCache = activity
     }
@@ -37,15 +37,19 @@ extension ProgressStore {
     }
 
     /// Total questions answered in the last N days.
+    ///
+    /// Activity keys are `yyyy-MM-dd` strings, which sort lexicographically the
+    /// same as chronologically — so we compute one cutoff string and sum the
+    /// cached dictionary directly instead of doing N `Calendar`/`DateFormatter`
+    /// round-trips on every render.
     func totalActivity(lastDays: Int) -> Int {
+        guard lastDays > 0 else { return 0 }
         let calendar = Calendar.current
-        var total = 0
-        for i in 0..<lastDays {
-            if let date = calendar.date(byAdding: .day, value: -i, to: Date()) {
-                total += activityCount(for: date)
-            }
+        guard let cutoff = calendar.date(byAdding: .day, value: -(lastDays - 1), to: Date()) else { return 0 }
+        let cutoffStr = Self.activityDateString(from: cutoff)
+        return studyActivity.reduce(0) { sum, pair in
+            pair.key >= cutoffStr ? sum + pair.value : sum
         }
-        return total
     }
 
     private static let _activityFormatter: DateFormatter = {

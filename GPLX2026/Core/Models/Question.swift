@@ -87,10 +87,29 @@ struct Question: Codable, Identifiable, Hashable {
     /// Whether this question is in the B1 question pool.
     var isB1: Bool { b1Position > 0 }
 
+    // The shuffle is deterministic per question number, so the result is cached
+    // and reused — `shuffledAnswers` is read on every exam-view render (the
+    // 1s timer re-renders the whole body), and the seeded shuffle is pure waste
+    // after the first call.
+    private static let shuffleCacheLock = NSLock()
+    nonisolated(unsafe) private static var shuffleCache: [Int: [Answer]] = [:]
+
     /// Shuffled copy of the answers array, deterministic per question number.
     var shuffledAnswers: [Answer] {
+        Self.shuffleCacheLock.lock()
+        if let cached = Self.shuffleCache[no] {
+            Self.shuffleCacheLock.unlock()
+            return cached
+        }
+        Self.shuffleCacheLock.unlock()
+
         var gen = SeededRandomNumberGenerator(seed: UInt64(no))
-        return answers.shuffled(using: &gen)
+        let result = answers.shuffled(using: &gen)
+
+        Self.shuffleCacheLock.lock()
+        Self.shuffleCache[no] = result
+        Self.shuffleCacheLock.unlock()
+        return result
     }
 
     // MARK: Hashable

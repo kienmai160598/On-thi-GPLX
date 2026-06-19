@@ -20,6 +20,7 @@ final class QuestionStore {
     private var _diemLietCache: [Question]?
     private var _simulationCache: [Question]?
     private var _b1Cache: [Question]?
+    private var _questionsByNo: [Int: Question] = [:]
 
     // MARK: - Memory tips cache
 
@@ -27,7 +28,8 @@ final class QuestionStore {
 
     // MARK: - Loading questions
 
-    func loadQuestions() {
+    @MainActor
+    func loadQuestions() async {
         guard allQuestions.isEmpty else { return }
         isLoading = true
 
@@ -37,12 +39,21 @@ final class QuestionStore {
             return
         }
 
-        do {
-            let data = try Data(contentsOf: url)
-            allQuestions = try JSONDecoder().decode([Question].self, from: data)
+        // Read + decode the ~460KB JSON off the main thread so the splash
+        // animation stays smooth and the first frame isn't blocked.
+        let decoded: [Question]? = await Task.detached(priority: .userInitiated) {
+            do {
+                let data = try Data(contentsOf: url)
+                return try JSONDecoder().decode([Question].self, from: data)
+            } catch {
+                logger.error("Failed to load questions.json: \(error.localizedDescription)")
+                return nil
+            }
+        }.value
+
+        if let decoded {
+            allQuestions = decoded
             rebuildCaches()
-        } catch {
-            logger.error("Failed to load questions.json: \(error.localizedDescription)")
         }
 
         isLoading = false
@@ -224,8 +235,7 @@ final class QuestionStore {
 
     /// Look up questions by their `no` values, preserving order.
     func questions(byNos nos: [Int]) -> [Question] {
-        let lookup = Dictionary(uniqueKeysWithValues: allQuestions.map { ($0.no, $0) })
-        return nos.compactMap { lookup[$0] }
+        nos.compactMap { _questionsByNo[$0] }
     }
 
     // MARK: - Cache management
@@ -238,6 +248,7 @@ final class QuestionStore {
         _diemLietCache = allQuestions.filter(\.isDiemLiet)
         _simulationCache = allQuestions.filter { $0.topic == 6 && $0.hasImage }
         _b1Cache = allQuestions.filter(\.isB1).sorted { $0.b1Position < $1.b1Position }
+        _questionsByNo = Dictionary(allQuestions.map { ($0.no, $0) }, uniquingKeysWith: { first, _ in first })
     }
 
     // MARK: - Private helpers

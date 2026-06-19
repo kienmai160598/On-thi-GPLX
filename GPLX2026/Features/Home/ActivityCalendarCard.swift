@@ -11,10 +11,13 @@ struct ActivityCalendarCard: View {
     private let cellSpacing: CGFloat = 3
     private let dayLabels = ["T2", "", "T4", "", "T6", "", "CN"]
 
-    var body: some View {
-        let activity = progressStore.studyActivity
-        let totalLast30 = progressStore.totalActivity(lastDays: 30)
+    // Precomputed grid (columns of per-day counts; nil = empty cell) and the
+    // 30-day total. Rebuilt only when activity changes, so the ~91
+    // Calendar/DateFormatter calls don't run on every render.
+    @State private var grid: [[Int?]] = []
+    @State private var totalLast30 = 0
 
+    var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack {
                 Text("Hoạt động học")
@@ -33,20 +36,20 @@ struct ActivityCalendarCard: View {
                 VStack(spacing: cellSpacing) {
                     ForEach(0..<7, id: \.self) { day in
                         Text(dayLabels[day])
-                            .font(.appSans(size: 9))
+                            .font(.appSans(size: 12))
                             .foregroundStyle(Color.appTextLight)
-                            .frame(width: 16, height: cellSize)
+                            .frame(width: 20, height: cellSize)
                     }
                 }
 
                 // Calendar grid
-                calendarGrid(activity: activity)
+                calendarGrid
             }
 
             // Legend
             HStack(spacing: 4) {
                 Text("Ít")
-                    .font(.appSans(size: 10))
+                    .font(.appSans(size: 12))
                     .foregroundStyle(Color.appTextLight)
                 ForEach(0..<5, id: \.self) { level in
                     RoundedRectangle(cornerRadius: 2)
@@ -54,31 +57,24 @@ struct ActivityCalendarCard: View {
                         .frame(width: 10, height: 10)
                 }
                 Text("Nhiều")
-                    .font(.appSans(size: 10))
+                    .font(.appSans(size: 12))
                     .foregroundStyle(Color.appTextLight)
             }
         }
         .padding(16)
         .glassCard()
+        .onAppear { rebuild() }
+        .onChange(of: progressStore.studyActivity) { rebuild() }
     }
 
     @ViewBuilder
-    private func calendarGrid(activity: [String: Int]) -> some View {
-        let calendar = Calendar.current
-        let today = Date()
-        let todayWeekday = calendar.component(.weekday, from: today)
-        // Convert to Monday-based (0=Mon, 6=Sun)
-        let todayOffset = (todayWeekday + 5) % 7
-
+    private var calendarGrid: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: cellSpacing) {
-                ForEach((0..<weeks).reversed(), id: \.self) { weekIndex in
+                ForEach(Array(grid.enumerated()), id: \.offset) { _, column in
                     VStack(spacing: cellSpacing) {
-                        ForEach(0..<7, id: \.self) { dayIndex in
-                            let daysAgo = weekIndex * 7 + (todayOffset - dayIndex)
-                            if daysAgo >= 0, let date = calendar.date(byAdding: .day, value: -daysAgo, to: today) {
-                                let dateStr = Self.dateString(from: date)
-                                let count = activity[dateStr] ?? 0
+                        ForEach(Array(column.enumerated()), id: \.offset) { _, count in
+                            if let count {
                                 RoundedRectangle(cornerRadius: 2)
                                     .fill(colorForCount(count))
                                     .frame(width: cellSize, height: cellSize)
@@ -90,6 +86,33 @@ struct ActivityCalendarCard: View {
                 }
             }
         }
+    }
+
+    /// Rebuild the week-column grid. Columns run oldest → newest (left → right),
+    /// matching the original layout.
+    private func rebuild() {
+        let calendar = Calendar.current
+        let today = Date()
+        let todayWeekday = calendar.component(.weekday, from: today)
+        // Convert to Monday-based (0=Mon, 6=Sun)
+        let todayOffset = (todayWeekday + 5) % 7
+        let activity = progressStore.studyActivity
+
+        var result: [[Int?]] = []
+        for weekIndex in (0..<weeks).reversed() {
+            var column: [Int?] = []
+            for dayIndex in 0..<7 {
+                let daysAgo = weekIndex * 7 + (todayOffset - dayIndex)
+                if daysAgo >= 0, let date = calendar.date(byAdding: .day, value: -daysAgo, to: today) {
+                    column.append(activity[Self.dateString(from: date)] ?? 0)
+                } else {
+                    column.append(nil)
+                }
+            }
+            result.append(column)
+        }
+        grid = result
+        totalLast30 = progressStore.totalActivity(lastDays: 30)
     }
 
     private func colorForCount(_ count: Int) -> Color {
