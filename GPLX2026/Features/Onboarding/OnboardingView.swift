@@ -2,9 +2,18 @@ import SwiftUI
 
 struct OnboardingView: View {
     @Environment(ThemeStore.self) private var themeStore
+    @Environment(QuestionStore.self) private var questionStore
+    @Environment(ProgressStore.self) private var progressStore
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
     @AppStorage(AppConstants.StorageKey.licenseType) private var licenseType = "b2"
+    @AppStorage(AppConstants.StorageKey.dailyReminderEnabled) private var dailyReminderEnabled = false
+    @AppStorage(AppConstants.StorageKey.dailyReminderHour) private var dailyReminderHour = 20
+    @AppStorage(AppConstants.StorageKey.examCountdownEnabled) private var examCountdownEnabled = false
+    @AppStorage(AppConstants.StorageKey.dailyGoalNudgeEnabled) private var dailyGoalNudgeEnabled = false
     @State private var currentPage = 0
+
+    /// Page that primes + requests notification permission.
+    private let notificationPageID = 5
 
     private let pages = [
         OnboardingPage(
@@ -39,6 +48,12 @@ struct OnboardingView: View {
         ),
         OnboardingPage(
             id: 5,
+            icon: "bell.badge.fill",
+            title: "Nhắc bạn ôn tập",
+            subtitle: "Bật thông báo để nhận nhắc nhở ôn tập mỗi ngày\nvà đếm ngược trước ngày thi"
+        ),
+        OnboardingPage(
+            id: 6,
             icon: "flag.checkered",
             title: "Sẵn sàng rồi!",
             subtitle: "Bắt đầu hành trình chinh phục\nbằng lái xe của bạn"
@@ -93,23 +108,61 @@ struct OnboardingView: View {
 
             // CTA button
             Button {
-                if currentPage < pages.count - 1 {
-                    withAnimation(.spring(duration: 0.3)) {
-                        currentPage += 1
-                    }
-                } else {
-                    completeOnboarding()
-                }
+                handleCTA()
             } label: {
-                AppButton(
-                    icon: currentPage == pages.count - 1 ? "arrow.right" : nil,
-                    label: currentPage == pages.count - 1 ? "Bắt đầu ngay" : "Tiếp tục"
-                )
+                AppButton(icon: ctaIcon, label: ctaLabel)
             }
             .padding(.horizontal, 24)
             .padding(.bottom, 40)
         }
         .glassBackground()
+    }
+
+    private var isNotificationPage: Bool {
+        pages[currentPage].id == notificationPageID
+    }
+
+    private var ctaLabel: String {
+        if isNotificationPage { return "Bật nhắc nhở" }
+        return currentPage == pages.count - 1 ? "Bắt đầu ngay" : "Tiếp tục"
+    }
+
+    private var ctaIcon: String? {
+        if isNotificationPage { return "bell.badge" }
+        return currentPage == pages.count - 1 ? "arrow.right" : nil
+    }
+
+    private func handleCTA() {
+        guard isNotificationPage else {
+            advance()
+            return
+        }
+        // Ask after showing the value prop. If granted, turn on the daily
+        // reminder by default and schedule immediately.
+        Task {
+            if await NotificationManager.requestAuthorization() {
+                dailyReminderEnabled = true
+                await NotificationManager.syncReminders(
+                    dailyEnabled: true,
+                    hour: dailyReminderHour,
+                    examCountdownEnabled: examCountdownEnabled,
+                    dailyGoalNudgeEnabled: dailyGoalNudgeEnabled,
+                    progressStore: progressStore,
+                    questionStore: questionStore
+                )
+            }
+            advance()
+        }
+    }
+
+    private func advance() {
+        if currentPage < pages.count - 1 {
+            withAnimation(.spring(duration: 0.3)) {
+                currentPage += 1
+            }
+        } else {
+            completeOnboarding()
+        }
     }
 
     private func completeOnboarding() {

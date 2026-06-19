@@ -10,10 +10,13 @@ struct SettingsView: View {
     @AppStorage(AppConstants.StorageKey.licenseType) private var licenseType: String = "b2"
     @AppStorage(AppConstants.StorageKey.dailyReminderEnabled) private var dailyReminderEnabled: Bool = false
     @AppStorage(AppConstants.StorageKey.dailyReminderHour) private var dailyReminderHour: Int = 20
+    @AppStorage(AppConstants.StorageKey.examCountdownEnabled) private var examCountdownEnabled: Bool = false
+    @AppStorage(AppConstants.StorageKey.dailyGoalNudgeEnabled) private var dailyGoalNudgeEnabled: Bool = false
 
     @State private var showResetSheet = false
     @State private var resetToast: String?
     @State private var resetConfirmation: ResetAction?
+    @State private var showPermissionDeniedAlert = false
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 28) {
@@ -88,19 +91,8 @@ struct SettingsView: View {
                             subtitle: "Thông báo nhắc ôn bài mỗi ngày",
                             isOn: $dailyReminderEnabled
                         )
-                        .onChange(of: dailyReminderEnabled) {
-                            if dailyReminderEnabled {
-                                Task {
-                                    let granted = await NotificationManager.requestPermission()
-                                    if granted {
-                                        NotificationManager.scheduleDailyReminder(hour: dailyReminderHour, progressStore: progressStore, questionStore: questionStore)
-                                    } else {
-                                        dailyReminderEnabled = false
-                                    }
-                                }
-                            } else {
-                                NotificationManager.cancelDailyReminder()
-                            }
+                        .onChange(of: dailyReminderEnabled) { _, newValue in
+                            handleReminderChange(turnedOn: newValue) { dailyReminderEnabled = false }
                         }
 
                         if dailyReminderEnabled {
@@ -127,9 +119,7 @@ struct SettingsView: View {
                             .padding(.horizontal, 16)
                             .padding(.vertical, 14)
                             .glassCard()
-                            .onChange(of: dailyReminderHour) {
-                                NotificationManager.scheduleDailyReminder(hour: dailyReminderHour, progressStore: progressStore, questionStore: questionStore)
-                            }
+                            .onChange(of: dailyReminderHour) { syncReminders() }
                         }
 
                         // Exam date
@@ -138,7 +128,7 @@ struct SettingsView: View {
                                 "Ngày thi dự kiến",
                                 selection: Binding(
                                     get: { progressStore.examDate ?? Calendar.current.date(byAdding: .day, value: 30, to: Date())! },
-                                    set: { progressStore.setExamDate($0) }
+                                    set: { progressStore.setExamDate($0); syncReminders() }
                                 ),
                                 in: Date()...,
                                 displayedComponents: .date
@@ -155,8 +145,21 @@ struct SettingsView: View {
                         .glassCard()
 
                         if progressStore.examDate != nil {
+                            // Exam countdown reminders
+                            settingsToggle(
+                                iconOn: "calendar.badge.clock",
+                                iconOff: "calendar",
+                                title: "Nhắc trước ngày thi",
+                                subtitle: "Còn 7, 3, 1 ngày và sáng ngày thi",
+                                isOn: $examCountdownEnabled
+                            )
+                            .onChange(of: examCountdownEnabled) { _, newValue in
+                                handleReminderChange(turnedOn: newValue) { examCountdownEnabled = false }
+                            }
+
                             Button {
                                 progressStore.setExamDate(nil)
+                                syncReminders()
                                 Haptics.notification(.success)
                                 showToast("Đã xoá ngày thi")
                             } label: {
@@ -198,6 +201,18 @@ struct SettingsView: View {
                         .padding(.horizontal, 16)
                         .padding(.vertical, 14)
                         .glassCard()
+
+                        // Daily-goal evening nudge
+                        settingsToggle(
+                            iconOn: "target",
+                            iconOff: "target",
+                            title: "Nhắc đạt mục tiêu",
+                            subtitle: "Nhắc buổi tối nếu chưa đạt mục tiêu ngày",
+                            isOn: $dailyGoalNudgeEnabled
+                        )
+                        .onChange(of: dailyGoalNudgeEnabled) { _, newValue in
+                            handleReminderChange(turnedOn: newValue) { dailyGoalNudgeEnabled = false }
+                        }
                     }
                     .animation(.easeOut(duration: 0.2), value: dailyReminderEnabled)
                 }
@@ -315,6 +330,62 @@ struct SettingsView: View {
                     .transition(.move(edge: .bottom).combined(with: .opacity))
             }
         }
+        .alert("Cần quyền thông báo", isPresented: $showPermissionDeniedAlert) {
+            Button("Mở Cài đặt") { openAppSettings() }
+            Button("Để sau", role: .cancel) {}
+        } message: {
+            Text("Bật thông báo trong Cài đặt để nhận nhắc nhở ôn tập.")
+        }
+    }
+
+    // MARK: - Reminder helpers
+
+    /// React to a reminder toggle changing. When turned on, ensure permission
+    /// first (resetting the toggle if denied); then reconcile all reminders.
+    private func handleReminderChange(turnedOn: Bool, resetOnDenied: @escaping () -> Void) {
+        guard turnedOn else {
+            syncReminders()
+            return
+        }
+        Task {
+            if await ensureNotificationPermission() {
+                syncReminders()
+            } else {
+                resetOnDenied()
+                showPermissionDeniedAlert = true
+            }
+        }
+    }
+
+    /// True if notifications are (or become) authorized.
+    private func ensureNotificationPermission() async -> Bool {
+        switch await NotificationManager.authorizationStatus() {
+        case .authorized, .provisional:
+            return true
+        case .notDetermined:
+            return await NotificationManager.requestAuthorization()
+        default:
+            return false
+        }
+    }
+
+    /// Reconcile scheduled reminders with the current settings.
+    private func syncReminders() {
+        Task {
+            await NotificationManager.syncReminders(
+                dailyEnabled: dailyReminderEnabled,
+                hour: dailyReminderHour,
+                examCountdownEnabled: examCountdownEnabled,
+                dailyGoalNudgeEnabled: dailyGoalNudgeEnabled,
+                progressStore: progressStore,
+                questionStore: questionStore
+            )
+        }
+    }
+
+    private func openAppSettings() {
+        guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
+        UIApplication.shared.open(url)
     }
 
     // MARK: - Helpers
@@ -329,7 +400,8 @@ struct SettingsView: View {
         withAnimation(.spring(duration: 0.3)) {
             resetToast = message
         }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+        Task { @MainActor in
+            try? await Task.sleep(for: .seconds(2))
             withAnimation(.easeOut(duration: 0.3)) {
                 resetToast = nil
             }
@@ -441,7 +513,7 @@ struct SettingsView: View {
                         .font(.appSans(size: 14, weight: .medium))
                         .foregroundStyle(Color.appTextDark)
                     Text(subtitle)
-                        .font(.appSans(size: 11))
+                        .font(.appSans(size: 12))
                         .foregroundStyle(Color.appTextLight)
                 }
                 Spacer()
@@ -657,6 +729,17 @@ struct VideoOfflineCard: View {
                     Text("\(cached)/\(total) video đã tải")
                         .font(.appSans(size: 13, weight: .medium))
                         .foregroundStyle(Color.appTextMedium)
+
+                    if !videoCache.failedIds.isEmpty && !videoCache.isDownloading {
+                        HStack(spacing: 5) {
+                            Image(systemName: "exclamationmark.triangle.fill")
+                                .font(.appSans(size: 11))
+                                .foregroundStyle(Color.appWarning)
+                            Text("\(videoCache.failedIds.count) video tải lỗi · kiểm tra mạng rồi thử lại")
+                                .font(.appSans(size: 12, weight: .medium))
+                                .foregroundStyle(Color.appWarning)
+                        }
+                    }
                 }
 
                 HStack(spacing: 10) {
@@ -705,7 +788,7 @@ struct VideoOfflineCard: View {
                                 .font(.appSans(size: 13, weight: .medium))
                                 .foregroundStyle(themeStore.primaryColor)
                             Image(systemName: showChapters ? "chevron.up" : "chevron.down")
-                                .font(.appSans(size: 11))
+                                .font(.appSans(size: 12))
                                 .foregroundStyle(themeStore.primaryColor)
                         }
                     }
@@ -731,11 +814,11 @@ struct VideoOfflineCard: View {
                                     .lineLimit(1)
                                 HStack(spacing: 4) {
                                     Text("\(chCached)/\(chTotal) video")
-                                        .font(.appSans(size: 11))
+                                        .font(.appSans(size: 12))
                                         .foregroundStyle(chComplete ? themeStore.primaryColor : Color.appTextLight)
                                     if isDownloading && videoCache.downloadSpeedMBps > 0 {
                                         Text(String(format: "· %.1f MB/s", videoCache.downloadSpeedMBps))
-                                            .font(.appSans(size: 11))
+                                            .font(.appSans(size: 12))
                                             .foregroundStyle(themeStore.primaryColor)
                                     }
                                 }
@@ -746,7 +829,7 @@ struct VideoOfflineCard: View {
                             Button {
                                 Haptics.impact(.light)
                                 if isDownloading {
-                                    videoCache.cancelChapter(chapter.id)
+                                    videoCache.pauseChapter(chapter.id)
                                 } else {
                                     Task { await videoCache.downloadChapter(chapter.id) }
                                 }

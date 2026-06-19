@@ -27,7 +27,8 @@ struct HomeView: View {
     @Environment(ThemeStore.self) private var themeStore
     @State private var activeExam: ExamScreen?
     @State private var pendingExam: ExamScreen?
-    @State private var selectedTab: SidebarTab? = .home
+    @State private var selectedTab: SidebarTab = .home
+    @State private var router = NotificationRouter.shared
 
     private var accentColor: Color {
         themeStore.primaryColor
@@ -42,6 +43,10 @@ struct HomeView: View {
             }
         }
         .environment(\.openExam) { screen in activeExam = screen }
+        .onAppear { applyNotificationDestination(router.pendingDestination) }
+        .onChange(of: router.pendingDestination) { _, destination in
+            applyNotificationDestination(destination)
+        }
         .fullScreenCover(item: $activeExam, onDismiss: {
             if let next = pendingExam {
                 pendingExam = nil
@@ -66,7 +71,10 @@ struct HomeView: View {
 
     private var iPadLayout: some View {
         NavigationSplitView {
-            List(SidebarTab.allCases, selection: $selectedTab) { tab in
+            List(SidebarTab.allCases, selection: Binding<SidebarTab?>(
+                get: { selectedTab },
+                set: { selectedTab = $0 ?? .home }
+            )) { tab in
                 Label(tab.rawValue, systemImage: tab.icon)
                     .tag(tab)
             }
@@ -83,22 +91,22 @@ struct HomeView: View {
     // MARK: - iPhone: TabView
 
     private var iPhoneLayout: some View {
-        TabView {
-            Tab("Trang chủ", systemImage: "house") {
+        TabView(selection: $selectedTab) {
+            Tab("Trang chủ", systemImage: "house", value: SidebarTab.home) {
                 NavigationStack {
                     HomeTab()
                 }
                 .tint(accentColor)
             }
 
-            Tab("Luyện tập", systemImage: "book") {
+            Tab("Luyện tập", systemImage: "book", value: SidebarTab.practice) {
                 NavigationStack {
                     PracticeTab()
                 }
                 .tint(accentColor)
             }
 
-            Tab("Thi thử", systemImage: "list.clipboard.fill") {
+            Tab("Thi thử", systemImage: "list.clipboard.fill", value: SidebarTab.exam) {
                 NavigationStack {
                     ExamTab()
                 }
@@ -106,6 +114,17 @@ struct HomeView: View {
             }
         }
         .tint(accentColor)
+    }
+
+    // MARK: - Notification deep-link
+
+    private func applyNotificationDestination(_ destination: NotificationDestination?) {
+        guard let destination else { return }
+        switch destination {
+        case .practice: selectedTab = .practice
+        case .exam:     selectedTab = .exam
+        }
+        router.pendingDestination = nil
     }
 
     // MARK: - Tab Content (iPad detail)
@@ -117,7 +136,6 @@ struct HomeView: View {
         case .practice: PracticeTab()
         case .exam:     ExamTab()
         case .settings: SettingsView()
-        case .none:     HomeTab()
         }
     }
 }
