@@ -26,12 +26,10 @@ struct ExamCountdownCard: View {
 
                     Spacer(minLength: 4)
 
-                    Image(systemName: "chevron.right")
-                        .font(.appMono(size: 12, weight: .medium))
-                        .foregroundStyle(Color.appTextLight)
+                    CircularActionButton(icon: "arrow.right", size: 36)
                 }
                 .padding(12)
-                .glassCard()
+                .glassCard(tint: themeStore.primaryColor)
             }
             .buttonStyle(.plain)
         } else if let daysLeft = progressStore.daysUntilExam {
@@ -81,7 +79,7 @@ struct ExamCountdownCard: View {
                 }
             }
             .padding(12)
-            .glassCard()
+            .glassCard(tint: daysLeft <= 7 ? Color.appWarning : nil)
         }
     }
 }

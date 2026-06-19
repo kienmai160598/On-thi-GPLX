@@ -9,16 +9,10 @@ struct InlinePill: View {
     }
 
     var body: some View {
-        if #available(iOS 26.0, *) {
-            pillText
-                .foregroundStyle(themeStore.primaryColor)
-                .glassEffect(.regular.interactive(), in: .capsule)
-        } else {
-            pillText
-                .foregroundStyle(themeStore.onPrimaryColor)
-                .background(themeStore.primaryColor)
-                .clipShape(Capsule())
-        }
+        pillText
+            .foregroundStyle(themeStore.onPrimaryColor)
+            .background(themeStore.primaryColor)
+            .clipShape(Capsule())
     }
 
     private var pillText: some View {

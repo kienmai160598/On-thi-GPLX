@@ -20,17 +20,10 @@ struct FilterChip: View {
             .padding(.vertical, 12)
     }
 
-    @ViewBuilder
     private var chipContent: some View {
-        if #available(iOS 26.0, *) {
-            chipText
-                .foregroundStyle(isSelected ? themeStore.primaryColor : Color.appTextMedium)
-                .glassEffect(.regular.interactive(), in: .capsule)
-        } else {
-            chipText
-                .foregroundStyle(isSelected ? themeStore.onPrimaryColor : Color.appTextMedium)
-                .background(isSelected ? themeStore.primaryColor : Color.appDivider)
-                .clipShape(Capsule())
-        }
+        chipText
+            .foregroundStyle(isSelected ? themeStore.onPrimaryColor : Color.appTextMedium)
+            .background(isSelected ? themeStore.primaryColor : Color.cardBg)
+            .clipShape(Capsule())
     }
 }

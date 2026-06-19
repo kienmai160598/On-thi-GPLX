@@ -116,8 +116,7 @@ struct OnboardingPageView: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
-        .background(.ultraThinMaterial)
-        .clipShape(RoundedRectangle(cornerRadius: 14))
+        .glassCard(cornerRadius: 14)
     }
 
     private var featureIconsHero: some View {

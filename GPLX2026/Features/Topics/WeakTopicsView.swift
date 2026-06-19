@@ -22,7 +22,7 @@ struct WeakTopicsView: View {
                             Button {
                                 let progress = progressStore.topicProgress(for: item.topic.key)
                                 let topicQs = questionStore.questionsForTopic(key: item.topic.key)
-                                let idx = topicQs.firstIndex(where: { progress[$0.no] == nil }) ?? 0
+                                let idx = topicQs.firstIndex(where: { progress[$0.no] != true }) ?? 0
                                 openExam(.questionView(topicKey: item.topic.key, startIndex: idx))
                             } label: {
                                 TopicAccuracyRow(item: item)
@@ -42,7 +42,7 @@ struct WeakTopicsView: View {
                             Button {
                                 let progress = progressStore.topicProgress(for: item.topic.key)
                                 let topicQs = questionStore.questionsForTopic(key: item.topic.key)
-                                let idx = topicQs.firstIndex(where: { progress[$0.no] == nil }) ?? 0
+                                let idx = topicQs.firstIndex(where: { progress[$0.no] != true }) ?? 0
                                 openExam(.questionView(topicKey: item.topic.key, startIndex: idx))
                             } label: {
                                 TopicAccuracyRow(item: item)
@@ -95,40 +95,30 @@ private struct TopicAccuracyRow: View {
     }
 
     var body: some View {
-        HStack(spacing: 14) {
-            ZStack {
-                Circle()
-                    .stroke(Color.appDivider, lineWidth: 3)
-                Circle()
-                    .trim(from: 0, to: item.accuracy)
-                    .stroke(accentColor, style: StrokeStyle(lineWidth: 3, lineCap: .round))
-                    .rotationEffect(.degrees(-90))
-                Image(systemName: item.topic.sfSymbol)
-                    .font(.appSans(size: 16))
-                    .foregroundStyle(accentColor)
-            }
-            .frame(width: 44, height: 44)
-
-            VStack(alignment: .leading, spacing: 4) {
+        HStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 10) {
                 Text(item.topic.name)
-                    .font(.appSans(size: 15, weight: .semibold))
+                    .font(.appSans(size: 16, weight: .bold))
                     .foregroundStyle(Color.appTextDark)
+                    .lineLimit(2)
+                    .multilineTextAlignment(.leading)
 
-                Text(item.attempted > 0
-                    ? "\(item.correct)/\(item.attempted) đúng · \(Int(item.accuracy * 100))%"
-                    : "0/\(item.total) câu · Chưa bắt đầu")
-                    .font(.appSans(size: 13))
-                    .foregroundStyle(Color.appTextMedium)
+                HStack(spacing: 6) {
+                    if item.attempted > 0 {
+                        TagPill(text: "\(Int(item.accuracy * 100))% đúng", color: accentColor)
+                        TagPill(text: "\(item.correct)/\(item.attempted) câu")
+                    } else {
+                        TagPill(text: "\(item.total) câu")
+                        TagPill(text: "Chưa bắt đầu")
+                    }
+                }
             }
 
-            Spacer(minLength: 4)
+            Spacer(minLength: 8)
 
-            Text("Ôn tập")
-                .font(.appSans(size: 13, weight: .medium))
-                .foregroundStyle(themeStore.primaryColor)
+            CircularActionButton(icon: "play.fill")
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 14)
+        .padding(16)
         .glassCard()
     }
 }

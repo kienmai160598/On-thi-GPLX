@@ -11,15 +11,9 @@ struct ProgressRing: View {
     }
 
     var body: some View {
-        if #available(iOS 26.0, *) {
-            ringContent
-                .glassEffect(.regular.interactive(), in: .circle)
-        } else {
-            ringContent
-                .background(Color.cardBg)
-                .clipShape(Circle())
-                .overlay(Circle().stroke(Color.appDivider, lineWidth: 0.5))
-        }
+        ringContent
+            .background(Color.cardBg)
+            .clipShape(Circle())
     }
 
     private var ringContent: some View {

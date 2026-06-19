@@ -35,27 +35,28 @@ private struct WrongTopicCard: View {
     let questions: [Question]
 
     var body: some View {
-        HStack(spacing: 14) {
-            IconBox(icon: topic.sfSymbol, color: .appError, size: 44, cornerRadius: 8, iconFontSize: 18)
+        Button { openExam(.questionView(topicKey: "\(AppConstants.TopicKey.wrongAnswers):\(topic.key)", startIndex: 0)) } label: {
+            HStack(spacing: 12) {
+                VStack(alignment: .leading, spacing: 10) {
+                    Text(topic.name)
+                        .font(.appSans(size: 16, weight: .bold))
+                        .foregroundStyle(Color.appTextDark)
+                        .lineLimit(2)
+                        .multilineTextAlignment(.leading)
 
-            VStack(alignment: .leading, spacing: 4) {
-                Text(topic.name)
-                    .font(.appSans(size: 15, weight: .bold))
-                    .foregroundStyle(Color.appTextDark)
-                    .lineLimit(1)
-                Text("\(questions.count) câu sai")
-                    .font(.appSans(size: 13, weight: .medium))
-                    .foregroundStyle(Color.appError)
+                    HStack(spacing: 6) {
+                        TagPill(text: "\(questions.count) câu sai", color: .appError)
+                    }
+                }
+
+                Spacer(minLength: 8)
+
+                CircularActionButton(icon: "play.fill")
             }
-
-            Spacer()
-
-            Button { openExam(.questionView(topicKey: "\(AppConstants.TopicKey.wrongAnswers):\(topic.key)", startIndex: 0)) } label: {
-                InlinePill("Luyện")
-            }
-            .buttonStyle(.plain)
+            .padding(16)
+            .contentShape(Rectangle())
         }
-        .padding(12)
+        .buttonStyle(.plain)
         .glassCard()
     }
 }

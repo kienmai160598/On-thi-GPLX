@@ -5,6 +5,7 @@ private enum ExamFilter: String, CaseIterable {
     case questions = "Câu hỏi"
     case simulation = "Sa hình"
     case hazard = "Tình huống"
+    case challenge = "Thử thách"
 }
 
 struct ExamTab: View {
@@ -44,6 +45,9 @@ struct ExamTab: View {
                     if filter == .all || filter == .hazard {
                         hazardExamCard
                     }
+                    if filter == .all || filter == .challenge {
+                        dailyChallengeCard
+                    }
                 }
 
                 // History sections below the grid
@@ -56,12 +60,15 @@ struct ExamTab: View {
                 if filter == .all || filter == .hazard {
                     hazardHistory
                 }
+                if filter == .all || filter == .challenge {
+                    dailyChallengeHistory
+                }
             }
             .padding(.horizontal, metrics.contentPadding)
             .padding(.top, 8)
             .padding(.bottom, 32)
+            .glassContainer()
         }
-        .glassContainer()
         .screenHeader("Thi thử")
     }
 
@@ -122,7 +129,7 @@ struct ExamTab: View {
                 stats: progressStore.hazardHistory.isEmpty ? nil : (
                     count: progressStore.hazardExamCount,
                     avg: Int(progressStore.averageHazardScore * 100),
-                    best: progressStore.bestHazardScore * 100 / 50
+                    best: progressStore.bestHazardScore * 100 / AppConstants.Hazard.maxTotalScore
                 )
             ) {
                 openExam(.hazardTest(mode: .exam))
@@ -183,6 +190,87 @@ struct ExamTab: View {
         }
     }
 
+    // MARK: - Daily Challenge Card
+
+    private var dailyChallengeCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            // Header
+            HStack(spacing: 12) {
+                Image(systemName: "calendar.badge.clock")
+                    .font(.appSans(size: 22))
+                    .foregroundStyle(themeStore.primaryColor)
+                    .frame(width: 44, height: 44)
+                    .background(themeStore.primaryColor.opacity(0.12))
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("Thử thách hôm nay")
+                        .font(.appSerif(size: 17, weight: .bold))
+                        .foregroundStyle(Color.appTextDark)
+
+                    Text("\(AppConstants.DailyChallenge.questionsCount) câu · \(AppConstants.DailyChallenge.totalTimeSeconds / 60) phút")
+                        .font(.appSans(size: 13, weight: .medium))
+                        .foregroundStyle(Color.appTextMedium)
+                }
+
+                Spacer(minLength: 4)
+            }
+
+            // Tip
+            HStack(spacing: 6) {
+                Image(systemName: "lightbulb.fill")
+                    .font(.appSans(size: 12))
+                    .foregroundStyle(themeStore.primaryColor)
+                Text("Mỗi ngày một thử thách, duy trì chuỗi ngày!")
+                    .font(.appSans(size: 13))
+                    .foregroundStyle(Color.appTextLight)
+            }
+
+            // Stats
+            if !progressStore.dailyChallengeHistory.isEmpty {
+                HStack(spacing: 0) {
+                    StatItem(value: "\(progressStore.dailyChallengeStreak)", label: "Chuỗi ngày", valueFontSize: 15)
+                    Rectangle().fill(Color.appDivider).frame(width: 1, height: 24)
+                    StatItem(value: "\(progressStore.dailyChallengeHistory.count)", label: "Đã thi", valueFontSize: 15)
+                }
+            }
+
+            // Button
+            let completed = progressStore.hasCompletedTodayChallenge
+            Button {
+                if !completed { openExam(.dailyChallenge) }
+            } label: {
+                AppButton(
+                    icon: completed ? "checkmark" : "play.fill",
+                    label: completed ? "Đã hoàn thành" : "Bắt đầu",
+                    height: metrics.buttonHeight
+                )
+            }
+            .disabled(completed)
+            .opacity(completed ? 0.7 : 1)
+        }
+        .padding(12)
+        .glassCard()
+    }
+
+    // MARK: - Daily Challenge History
+
+    @ViewBuilder
+    private var dailyChallengeHistory: some View {
+        if !progressStore.dailyChallengeHistory.isEmpty {
+            VStack(alignment: .leading, spacing: 12) {
+                SectionTitle(title: "Lịch sử thử thách")
+                HistoryList(
+                    results: Array(progressStore.dailyChallengeHistory.prefix(5)),
+                    scoreText: { "\($0.score)/\($0.totalQuestions) đúng" },
+                    passed: { _ in true },
+                    date: \.date,
+                    destination: { ExamHistoryDetailView(result: $0) }
+                )
+            }
+        }
+    }
+
     // MARK: - Fixed Exam Sets
 
     @ViewBuilder
@@ -232,42 +320,41 @@ struct ExamTab: View {
 
                 Divider().padding(.horizontal, 12)
 
-                ForEach(1...visibleSets, id: \.self) { setId in
-                    let isCompleted = completedSets.contains(setId)
-                    let latestResult = isCompleted ? progressStore.latestResult(forExamSet: setId) : nil
+                if visibleSets > 0 {
+                    ForEach(1...visibleSets, id: \.self) { setId in
+                        let isCompleted = completedSets.contains(setId)
+                        let latestResult = isCompleted ? progressStore.latestResult(forExamSet: setId) : nil
 
-                    Button { openExam(.mockExam(examSetId: setId)) } label: {
-                        HStack(spacing: 12) {
-                            Text("Đề \(setId)")
-                                .font(.appSans(size: 15, weight: .medium))
-                                .foregroundStyle(Color.appTextDark)
+                        Button { openExam(.mockExam(examSetId: setId)) } label: {
+                            HStack(spacing: 10) {
+                                Text("Đề \(setId)")
+                                    .font(.appSans(size: 15, weight: .semibold))
+                                    .foregroundStyle(Color.appTextDark)
 
-                            Spacer()
+                                if let result = latestResult {
+                                    TagPill(
+                                        text: "\(result.score)/\(result.totalQuestions)",
+                                        color: result.passed ? .appSuccess : .appError
+                                    )
+                                }
 
-                            if let result = latestResult {
-                                Text("\(result.score)/\(result.totalQuestions)")
-                                    .font(.appSans(size: 14, weight: .medium))
-                                    .foregroundStyle(themeStore.primaryColor)
+                                Spacer()
+
+                                CircularActionButton(
+                                    icon: isCompleted ? "checkmark" : "play.fill",
+                                    size: 34,
+                                    subtle: isCompleted
+                                )
                             }
-
-                            if isCompleted {
-                                Image(systemName: "checkmark.circle.fill")
-                                    .font(.appSans(size: 16))
-                                    .foregroundStyle(themeStore.primaryColor)
-                            } else {
-                                Image(systemName: "chevron.right")
-                                    .font(.appSans(size: 12, weight: .medium))
-                                    .foregroundStyle(Color.appTextLight)
-                            }
+                            .padding(.horizontal, 12)
+                            .frame(height: 56)
+                            .contentShape(Rectangle())
                         }
-                        .padding(.horizontal, 12)
-                        .frame(height: 46)
-                        .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
+                        .buttonStyle(.plain)
 
-                    if setId < visibleSets {
-                        Divider().padding(.horizontal, 12)
+                        if setId < visibleSets {
+                            Divider().padding(.horizontal, 12)
+                        }
                     }
                 }
 
@@ -340,25 +427,21 @@ struct ExamTab: View {
                     let isCompleted = completedSets.contains(setId)
 
                     Button { openExam(.simulationExam(mode: .examSet(setId))) } label: {
-                        HStack(spacing: 12) {
+                        HStack(spacing: 10) {
                             Text("Đề \(setId)")
-                                .font(.appSans(size: 15, weight: .medium))
+                                .font(.appSans(size: 15, weight: .semibold))
                                 .foregroundStyle(Color.appTextDark)
 
                             Spacer()
 
-                            if isCompleted {
-                                Image(systemName: "checkmark.circle.fill")
-                                    .font(.appSans(size: 16))
-                                    .foregroundStyle(themeStore.primaryColor)
-                            } else {
-                                Image(systemName: "chevron.right")
-                                    .font(.appSans(size: 12, weight: .medium))
-                                    .foregroundStyle(Color.appTextLight)
-                            }
+                            CircularActionButton(
+                                icon: isCompleted ? "checkmark" : "play.fill",
+                                size: 34,
+                                subtle: isCompleted
+                            )
                         }
                         .padding(.horizontal, 12)
-                        .frame(height: 46)
+                        .frame(height: 56)
                         .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
@@ -413,36 +496,30 @@ struct ExamTab: View {
             }
             .buttonStyle(.plain)
 
-            if showFixedHazardSets {
+            if showFixedHazardSets && totalSets > 0 {
                 Divider().padding(.horizontal, 12)
 
                 ForEach(1...totalSets, id: \.self) { setId in
                     let isCompleted = completedSets.contains(setId)
 
                     Button { openExam(.hazardTest(mode: .examSet(setId))) } label: {
-                        HStack(spacing: 12) {
+                        HStack(spacing: 10) {
                             Text("Đề \(setId)")
-                                .font(.appSans(size: 15, weight: .medium))
+                                .font(.appSans(size: 15, weight: .semibold))
                                 .foregroundStyle(Color.appTextDark)
 
-                            Text("TH \((setId - 1) * 10 + 1)-\(setId * 10)")
-                                .font(.appSans(size: 12))
-                                .foregroundStyle(Color.appTextLight)
+                            TagPill(text: "TH \((setId - 1) * 10 + 1)-\(setId * 10)")
 
                             Spacer()
 
-                            if isCompleted {
-                                Image(systemName: "checkmark.circle.fill")
-                                    .font(.appSans(size: 16))
-                                    .foregroundStyle(themeStore.primaryColor)
-                            } else {
-                                Image(systemName: "chevron.right")
-                                    .font(.appSans(size: 12, weight: .medium))
-                                    .foregroundStyle(Color.appTextLight)
-                            }
+                            CircularActionButton(
+                                icon: isCompleted ? "checkmark" : "play.fill",
+                                size: 34,
+                                subtle: isCompleted
+                            )
                         }
                         .padding(.horizontal, 12)
-                        .frame(height: 46)
+                        .frame(height: 56)
                         .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
@@ -495,7 +572,7 @@ private struct ExamTypeCard: View {
             // Tip
             HStack(spacing: 6) {
                 Image(systemName: "lightbulb.fill")
-                    .font(.appSans(size: 11))
+                    .font(.appSans(size: 12))
                     .foregroundStyle(themeStore.primaryColor)
                 Text(tip)
                     .font(.appSans(size: 13))

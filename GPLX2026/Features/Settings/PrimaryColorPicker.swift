@@ -27,7 +27,7 @@ struct PrimaryColorPicker: View {
                             .frame(height: 48)
 
                         Text(item.label)
-                            .font(.appSans(size: 11, weight: isSelected ? .bold : .medium))
+                            .font(.appSans(size: 12, weight: isSelected ? .bold : .medium))
                             .foregroundStyle(isSelected ? Color.appTextDark : Color.appTextLight)
                     }
                     .frame(maxWidth: .infinity)
@@ -42,24 +42,12 @@ struct PrimaryColorPicker: View {
     private func swatch(item: (key: String, color: Color, label: String), isSelected: Bool) -> some View {
         let shape = RoundedRectangle(cornerRadius: 12, style: .continuous)
 
-        if #available(iOS 26.0, *) {
-            shape
-                .fill(item.color)
-                .overlay {
-                    if isSelected {
-                        shape.strokeBorder(.white, lineWidth: 2.5)
-                    }
+        shape
+            .fill(item.color)
+            .overlay {
+                if isSelected {
+                    shape.strokeBorder(.white, lineWidth: 2.5)
                 }
-                .glassEffect(.regular.interactive(), in: .rect(cornerRadius: 12))
-        } else {
-            shape
-                .fill(item.color)
-                .overlay {
-                    if isSelected {
-                        shape
-                            .strokeBorder(.white, lineWidth: 2.5)
-                    }
-                }
-        }
+            }
     }
 }

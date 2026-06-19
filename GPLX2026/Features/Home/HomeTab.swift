@@ -20,36 +20,38 @@ struct HomeTab: View {
         let goalDone = progressStore.todayProgress.done >= progressStore.todayProgress.goal
 
         ScrollView {
-            if metrics.isCompact {
-                VStack(spacing: 20) {
-                    ProgressOverview()
-                    PrimaryActionCard()
-                    QuickActionsGrid()
-                    ShortcutsRow()
-                    RecentResultsCard()
-                    AchievementsCard()
+            Group {
+                if metrics.isCompact {
+                    VStack(spacing: metrics.sectionSpacing) {
+                        ProgressOverview()
+                        ExamCountdownCard()
+                        PrimaryActionCard()
+                        QuickActionsGrid()
+                        ShortcutsRow()
+                        RecentResultsCard()
+                    }
+                    .padding(.horizontal, metrics.contentPadding)
+                    .padding(.bottom, 32)
+                } else {
+                    LazyVGrid(
+                        columns: Array(repeating: GridItem(.flexible(), spacing: metrics.gridSpacing),
+                                       count: metrics.columns),
+                        spacing: metrics.gridSpacing
+                    ) {
+                        ProgressOverview()
+                        ExamCountdownCard()
+                        PrimaryActionCard()
+                        QuickActionsGrid()
+                        ShortcutsRow()
+                        RecentResultsCard()
+                    }
+                    .padding(.horizontal, metrics.contentPadding)
+                    .padding(.bottom, 32)
                 }
-                .padding(.horizontal, metrics.contentPadding)
-                .padding(.bottom, 32)
-            } else {
-                LazyVGrid(
-                    columns: Array(repeating: GridItem(.flexible(), spacing: metrics.gridSpacing),
-                                   count: metrics.columns),
-                    spacing: metrics.gridSpacing
-                ) {
-                    ProgressOverview()
-                    PrimaryActionCard()
-                    QuickActionsGrid()
-                    ShortcutsRow()
-                    RecentResultsCard()
-                    AchievementsCard()
-                }
-                .padding(.horizontal, metrics.contentPadding)
-                .padding(.bottom, 32)
             }
+            .glassContainer()
         }
         .dailyGoalCelebration(isDone: goalDone)
-        .glassContainer()
         .screenHeader(greetingText)
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
@@ -181,6 +183,7 @@ private struct PrimaryActionCard: View {
     @Environment(QuestionStore.self) private var questionStore
     @Environment(ProgressStore.self) private var progressStore
     @Environment(ThemeStore.self) private var themeStore
+    @Environment(LayoutMetrics.self) private var metrics
     @Environment(\.openExam) private var openExam
 
     var body: some View {
@@ -224,11 +227,9 @@ private struct PrimaryActionCard: View {
 
                 Spacer(minLength: 4)
 
-                Image(systemName: "chevron.right")
-                    .font(.appSans(size: 14, weight: .semibold))
-                    .foregroundStyle(Color.appTextLight)
+                CircularActionButton(icon: "play.fill")
             }
-            .padding(12)
+            .padding(metrics.cardPadding)
             .glassCard()
         }
         .buttonStyle(.plain)
@@ -263,12 +264,10 @@ private struct PrimaryActionCard: View {
 
                 Spacer(minLength: 4)
 
-                Image(systemName: "chevron.right")
-                    .font(.appSans(size: 14, weight: .semibold))
-                    .foregroundStyle(Color.appTextLight)
+                CircularActionButton(icon: "arrow.right", size: 40)
             }
-            .padding(12)
-            .glassCard()
+            .padding(metrics.cardPadding)
+            .glassCard(tint: themeStore.primaryColor)
         }
         .buttonStyle(.plain)
     }
@@ -438,12 +437,10 @@ private struct ShortcutsRow: View {
                     .foregroundStyle(themeStore.primaryColor)
             }
 
-            Image(systemName: "chevron.right")
-                .font(.appSans(size: 12, weight: .medium))
-                .foregroundStyle(Color.appTextLight)
+            CircularActionButton(icon: "chevron.right", size: 30, subtle: true)
         }
         .padding(.horizontal, 16)
-        .padding(.vertical, 14)
+        .padding(.vertical, 12)
         .contentShape(Rectangle())
     }
 }
@@ -556,3 +553,4 @@ private struct RecentResultRow: View {
         .contentShape(Rectangle())
     }
 }
+
