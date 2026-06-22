@@ -266,7 +266,7 @@ struct SettingsView: View {
                     VStack(spacing: 0) {
                         aboutRow(icon: "doc.text.fill", label: "Ngân hàng đề thi", value: "Bộ GTVT")
                         Divider().padding(.horizontal, 16)
-                        aboutRow(icon: "video.fill", label: "Video mô phỏng", value: "gmec.vn")
+                        aboutRow(icon: "video.fill", label: "Video mô phỏng", value: "github.com")
                         Divider().padding(.horizontal, 16)
                         aboutRow(icon: "person.fill", label: "Tác giả", value: "Kien Mai")
                         Divider().padding(.horizontal, 16)
