@@ -1,9 +1,8 @@
 # Test Matrix
 
-This file maps product behavior to proof.
-
-No product behavior has been defined or implemented yet. Do not mark a row
-implemented until tests or validation evidence exist.
+This file maps product behavior to proof. See `docs/product/overview.md` for the
+product context. Unit tests live in `GPLX2026Tests/` (XCTest); run with
+`xcodebuild test -scheme GPLX2026 -destination 'platform=iOS Simulator,name=iPhone 17 Pro Max'`.
 
 ## Status Values
 
@@ -19,7 +18,13 @@ implemented until tests or validation evidence exist.
 
 | Story | Contract | Unit | Integration | E2E | Platform | Status | Evidence |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| TBD | Add rows when story packets are created | no | no | no | no | planned | none |
+| Hazard videos | `videoURL` points at the live host with unpadded filename (`th1…th120.mp4`); never `gmec.vn` | yes | no | no | no | implemented | `HazardSituationTests.testVideoFileNameIsUnpadded`, `…testVideoURLPointsAtLiveHostWithUnpaddedName` |
+| Hazard scoring | Tap score is 5 at perfect-start, 0 at perfect-end, linear between, 0 outside the window or on no-tap | yes | no | no | no | implemented | `HazardSituationTests.testPerfectStartScoresFive`, `…testPerfectEndScoresZero`, `…testLinearInterpolationWithinWindow`, `…testTapBeforeOrAfterWindowScoresZero`, `…testNoTapScoresZero` |
+| Answer order | `shuffledAnswers` is deterministic per question and a permutation of the answers | yes | no | no | no | implemented | `QuestionTests.testShuffledAnswersIsDeterministicPerQuestion`, `…testShuffledAnswersIsAPermutationOfAnswers` |
+| Study activity | `recordStudyActivity` increments today's count; `totalActivity(lastDays:)` sums the window (0 for non-positive days) | yes | no | no | no | implemented | `ProgressStoreTests.testTotalActivityStartsAtZero`, `…testRecordStudyActivityCountsTowardTotal`, `…testTotalActivityWithNonPositiveDaysIsZero` |
+| Progress state | Wrong-answers add/remove, bookmark toggle, and topic answer-status reflect saved results | yes | no | no | no | implemented | `ProgressStoreTests.testAddAndRemoveWrongAnswer`, `…testToggleBookmark`, `…testAnswerStatusReflectsSavedResults` |
+| Reminders | Local notifications schedule/cancel per settings; taps deep-link; revoked permission resets toggles | no | no | no | yes | planned | needs device/integration (UNUserNotificationCenter side effects) — see manual checklist |
+| Graceful video download | Failed downloads tracked in `failedIds` + surfaced; buffering timeout → retry overlay | no | yes | no | no | planned | needs network/device integration |
 
 ## Evidence Rules
 
