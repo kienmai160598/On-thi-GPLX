@@ -20,10 +20,6 @@ struct HazardResultView: View {
         situations.last
     }
 
-    private var lastDetail: HazardResult.SituationDetail? {
-        result.details.last
-    }
-
     private var lastTapTime: Double? {
         guard let idx = situations.indices.last else { return nil }
         return tapTimes[idx] ?? nil
@@ -70,6 +66,49 @@ struct HazardResultView: View {
         .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
     }
 
+    // MARK: - Summary Card (header + quality pill + 3 stats, design p1cOS)
+
+    private var summaryCard: some View {
+        let quality = HistoryQuality.hazard(result.scorePercentage)
+        let avgReflex = result.situationCount > 0
+            ? Int(round(Double(result.totalScore) / Double(result.situationCount)))
+            : 0
+        let detected = result.details.filter { $0.score > 0 }.count
+        return VStack(spacing: 14) {
+            HStack(spacing: 10) {
+                IconBox(
+                    icon: result.passed ? "hand.thumbsup.fill" : "arrow.clockwise",
+                    color: quality.color,
+                    size: 36, cornerRadius: 10, iconFontSize: 16, iconWeight: .semibold
+                )
+                Text(heroLabel)
+                    .font(.appSans(size: 18, weight: .heavy))
+                    .foregroundStyle(Color.appTextDark)
+                    .kerning(-0.3)
+                Spacer(minLength: 8)
+                Text(quality.label.uppercased())
+                    .font(.appSans(size: 12, weight: .heavy))
+                    .foregroundStyle(.white)
+                    .kerning(1)
+                    .padding(.vertical, 5)
+                    .padding(.horizontal, 12)
+                    .background(quality.color, in: Capsule())
+            }
+
+            Rectangle()
+                .fill(Color.appDivider.opacity(0.6))
+                .frame(height: 1)
+
+            HStack(spacing: 0) {
+                StatItem(value: "\(avgReflex)/\(AppConstants.Hazard.maxScorePerSituation)", label: "Điểm phản xạ", valueColor: quality.color, valueFontSize: 22)
+                StatItem(value: "\(detected)/\(result.situationCount)", label: "Tình huống", valueFontSize: 22)
+                StatItem(value: "\(result.totalScore)/\(result.maxScore)", label: "Điểm phiên", valueFontSize: 22)
+            }
+        }
+        .padding(20)
+        .glassCard(cornerRadius: 22)
+    }
+
     // MARK: - Body
 
     var body: some View {
@@ -91,25 +130,11 @@ struct HazardResultView: View {
                     Spacer().frame(height: 4)
 
                     // C1: Score hero group
-                    VStack(spacing: 8) {
-                        // C1a: Result hero card
-                        HazardResultHeroCard(
-                            isPassed: result.passed,
-                            heroLabel: heroLabel,
-                            score: lastDetail?.score ?? 0,
-                            maxScore: AppConstants.Hazard.maxScorePerSituation,
-                            subtitle: heroSubtitle
-                        )
+                    VStack(spacing: 12) {
+                        // Summary card (header + quality pill + 3 stats) · design p1cOS
+                        summaryCard
 
-                        // C1b: Session progress card
-                        SessionProgressCard(
-                            completedCount: situations.count,
-                            totalCount: result.situationCount,
-                            sessionScore: result.totalScore,
-                            sessionMaxScore: result.maxScore
-                        )
-
-                        // C1c: Recent situation card (only if we have a last situation)
+                        // Recent situation card (only if we have a last situation)
                         if let lastSituation {
                             RecentSituationCard(
                                 index: situations.count,
@@ -186,146 +211,6 @@ struct HazardResultView: View {
                 ReviewHelper.requestIfFirstPass(passed: result.passed)
             }
         }
-    }
-}
-
-// MARK: - Hero Card (Design C1a)
-
-private struct HazardResultHeroCard: View {
-    let isPassed: Bool
-    let heroLabel: String
-    let score: Int
-    let maxScore: Int
-    let subtitle: String
-
-    var body: some View {
-        HStack(alignment: .center, spacing: 0) {
-            // Left column
-            VStack(alignment: .leading, spacing: 8) {
-                // Badge row
-                HStack(spacing: 5) {
-                    Image(systemName: isPassed ? "hand.thumbsup.fill" : "arrow.up.circle.fill")
-                        .font(.appSans(size: 12, weight: .semibold))
-                        .foregroundStyle(.white)
-                    Text(isPassed ? "TỐT" : "CỐ LÊN")
-                        .font(.appSans(size: 12, weight: .bold))
-                        .foregroundStyle(.white)
-                        .tracking(1)
-                }
-                .padding(.vertical, 5)
-                .padding(.leading, 10)
-                .padding(.trailing, 12)
-                .background(isPassed ? Color.appSuccess : Color.appError)
-                .clipShape(Capsule())
-
-                // Heading
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(heroLabel)
-                        .font(.appSans(size: 24, weight: .bold))
-                        .foregroundStyle(Color.appTextDark)
-                        .tracking(-0.5)
-                    Text(subtitle)
-                        .font(.appSans(size: 12.5, weight: .medium))
-                        .foregroundStyle(Color(hex: 0x5E7A66))
-                }
-            }
-
-            Spacer()
-
-            // Right column: large score
-            VStack(alignment: .trailing, spacing: 0) {
-                Text("\(score)/\(maxScore)")
-                    .font(.appSans(size: 48, weight: .bold))
-                    .foregroundStyle(isPassed ? Color(hex: 0x1E9E50) : Color.appError)
-                    .lineSpacing(0)
-                Text("điểm phản xạ")
-                    .font(.appSans(size: 12, weight: .medium))
-                    .foregroundStyle(Color.appTextMedium)
-            }
-        }
-        .padding(16)
-        .background(isPassed ? Color(hex: 0xE7F5EC) : Color(hex: 0xFCE4E2))
-        .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .stroke(Color.black.opacity(0.05), lineWidth: 1)
-        )
-    }
-}
-
-// MARK: - Session Progress Card (Design C1b)
-
-private struct SessionProgressCard: View {
-    let completedCount: Int
-    let totalCount: Int
-    let sessionScore: Int
-    let sessionMaxScore: Int
-
-    private var fraction: Double {
-        guard totalCount > 0 else { return 0 }
-        return Double(completedCount) / Double(totalCount)
-    }
-
-    private var percentageText: String {
-        let pct = Int((fraction * 100).rounded())
-        return "\(pct)%"
-    }
-
-    var body: some View {
-        VStack(spacing: 10) {
-            // Head row
-            HStack(alignment: .lastTextBaseline) {
-                Text("TIẾN ĐỘ PHIÊN")
-                    .font(.appSans(size: 10, weight: .bold))
-                    .foregroundStyle(Color(hex: 0x7A7166))
-                    .tracking(1.2)
-
-                Spacer()
-
-                HStack(alignment: .lastTextBaseline, spacing: 4) {
-                    Text("\(sessionScore)/\(sessionMaxScore)")
-                        .font(.appSans(size: 18, weight: .bold))
-                        .foregroundStyle(Color.appTextDark)
-                    Text("điểm")
-                        .font(.appSans(size: 12, weight: .medium))
-                        .foregroundStyle(Color(hex: 0x7A7166))
-                }
-            }
-
-            // 10-segment performance bar — filled by score, not completion (the
-            // session is always fully completed by the time this result shows).
-            let filledSegments = sessionMaxScore > 0
-                ? Int((Double(sessionScore) / Double(sessionMaxScore) * 10).rounded())
-                : 0
-            HStack(spacing: 4) {
-                ForEach(0..<10, id: \.self) { i in
-                    RoundedRectangle(cornerRadius: 3)
-                        .fill(i < filledSegments ? Color.appSuccess : Color(hex: 0xE6E3DD))
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 8)
-                }
-            }
-
-            // Foot row
-            HStack {
-                Text("Đã hoàn thành \(completedCount)/\(totalCount) tình huống")
-                    .font(.appSans(size: 11.5, weight: .semibold))
-                    .foregroundStyle(Color(hex: 0x7A7166))
-
-                Spacer()
-
-                Text(percentageText)
-                    .font(.appSans(size: 14, weight: .bold))
-                    .foregroundStyle(Color(hex: 0x1E9E50))
-            }
-        }
-        .padding(12)
-        .background(Color.cardBg)
-        .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .stroke(Color.black.opacity(0.05), lineWidth: 1)
-        )
     }
 }
 

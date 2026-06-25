@@ -1,19 +1,16 @@
 import SwiftUI
 
-/// Light hero card variant (semi-transparent white card, amber border, dark
-/// serif title with a gold circular play button). Used as the headline CTA on
-/// both the Practice ("Luyện tập") and Mô phỏng tabs so they share one look.
+/// Light hero card variant (semi-transparent white card, neutral border, dark
+/// serif title with a neutral circular play button whose icon follows the
+/// configured accent). Used as the headline CTA on both the Practice
+/// ("Luyện tập") and Mô phỏng tabs so they share one look.
 struct LightFeatureCard: View {
+    @Environment(ThemeStore.self) private var themeStore
     let eyebrow: String
     let title: String
     let tags: [String]
     let icon: String
     let action: () -> Void
-
-    private let amberBorder = Color(hex: 0xFFE9B0)
-    private let eyebrowColor = Color(hex: 0x7A4A00)
-    private let goldFill = Color(hex: 0xFFC233)
-    private let goldInk  = Color(hex: 0x7A4A00)
 
     var body: some View {
         HStack(alignment: .center, spacing: 14) {
@@ -21,7 +18,7 @@ struct LightFeatureCard: View {
                 Text(eyebrow.uppercased())
                     .font(.appSans(size: 10, weight: .heavy))
                     .tracking(1.2)
-                    .foregroundStyle(eyebrowColor)
+                    .foregroundStyle(themeStore.primaryColor)
 
                 Text(title)
                     .font(.appSerif(size: 20, weight: .bold))
@@ -49,9 +46,9 @@ struct LightFeatureCard: View {
             Button(action: action) {
                 Image(systemName: icon)
                     .font(.appSans(size: 20, weight: .bold))
-                    .foregroundStyle(goldInk)
+                    .foregroundStyle(themeStore.primaryColor)
                     .frame(width: 52, height: 52)
-                    .background(goldFill, in: Circle())
+                    .background(Color.neutralWash, in: Circle())
                     .contentShape(Circle())
             }
             .buttonStyle(.plain)
@@ -60,7 +57,7 @@ struct LightFeatureCard: View {
         .background(Color.cardBg, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .stroke(amberBorder, lineWidth: 1)
+                .stroke(Color.cardBorder, lineWidth: 1)
         )
     }
 }

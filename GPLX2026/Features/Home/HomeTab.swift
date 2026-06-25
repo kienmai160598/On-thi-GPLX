@@ -97,6 +97,7 @@ struct HomeTab: View {
 // MARK: - Header
 
 private struct HomeSubheader: View {
+    @Environment(ThemeStore.self) private var themeStore
     let subtitle: String
     let dateString: String
     let streakDays: Int
@@ -130,14 +131,14 @@ private struct HomeSubheader: View {
                     HStack(spacing: 6) {
                         Image(systemName: "flame.fill")
                             .font(.appSans(size: 12))
-                            .foregroundStyle(Color.amberInk)
+                            .foregroundStyle(themeStore.primaryColor)
                         Text("\(streakDays) ngày liên tục")
                             .font(.appSans(size: 12, weight: .bold))
-                            .foregroundStyle(Color.amberInk)
+                            .foregroundStyle(themeStore.primaryColor)
                     }
                     .padding(.horizontal, 12)
                     .padding(.vertical, 6)
-                    .background(Color.amberWash, in: Capsule())
+                    .background(themeStore.primaryColor.opacity(0.14), in: Capsule())
                 }
             }
         }

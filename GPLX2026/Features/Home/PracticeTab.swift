@@ -21,28 +21,26 @@ private enum MasteryFilter: String, CaseIterable {
 
 // MARK: - Screen-private sub-views
 
-/// Full-width gold primary CTA button (design #FFC233 fill)
-private struct GoldCTAButton: View {
+/// Full-width primary CTA button, filled with the configured accent color.
+private struct PrimaryCTAButton: View {
+    @Environment(ThemeStore.self) private var themeStore
     let icon: String
     let label: String
     let action: () -> Void
-
-    private let goldFill = Color(hex: 0xFFC233)
-    private let goldInk  = Color(hex: 0x7A4A00)
 
     var body: some View {
         Button(action: action) {
             HStack(spacing: 8) {
                 Image(systemName: icon)
                     .font(.appSans(size: 16, weight: .bold))
-                    .foregroundStyle(goldInk)
+                    .foregroundStyle(themeStore.onPrimaryColor)
                 Text(label)
                     .font(.appSans(size: 14.5, weight: .bold))
-                    .foregroundStyle(goldInk)
+                    .foregroundStyle(themeStore.onPrimaryColor)
             }
             .frame(maxWidth: .infinity)
             .frame(height: 52)
-            .background(goldFill, in: RoundedRectangle(cornerRadius: 25, style: .continuous))
+            .background(themeStore.primaryColor, in: RoundedRectangle(cornerRadius: 25, style: .continuous))
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -89,13 +87,13 @@ private struct TopicRowCard: View {
 struct PracticeTab: View {
     @Environment(QuestionStore.self) private var questionStore
     @Environment(ProgressStore.self) private var progressStore
+    @Environment(ThemeStore.self) private var themeStore
     @Environment(LayoutMetrics.self) private var metrics
     @Environment(\.openExam) private var openExam
 
     @State private var selectedTypeFilter: PracticeTypeFilter = .tatCa
     @State private var selectedMasteryFilter: MasteryFilter = .tatCa
     @State private var showSaHinhSets = false
-    @State private var showTinhHuongSets = false
 
     var body: some View {
         ScrollView {
@@ -114,9 +112,10 @@ struct PracticeTab: View {
                     questionSection
                 }
 
-                // Tình huống history (under "Tất cả")
+                // Practice + Sa hình history (under "Tất cả")
                 if selectedTypeFilter == .tatCa {
-                    tinhHuongHistory
+                    practiceHistoryLink
+                    saHinhHistory
                 }
             }
             .padding(.horizontal, metrics.contentPadding)
@@ -178,21 +177,8 @@ struct PracticeTab: View {
         }
     }
 
-    // MARK: - Sa hình & Tình huống (parent card with nested collapsibles)
-
-    private var practiceSetsSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Sa hình & Tình huống")
-                .font(.appSans(size: 17, weight: .bold))
-                .foregroundStyle(Color.appTextDark)
-                .padding(.horizontal, 2)
-
-            saHinhCollapsible
-            tinhHuongCollapsible
-        }
-        .padding(12)
-        .glassCard(cornerRadius: 22)
-    }
+    // MARK: - Sa hình sets
+    // Tình huống (hazard perception) lives in the Mô phỏng tab, not here.
 
     @ViewBuilder
     private var saHinhCollapsible: some View {
@@ -200,41 +186,53 @@ struct PracticeTab: View {
             title: "Sa hình",
             isExpanded: $showSaHinhSets,
             totalSets: questionStore.totalSimulationSets,
-            completedSets: progressStore.completedSimulationSets,
-            nested: true
+            completedSets: progressStore.completedSimulationSets
         ) { setId in
             openExam(.simulationExam(mode: .examSet(setId)))
         }
     }
 
-    @ViewBuilder
-    private var tinhHuongCollapsible: some View {
-        let totalSets = HazardSituation.all.count / AppConstants.Hazard.situationsPerExam
-        CollapsibleSetList(
-            title: "Tình huống",
-            isExpanded: $showTinhHuongSets,
-            totalSets: totalSets,
-            completedSets: progressStore.completedHazardSets,
-            tag: { setId in "TH \((setId - 1) * 10 + 1)-\(setId * 10)" },
-            nested: true
-        ) { setId in
-            openExam(.hazardTest(mode: .examSet(setId)))
+    // MARK: - Practice History entry ("Lịch sử luyện tập")
+
+    private var practiceHistoryLink: some View {
+        NavigationLink {
+            PracticeHistoryView()
+        } label: {
+            HStack(spacing: 12) {
+                IconBox(icon: "chart.bar.xaxis", color: themeStore.primaryColor, size: 44, cornerRadius: 12, iconFontSize: 18, iconWeight: .semibold)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Lịch sử luyện tập")
+                        .font(.appSans(size: 16, weight: .bold))
+                        .foregroundStyle(Color.appTextDark)
+                    Text("Tiến độ ôn tập theo chủ đề")
+                        .font(.appSans(size: 13))
+                        .foregroundStyle(Color.appTextMedium)
+                }
+                Spacer()
+                Image(systemName: "chevron.right")
+                    .font(.appSans(size: 13, weight: .semibold))
+                    .foregroundStyle(Color.appTextLight)
+            }
+            .padding(14)
+            .contentShape(Rectangle())
         }
+        .buttonStyle(.plain)
+        .glassCard()
     }
 
-    // MARK: - Tình huống History
+    // MARK: - Sa hình History
 
     @ViewBuilder
-    private var tinhHuongHistory: some View {
-        if !progressStore.hazardHistory.isEmpty {
+    private var saHinhHistory: some View {
+        if !progressStore.simulationHistory.isEmpty {
             VStack(alignment: .leading, spacing: 12) {
-                SectionTitle(title: "Lịch sử tình huống")
+                SectionTitle(title: "Lịch sử sa hình")
                 HistoryList(
-                    results: Array(progressStore.hazardHistory.prefix(5)),
-                    scoreText: { "\($0.totalScore)/\($0.maxScore) điểm" },
+                    results: Array(progressStore.simulationHistory.prefix(5)),
+                    scoreText: { "\($0.score)/\($0.totalScenarios) đúng" },
                     passed: \.passed,
                     date: \.date,
-                    destination: { HazardHistoryDetailView(result: $0) }
+                    destination: { SimulationHistoryDetailView(result: $0) }
                 )
             }
         }
@@ -272,8 +270,8 @@ struct PracticeTab: View {
                 PillFilterBar(items: MasteryFilter.allCases, label: \.label, selection: $selectedMasteryFilter, style: .compact)
             }
 
-            // Gold CTA button
-            GoldCTAButton(icon: "play.circle.fill", label: "Ôn tập \(totalCount) câu · Đề tổng hợp") {
+            // Primary CTA button (accent-filled)
+            PrimaryCTAButton(icon: "play.circle.fill", label: "Ôn tập \(totalCount) câu · Đề tổng hợp") {
                 Haptics.impact(.medium)
                 openExam(.questionView(topicKey: AppConstants.TopicKey.allQuestions, startIndex: 0))
             }
@@ -302,9 +300,9 @@ struct PracticeTab: View {
                 }
             }
 
-            // Sa hình & Tình huống card (nested within the Câu hỏi section)
+            // Sa hình card (within the Câu hỏi section)
             if selectedTypeFilter != .yeuThich {
-                practiceSetsSection
+                saHinhCollapsible
             }
         }
     }

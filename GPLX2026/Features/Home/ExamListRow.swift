@@ -1,8 +1,10 @@
 import SwiftUI
 
 /// One fixed exam-set row on the Thi thử tab — set name plus a score pill +
-/// check circle when completed, or a gold play circle when not yet taken.
+/// check circle when completed, or a neutral play circle (accent icon) when not
+/// yet taken.
 struct ExamListRow: View {
+    @Environment(ThemeStore.self) private var themeStore
     let examName: String
     let latestResult: ExamResult?
     let isCompleted: Bool
@@ -40,11 +42,11 @@ struct ExamListRow: View {
                 } else {
                     ZStack {
                         Circle()
-                            .fill(Color(hex: 0xFFC233))
+                            .fill(Color.neutralWash)
                             .frame(width: 34, height: 34)
                         Image(systemName: "play.fill")
                             .font(.appSans(size: 34 * 0.44, weight: .bold))
-                            .foregroundStyle(Color(hex: 0x7A4A00))
+                            .foregroundStyle(themeStore.primaryColor)
                     }
                 }
             }

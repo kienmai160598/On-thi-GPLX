@@ -7,6 +7,7 @@ import SwiftUI
 /// to the bottom. The warm gradient background is supplied by the container
 /// (`OnboardingView`), not here.
 struct OnboardingStepScaffold<Content: View>: View {
+    @Environment(ThemeStore.self) private var themeStore
     let step: Int
     var totalSteps: Int = 4
     var showSkip: Bool = true
@@ -49,14 +50,14 @@ struct OnboardingStepScaffold<Content: View>: View {
                             .font(.appSans(size: 16, weight: .bold))
                     }
                 }
-                .foregroundStyle(Color.appOnInk)
+                .foregroundStyle(themeStore.onPrimaryColor)
                 .frame(maxWidth: .infinity)
                 .frame(height: 50)
-                .background(Color.appInk, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+                .background(themeStore.primaryColor, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            .shadow(color: .black.opacity(0.18), radius: 9, y: 6)
+            .shadow(color: themeStore.primaryColor.opacity(0.28), radius: 9, y: 6)
             .padding(.top, 12)
         }
         .padding(.horizontal, 20)
@@ -147,6 +148,7 @@ struct OnboardingAppIconBadge: View {
 /// `amber` switches the icon box to the warm accent style; otherwise it uses the
 /// neutral charcoal style.
 struct OnboardingFeatureRow: View {
+    @Environment(ThemeStore.self) private var themeStore
     let icon: String
     var amber: Bool = false
     let title: String
@@ -155,9 +157,9 @@ struct OnboardingFeatureRow: View {
     var body: some View {
         HStack(spacing: 12) {
             IconBox(icon: icon,
-                    color: amber ? .amberInk : .appTextDark,
+                    color: amber ? themeStore.primaryColor : .appTextDark,
                     size: 42, cornerRadius: 10, iconFontSize: 21,
-                    background: amber ? .amberWash : .neutralWash)
+                    background: amber ? themeStore.primaryColor.opacity(0.14) : .neutralWash)
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
                     .font(.appSans(size: 14.5, weight: .bold))
@@ -201,11 +203,11 @@ struct OnboardingWelcomeStep: View {
                 }
 
                 VStack(spacing: 12) {
-                    OnboardingFeatureRow(icon: "book.fill",
+                    OnboardingFeatureRow(icon: "book.fill", amber: true,
                                          title: "600+ câu hỏi", subtitle: "Đầy đủ bộ đề thi mới nhất 2026")
                     OnboardingFeatureRow(icon: "list.clipboard.fill", amber: true,
                                          title: "Thi thử sát đề thật", subtitle: "Mô phỏng đúng cấu trúc đề thi")
-                    OnboardingFeatureRow(icon: "video.fill",
+                    OnboardingFeatureRow(icon: "video.fill", amber: true,
                                          title: "Mô phỏng tình huống", subtitle: "120 tình huống giao thông thực tế")
                 }
                 .padding(.top, 4)
@@ -242,35 +244,37 @@ struct OnboardingExperienceStep: View {
 }
 
 struct ExperienceLevelCard: View {
+    @Environment(ThemeStore.self) private var themeStore
     let level: ExperienceLevel
     let isSelected: Bool
     let action: () -> Void
 
     var body: some View {
+        let accent = themeStore.primaryColor
         Button(action: action) {
             HStack(spacing: 14) {
                 IconBox(icon: level.icon,
-                        color: isSelected ? .amberInk : .appTextDark,
+                        color: isSelected ? accent : .appTextDark,
                         size: 46, cornerRadius: 10, iconFontSize: 22,
                         background: isSelected ? .cardBg : .neutralWash)
                 VStack(alignment: .leading, spacing: 3) {
                     Text(level.title)
                         .font(.appSans(size: 15.5, weight: .bold))
-                        .foregroundStyle(isSelected ? Color.amberInk : Color.appTextDark)
+                        .foregroundStyle(isSelected ? accent : Color.appTextDark)
                     Text(level.subtitle)
                         .font(.appSans(size: 12, weight: .semibold))
-                        .foregroundStyle(isSelected ? Color.amberInk.opacity(0.85) : Color.appTextMedium)
+                        .foregroundStyle(isSelected ? accent.opacity(0.85) : Color.appTextMedium)
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 Spacer(minLength: 0)
             }
             .padding(12)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(isSelected ? Color.amberWash : Color.cardBg,
+            .background(isSelected ? accent.opacity(0.14) : Color.cardBg,
                         in: RoundedRectangle(cornerRadius: 20, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: 20, style: .continuous)
-                    .strokeBorder(isSelected ? Color.amberBorder : Color.cardBorder,
+                    .strokeBorder(isSelected ? accent.opacity(0.55) : Color.cardBorder,
                                   lineWidth: isSelected ? 1.5 : 1)
             )
             .shadow(color: Color(hex: 0x8A7B58, opacity: 0.14), radius: 10, x: 0, y: 5)
@@ -286,6 +290,7 @@ struct ExperienceLevelCard: View {
 // MARK: - Step 3 · Study plan setup
 
 struct OnboardingStudyPlanStep: View {
+    @Environment(ThemeStore.self) private var themeStore
     @Binding var license: String
     @Binding var examDate: Date
     @Binding var dailyGoal: Int
@@ -335,7 +340,7 @@ struct OnboardingStudyPlanStep: View {
                 Haptics.impact(.light); showDatePicker = true
             } label: {
                 HStack(spacing: 12) {
-                    IconBox(icon: "calendar", color: .appTextDark, size: 40, cornerRadius: 10, iconFontSize: 18, background: .neutralWash)
+                    IconBox(icon: "calendar", color: themeStore.primaryColor, size: 40, cornerRadius: 10, iconFontSize: 18, background: themeStore.primaryColor.opacity(0.14))
                     VStack(alignment: .leading, spacing: 2) {
                         Text(Self.longDateFormatter.string(from: examDate))
                             .font(.appSans(size: 15, weight: .heavy))
@@ -382,7 +387,7 @@ struct OnboardingStudyPlanStep: View {
                 Spacer()
                 Text("\(dailyGoal) câu / ngày")
                     .font(.appSans(size: 12, weight: .heavy))
-                    .foregroundStyle(Color.amberInk)
+                    .foregroundStyle(themeStore.primaryColor)
             }
             HStack(spacing: 8) {
                 DailyGoalTile(count: 15, label: "Nhẹ nhàng", isSelected: dailyGoal == 15) {
@@ -402,7 +407,7 @@ struct OnboardingStudyPlanStep: View {
 
     private var notificationCard: some View {
         HStack(spacing: 12) {
-            IconBox(icon: "bell.fill", color: .amberInk, size: 42, cornerRadius: 10, iconFontSize: 20, background: .amberWash)
+            IconBox(icon: "bell.fill", color: themeStore.primaryColor, size: 42, cornerRadius: 10, iconFontSize: 20, background: themeStore.primaryColor.opacity(0.14))
             VStack(alignment: .leading, spacing: 2) {
                 Text("Nhắc nhở ôn tập")
                     .font(.appSans(size: 14.5, weight: .bold))
@@ -415,7 +420,7 @@ struct OnboardingStudyPlanStep: View {
             Spacer(minLength: 0)
             Toggle("", isOn: $notificationsEnabled)
                 .labelsHidden()
-                .tint(Color.appInk)
+                .tint(themeStore.primaryColor)
                 .accessibilityLabel("Nhắc nhở ôn tập")
                 .accessibilityValue(notificationsEnabled ? "Bật" : "Tắt")
         }
@@ -442,26 +447,32 @@ struct OnboardingStudyPlanStep: View {
 }
 
 struct LicenceOptionTile: View {
+    @Environment(ThemeStore.self) private var themeStore
     let code: String
     let subtitle: String
     let isSelected: Bool
     let action: () -> Void
 
     var body: some View {
+        let accent = themeStore.primaryColor
         Button(action: action) {
             VStack(alignment: .leading, spacing: 4) {
                 Text(code)
                     .font(.appSans(size: 20, weight: .bold))
-                    .foregroundStyle(isSelected ? Color.amberInk : Color.appTextDark)
+                    .foregroundStyle(isSelected ? accent : Color.appTextDark)
                 Text(subtitle)
                     .font(.appSans(size: 11.5, weight: .semibold))
-                    .foregroundStyle(isSelected ? Color.amberInk.opacity(0.9) : Color.appTextMedium)
+                    .foregroundStyle(isSelected ? accent.opacity(0.9) : Color.appTextMedium)
                     .fixedSize(horizontal: false, vertical: true)
             }
             .padding(12)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(isSelected ? Color.amberWash : Color.neutralWash,
+            .background(isSelected ? accent.opacity(0.14) : Color.neutralWash,
                         in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .strokeBorder(isSelected ? accent.opacity(0.55) : .clear, lineWidth: 1.5)
+            )
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -472,33 +483,35 @@ struct LicenceOptionTile: View {
 }
 
 struct DailyGoalTile: View {
+    @Environment(ThemeStore.self) private var themeStore
     let count: Int
     let label: String
     let isSelected: Bool
     let action: () -> Void
 
     var body: some View {
+        let accent = themeStore.primaryColor
         Button(action: action) {
             VStack(spacing: 4) {
                 Text("\(count)")
                     .font(.appSans(size: 24, weight: .bold))
-                    .foregroundStyle(isSelected ? Color.amberInk : Color.appTextDark)
+                    .foregroundStyle(isSelected ? accent : Color.appTextDark)
                 Text("câu / ngày")
                     .font(.appSans(size: 10, weight: .semibold))
-                    .foregroundStyle(isSelected ? Color.amberInk.opacity(0.85) : Color.appTextMedium)
+                    .foregroundStyle(isSelected ? accent.opacity(0.85) : Color.appTextMedium)
                 Text(label)
                     .font(.appSans(size: 10, weight: .bold))
                     .tracking(0.3)
-                    .foregroundStyle(isSelected ? Color.amberInk : Color.appTextMedium)
+                    .foregroundStyle(isSelected ? accent : Color.appTextMedium)
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, 12)
             .padding(.horizontal, 8)
-            .background(isSelected ? Color.amberWash : Color.neutralWash,
+            .background(isSelected ? accent.opacity(0.14) : Color.neutralWash,
                         in: RoundedRectangle(cornerRadius: 10, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .strokeBorder(isSelected ? Color.amberBorder : Color.cardBorder,
+                    .strokeBorder(isSelected ? accent.opacity(0.55) : Color.cardBorder,
                                   lineWidth: isSelected ? 1.5 : 1)
             )
             .contentShape(Rectangle())
@@ -513,6 +526,7 @@ struct DailyGoalTile: View {
 // MARK: - Step 4 · Ready
 
 struct OnboardingReadyStep: View {
+    @Environment(ThemeStore.self) private var themeStore
     let license: String
     let examDate: Date
     let dailyGoal: Int
@@ -528,7 +542,7 @@ struct OnboardingReadyStep: View {
     var body: some View {
         OnboardingStepScaffold(step: 4, showSkip: false, ctaTitle: "Vào ứng dụng", onContinue: onFinish) {
             VStack(spacing: 16) {
-                OnboardingBadge(icon: "party.popper.fill", tint: .amberInk, bg: .amberWash, iconSize: 46)
+                OnboardingBadge(icon: "party.popper.fill", tint: themeStore.primaryColor, bg: themeStore.primaryColor.opacity(0.14), iconSize: 46)
                     .padding(.top, 16)
 
                 VStack(spacing: 8) {
@@ -557,11 +571,11 @@ struct OnboardingReadyStep: View {
                                      label: "Hạng giấy phép",
                                      value: (LicenseType(rawValue: license) ?? .b2).displayName)
                 onboardingDivider
-                OnboardingSummaryRow(icon: "calendar",
+                OnboardingSummaryRow(icon: "calendar", amber: true,
                                      label: "Ngày thi dự kiến",
                                      value: Self.shortDateFormatter.string(from: examDate))
                 onboardingDivider
-                OnboardingSummaryRow(icon: "target",
+                OnboardingSummaryRow(icon: "target", amber: true,
                                      label: "Mục tiêu mỗi ngày",
                                      value: "\(dailyGoal) câu")
             }
@@ -577,6 +591,7 @@ struct OnboardingReadyStep: View {
 }
 
 struct OnboardingSummaryRow: View {
+    @Environment(ThemeStore.self) private var themeStore
     let icon: String
     var amber: Bool = false
     let label: String
@@ -584,9 +599,9 @@ struct OnboardingSummaryRow: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            IconBox(icon: icon, color: amber ? .amberInk : .appTextDark,
+            IconBox(icon: icon, color: amber ? themeStore.primaryColor : .appTextDark,
                     size: 38, cornerRadius: 10, iconFontSize: 18,
-                    background: amber ? .amberWash : .neutralWash)
+                    background: amber ? themeStore.primaryColor.opacity(0.14) : .neutralWash)
             Text(label)
                 .font(.appSans(size: 13, weight: .semibold))
                 .foregroundStyle(Color.appTextMedium)

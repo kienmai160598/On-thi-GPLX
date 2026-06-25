@@ -36,7 +36,6 @@ struct ExamResultView: View {
 
     // MARK: - State
 
-    @State private var statsExpanded = true
     @State private var topicsExpanded = false
     @State private var topicStats: [ExamTopicStat] = []
 
@@ -76,11 +75,11 @@ struct ExamResultView: View {
                         .kerning(-0.5)
                         .frame(maxWidth: .infinity, alignment: .leading)
 
-                    // ── Hero card ─────────────────────────────────────────
-                    resultHeroCard
+                    // ── Summary card (header + 3 stats) ───────────────────
+                    summaryCard
 
-                    // ── Tổng quan ─────────────────────────────────────────
-                    statsCard
+                    // ── Chi tiết ──────────────────────────────────────────
+                    chiTietSection
 
                     // ── Theo chủ đề ───────────────────────────────────────
                     topicsCard
@@ -184,138 +183,95 @@ struct ExamResultView: View {
         .frame(maxWidth: .infinity, alignment: .center)
     }
 
-    // MARK: - Result Hero Card (horizontal layout per design VVIdQ)
+    // MARK: - Summary Card (header + 3 stats, design VVIdQ)
 
-    private var resultHeroCard: some View {
-        // Use the stored result's own totals — the reconstructed `questions`
-        // array can be shorter than the exam if the question bank changed.
-        let fraction = examResult.accuracy
-        let pct = Int(round(fraction * 100))
-
-        return HStack(alignment: .center, spacing: 14) {
-            // Left column: badge + headings
-            VStack(alignment: .leading, spacing: 8) {
-                HStack(spacing: 5) {
-                    Image(systemName: isPassed ? "checkmark" : "xmark")
-                        .font(.appSans(size: 11, weight: .bold))
-                        .foregroundStyle(.white)
-                    Text(isPassed ? "ĐẠT" : "TRƯỢT")
-                        .font(.appSans(size: 12, weight: .heavy))
-                        .foregroundStyle(.white)
-                        .kerning(1)
-                }
-                .padding(.vertical, 5)
-                .padding(.leading, 10)
-                .padding(.trailing, 12)
-                .background(isPassed ? Color.appSuccess : Color.appError)
-                .clipShape(Capsule())
-
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(isPassed ? "Chúc mừng!" : "Cố lên!")
-                        .font(.appSans(size: 24, weight: .heavy))
-                        .foregroundStyle(Color.appTextDark)
-                        .kerning(-0.5)
-                    Text(isPassed ? "Bạn đã vượt qua bài thi thử" : "Hãy ôn tập thêm và thử lại nhé")
-                        .font(.appSans(size: 12.5, weight: .medium))
-                        .foregroundStyle(isPassed ? Color(hex: 0x5E7A66) : Color.appTextMedium)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
+    private var summaryCard: some View {
+        let pct = Int(round(examResult.accuracy * 100))
+        let passDiemLiet = wrongDiemLietCount == 0
+        return VStack(spacing: 14) {
+            HStack(spacing: 10) {
+                IconBox(
+                    icon: isPassed ? "hand.thumbsup.fill" : "arrow.clockwise",
+                    color: isPassed ? .appSuccess : .appError,
+                    size: 36, cornerRadius: 10, iconFontSize: 16, iconWeight: .semibold
+                )
+                Text(isPassed ? "Chúc mừng!" : "Cố lên!")
+                    .font(.appSans(size: 18, weight: .heavy))
+                    .foregroundStyle(Color.appTextDark)
+                    .kerning(-0.3)
+                Spacer(minLength: 8)
+                Text(isPassed ? "ĐẠT" : "TRƯỢT")
+                    .font(.appSans(size: 12, weight: .heavy))
+                    .foregroundStyle(.white)
+                    .kerning(1)
+                    .padding(.vertical, 5)
+                    .padding(.horizontal, 12)
+                    .background(isPassed ? Color.appSuccess : Color.appError, in: Capsule())
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
 
-            // Right column: percentage + score fraction
-            VStack(alignment: .trailing, spacing: 2) {
-                Text("\(pct)%")
-                    .font(.appSans(size: 48, weight: .bold))
-                    .foregroundStyle(isPassed ? Color.appSuccess : Color.appError)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.6)
-                Text("\(correctCount)/\(questions.count) câu đúng")
-                    .font(.appSans(size: 12, weight: .medium))
-                    .foregroundStyle(Color.appTextMedium)
-                    .multilineTextAlignment(.trailing)
+            Rectangle()
+                .fill(Color.appDivider.opacity(0.6))
+                .frame(height: 1)
+
+            HStack(spacing: 0) {
+                StatItem(value: "\(pct)%", label: "Chính xác", valueColor: isPassed ? .appSuccess : .appError, valueFontSize: 22)
+                StatItem(value: "\(correctCount)/\(examResult.totalQuestions)", label: "Câu đúng", valueFontSize: 22)
+                StatItem(value: passDiemLiet ? "Đạt" : "Trượt", label: "Điểm liệt", valueColor: passDiemLiet ? .appSuccess : .appError, valueFontSize: 22)
             }
         }
-        .padding(16)
-        .background(
-            RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .fill(isPassed ? Color(hex: 0xE7F5EC) : Color(hex: 0xFCE4E2))
-        )
-        .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .padding(20)
+        .glassCard(cornerRadius: 22)
     }
 
-    // MARK: - Stats Card (Tổng quan)
+    // MARK: - Chi tiết (detail list, design VVIdQ)
 
-    private var statsCard: some View {
-        let minutes = timeUsedSeconds / 60
-        let seconds = timeUsedSeconds % 60
-        let timeStr = String(format: "%02d:%02d", minutes, seconds)
+    private var chiTietSection: some View {
+        let pct = Int(round(examResult.accuracy * 100))
+        let wrong = max(0, examResult.totalQuestions - examResult.score)
+        let passDiemLiet = wrongDiemLietCount == 0
+        let withinTime = timeUsedSeconds <= LicenseType.current.totalTimeSeconds
+        return VStack(alignment: .leading, spacing: 10) {
+            SectionTitle(title: "Chi tiết")
 
-        return VStack(spacing: 12) {
-            Button {
-                withAnimation(.easeInOut(duration: 0.25)) {
-                    statsExpanded.toggle()
+            HistoryItemRow(
+                icon: "checkmark.circle.fill", iconColor: .appSuccess,
+                title: "Câu đúng", meta: "Trên tổng số \(examResult.totalQuestions) câu",
+                value: "\(correctCount)", valueColor: .appSuccess, status: "\(pct)%"
+            )
+            let cauSaiRow = HistoryItemRow(
+                icon: "xmark.circle.fill", iconColor: .appError,
+                title: "Câu sai", meta: wrong > 0 ? "Nhấn để xem lại các câu này" : "Không có câu sai",
+                value: "\(wrong)", valueColor: .appError, status: "\(max(0, 100 - pct))%"
+            )
+            if wrong > 0 {
+                NavigationLink {
+                    WrongAnswerReviewView(questions: questions, answers: answers)
+                } label: {
+                    cauSaiRow
                 }
-            } label: {
-                HStack {
-                    Text("Tổng quan")
-                        .font(.appSans(size: 14, weight: .heavy))
-                        .foregroundStyle(Color.appTextDark)
-                        .kerning(-0.2)
-                    Spacer()
-                    Image(systemName: statsExpanded ? "chevron.up" : "chevron.down")
-                        .font(.appSans(size: 14, weight: .medium))
-                        .foregroundStyle(Color.appTextMedium)
-                }
-                .contentShape(Rectangle())
+                .buttonStyle(.plain)
+            } else {
+                cauSaiRow
             }
-            .buttonStyle(.plain)
-            .accessibilityValue(statsExpanded ? "Đang mở" : "Đã đóng")
-
-            if statsExpanded {
-                VStack(spacing: 10) {
-                    ExamStatIconRow(
-                        iconName: "checkmark.circle.fill",
-                        iconBgColor: Color(hex: 0xE7F5EC),
-                        iconColor: Color(hex: 0x1F7A3D),
-                        label: "Câu đúng",
-                        value: "\(correctCount)",
-                        valueColor: Color.appTextDark
-                    )
-                    ExamStatIconRow(
-                        iconName: "xmark.circle.fill",
-                        iconBgColor: Color(hex: 0xFCE4E2),
-                        iconColor: Color(hex: 0xB3261E),
-                        label: "Câu sai",
-                        value: "\(max(0, examResult.totalQuestions - examResult.score))",
-                        valueColor: Color.appTextDark
-                    )
-                    ExamStatIconRow(
-                        iconName: wrongDiemLietCount == 0 ? "checkmark.shield.fill" : "exclamationmark.shield.fill",
-                        iconBgColor: wrongDiemLietCount == 0 ? Color(hex: 0xE7F5EC) : Color(hex: 0xFCE4E2),
-                        iconColor: wrongDiemLietCount == 0 ? Color(hex: 0x1F7A3D) : Color(hex: 0xB3261E),
-                        label: "Điểm liệt",
-                        value: wrongDiemLietCount == 0 ? "Đạt" : "Không đạt",
-                        valueColor: wrongDiemLietCount == 0 ? Color(hex: 0x1F5A2A) : Color.appError
-                    )
-                    ExamStatIconRow(
-                        iconName: "timer",
-                        iconBgColor: Color(hex: 0xF0EEE9),
-                        iconColor: Color(hex: 0x6B6B6B),
-                        label: "Thời gian",
-                        value: timeStr,
-                        valueColor: Color.appTextDark
-                    )
-                }
-            }
+            HistoryItemRow(
+                icon: passDiemLiet ? "checkmark.shield.fill" : "exclamationmark.shield.fill",
+                iconColor: passDiemLiet ? .appSuccess : .appError,
+                title: "Điểm liệt",
+                meta: passDiemLiet ? "Không sai câu điểm liệt" : "\(wrongDiemLietCount) câu điểm liệt bị sai",
+                value: passDiemLiet ? "Đạt" : "Trượt", valueColor: passDiemLiet ? .appSuccess : .appError,
+                status: passDiemLiet ? "An toàn" : "Nguy hiểm"
+            )
+            HistoryItemRow(
+                icon: "timer", iconColor: .appTextMedium,
+                title: "Thời gian làm bài", meta: "Giới hạn \(formatTime(LicenseType.current.totalTimeSeconds))",
+                value: formatTime(timeUsedSeconds), valueColor: .appTextDark,
+                status: withinTime ? "Còn dư" : "Hết giờ"
+            )
         }
-        .padding(14)
-        .background(.ultraThinMaterial)
-        .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .strokeBorder(Color.appDivider.opacity(0.5), lineWidth: 1)
-        )
+    }
+
+    private func formatTime(_ seconds: Int) -> String {
+        String(format: "%02d:%02d", seconds / 60, seconds % 60)
     }
 
     // MARK: - Topics Card (Theo chủ đề)
@@ -407,43 +363,6 @@ private struct ExamTopicStat: Identifiable {
     let correct: Int
     let total: Int
     var fraction: Double { total > 0 ? Double(correct) / Double(total) : 0 }
-}
-
-// MARK: - ExamStatIconRow (file-private subview)
-
-private struct ExamStatIconRow: View {
-    let iconName: String
-    let iconBgColor: Color
-    let iconColor: Color
-    let label: String
-    let value: String
-    let valueColor: Color
-
-    var body: some View {
-        HStack(alignment: .center, spacing: 12) {
-            ZStack {
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .fill(iconBgColor)
-                    .frame(width: 32, height: 32)
-                Image(systemName: iconName)
-                    .font(.appSans(size: 15, weight: .medium))
-                    .foregroundStyle(iconColor)
-            }
-            Text(label)
-                .font(.appSans(size: 13.5, weight: .semibold))
-                .foregroundStyle(Color.appTextDark)
-                .frame(maxWidth: .infinity, alignment: .leading)
-            Text(value)
-                .font(.appSans(size: 18, weight: .bold))
-                .foregroundStyle(valueColor)
-        }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 12)
-        .background(
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .fill(Color.cardBg.opacity(0.5))
-        )
-    }
 }
 
 // MARK: - ExamTopicStatRow (file-private subview)

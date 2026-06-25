@@ -96,8 +96,7 @@ struct CollapsibleSetList: View {
 
                 CircularActionButton(
                     icon: isCompleted ? "checkmark" : "play.fill",
-                    size: 34,
-                    subtle: isCompleted
+                    size: 34
                 )
             }
             .padding(.horizontal, 12)

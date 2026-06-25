@@ -67,7 +67,14 @@ struct HazardTestView: View {
         }
         .alert("Thoát bài thi?", isPresented: $showExitDialog) {
             Button("Tiếp tục", role: .cancel) {}
-            Button("Thoát", role: .destructive) { dismiss() }
+            Button("Thoát", role: .destructive) {
+                // Restore portrait *before* dismissing (same as the natural finish
+                // path). Relying only on onDisappear/onDismiss leaves the geometry
+                // request firing mid-dismiss, where the system rejects it and the
+                // screen stays landscape.
+                OrientationManager.shared.lock()
+                dismiss()
+            }
         } message: {
             Text("Kết quả sẽ không được lưu.")
         }

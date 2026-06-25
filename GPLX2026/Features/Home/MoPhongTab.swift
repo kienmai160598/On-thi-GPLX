@@ -7,6 +7,7 @@ struct MoPhongTab: View {
     @Environment(ProgressStore.self) private var progressStore
     @Environment(HazardVideoCache.self) private var videoCache
     @Environment(LayoutMetrics.self) private var metrics
+    @Environment(ThemeStore.self) private var themeStore
     @Environment(\.openExam) private var openExam
 
     @State private var selectedFilter: ChapterFilter = .all
@@ -19,8 +20,8 @@ struct MoPhongTab: View {
             VStack(alignment: .leading, spacing: 16) {
                 heroCard
                 PillFilterBar(items: ChapterFilter.allCases, label: \.label, selection: $selectedFilter)
-                focusCard
                 chapterSection
+                tinhHuongHistory
             }
             .padding(.horizontal, metrics.contentPadding)
             .padding(.top, 8)
@@ -84,10 +85,10 @@ struct MoPhongTab: View {
 
                 Text("\(pct)%")
                     .font(.appSans(size: 13, weight: .heavy))
-                    .foregroundStyle(Color(hex: 0x7A4A00))
+                    .foregroundStyle(themeStore.primaryColor)
                     .padding(.horizontal, 12)
                     .padding(.vertical, 6)
-                    .background(Color(hex: 0xFFE9B0), in: Capsule())
+                    .background(themeStore.primaryColor.opacity(0.14), in: Capsule())
             }
 
             HStack {
@@ -125,28 +126,6 @@ struct MoPhongTab: View {
         .glassCard(cornerRadius: 22)
     }
 
-    // MARK: - Focus Card (today's suggestion)
-
-    private var focusCard: some View {
-        let suggested = HazardSituation.chapters.first {
-            !progressStore.chapterHasPractice(chapterId: $0.id)
-        } ?? HazardSituation.chapters.first
-
-        return FeatureCard(
-            eyebrow: "GỢI Ý HÔM NAY",
-            title: suggested?.name ?? "Thi thử 10 tình huống",
-            tags: ["10 video", "Tính điểm"],
-            icon: "play.fill"
-        ) {
-            Haptics.impact(.medium)
-            if let suggested {
-                openExam(.hazardTest(mode: .chapter(suggested.id)))
-            } else {
-                openExam(.hazardTest(mode: .exam))
-            }
-        }
-    }
-
     // MARK: - Chapter Section
 
     private var chapterSection: some View {
@@ -163,6 +142,35 @@ struct MoPhongTab: View {
                         chapterCard(chapter)
                     }
                 }
+            }
+        }
+    }
+
+    // MARK: - Tình huống History
+
+    @ViewBuilder
+    private var tinhHuongHistory: some View {
+        if !progressStore.hazardHistory.isEmpty {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(spacing: 8) {
+                    SectionTitle(title: "Lịch sử tình huống")
+                    NavigationLink { HazardHistoryView() } label: {
+                        HStack(spacing: 2) {
+                            Text("Xem tất cả").font(.appSans(size: 12, weight: .semibold))
+                            Image(systemName: "chevron.right").font(.appSans(size: 10, weight: .semibold))
+                        }
+                        .foregroundStyle(themeStore.primaryColor)
+                        .fixedSize()
+                    }
+                    .buttonStyle(.plain)
+                }
+                HistoryList(
+                    results: Array(progressStore.hazardHistory.prefix(5)),
+                    scoreText: { "\($0.totalScore)/\($0.maxScore) điểm" },
+                    passed: \.passed,
+                    date: \.date,
+                    destination: { HazardHistoryDetailView(result: $0) }
+                )
             }
         }
     }
@@ -222,9 +230,9 @@ struct MoPhongTab: View {
     private var goldPlayButton: some View {
         Image(systemName: "play.fill")
             .font(.appSans(size: 17, weight: .bold))
-            .foregroundStyle(Color(hex: 0x7A4A00))
+            .foregroundStyle(themeStore.primaryColor)
             .frame(width: 44, height: 44)
-            .background(Color(hex: 0xFFC233), in: Circle())
+            .background(Color.neutralWash, in: Circle())
     }
 
     // MARK: - Chapter Badge

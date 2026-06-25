@@ -99,45 +99,43 @@ struct SpeedDistanceReferenceView: View {
 
                     // MARK: - Rules
                     if selectedSection == nil || selectedSection == .rules {
-                        SectionTitle(title: "Quy tắc quan trọng")
-                            .padding(.bottom, 10)
+                        VStack(alignment: .leading, spacing: 10) {
+                            RefSectionHeader(icon: "checkmark.shield.fill", title: "Quy tắc quan trọng")
 
-                        VStack(spacing: 8) {
-                            RuleCard(icon: "list.number", title: "Thứ tự ưu tiên điều khiển GT",
-                                     detail: "CSGT → Đèn tín hiệu → Biển báo → Vạch kẻ đường")
-                            RuleCard(icon: "arrow.triangle.branch", title: "Ngã tư không đèn",
-                                     detail: "Nhường xe đến từ bên phải. Đường ưu tiên > Đường nhánh")
-                            RuleCard(icon: "car.side", title: "Vượt xe",
-                                     detail: "Chỉ vượt bên trái, trừ khi xe phía trước rẽ trái")
-                            RuleCard(icon: "light.beacon.max", title: "Xe ưu tiên",
-                                     detail: "Cứu hoả, cứu thương, công an, quân sự (có còi + đèn ưu tiên)")
-                            RuleCard(icon: "moon.fill", title: "Ban đêm",
-                                     detail: "Đèn chiếu gần trong đô thị, chuyển đèn chiếu gần khi có xe ngược chiều")
-                            RuleCard(icon: "parkingsign", title: "Dừng / Đỗ xe",
-                                     detail: "Cách ngã ba/tư ≥ 5m, cách bến xe buýt ≥ 20m, không đỗ trên cầu")
-                            RuleCard(icon: "phone.down.fill", title: "Cấm điện thoại",
-                                     detail: "Cấm sử dụng điện thoại cầm tay khi lái xe",
-                                     accentColor: .appError)
+                            VStack(spacing: 8) {
+                                RuleCard(icon: "list.number", title: "Thứ tự ưu tiên điều khiển GT",
+                                         detail: "CSGT → Đèn tín hiệu → Biển báo → Vạch kẻ đường")
+                                RuleCard(icon: "arrow.triangle.branch", title: "Ngã tư không đèn",
+                                         detail: "Nhường xe đến từ bên phải. Đường ưu tiên > Đường nhánh")
+                                RuleCard(icon: "car.side", title: "Vượt xe",
+                                         detail: "Chỉ vượt bên trái, trừ khi xe phía trước rẽ trái")
+                                RuleCard(icon: "light.beacon.max", title: "Xe ưu tiên",
+                                         detail: "Cứu hoả, cứu thương, công an, quân sự (có còi + đèn ưu tiên)")
+                                RuleCard(icon: "moon.fill", title: "Ban đêm",
+                                         detail: "Đèn chiếu gần trong đô thị, chuyển đèn chiếu gần khi có xe ngược chiều")
+                                RuleCard(icon: "parkingsign", title: "Dừng / Đỗ xe",
+                                         detail: "Cách ngã ba/tư ≥ 5m, cách bến xe buýt ≥ 20m, không đỗ trên cầu")
+                                RuleCard(icon: "phone.down.fill", title: "Cấm điện thoại",
+                                         detail: "Cấm sử dụng điện thoại cầm tay khi lái xe",
+                                         accentColor: .appError)
+                            }
                         }
                     }
 
                     // MARK: - Penalty
                     if selectedSection == nil || selectedSection == .penalty {
-                        SectionTitle(title: "Mức phạt ô tô (NĐ 168/2024)")
-                            .padding(.bottom, 10)
+                        VStack(alignment: .leading, spacing: 10) {
+                            RefSectionHeader(icon: "banknote", title: "Mức phạt ô tô (NĐ 168/2024)")
 
-                        VStack(spacing: 0) {
-                            PenaltyRow(icon: "light.max", violation: "Vượt đèn đỏ", penalty: "18–20 triệu + trừ 4 điểm")
-                            Divider().padding(.horizontal, 16)
-                            PenaltyRow(icon: "wineglass", violation: "Nồng độ cồn (cao nhất)", penalty: "30–40 triệu + trừ 12 điểm")
-                            Divider().padding(.horizontal, 16)
-                            PenaltyRow(icon: "gauge.with.dots.needle.100percent", violation: "Quá tốc độ > 35 km/h", penalty: "12–14 triệu + trừ 10 điểm")
-                            Divider().padding(.horizontal, 16)
-                            PenaltyRow(icon: "doc.text", violation: "Không có GPLX", penalty: "18–20 triệu")
-                            Divider().padding(.horizontal, 16)
-                            PenaltyRow(icon: "arrow.uturn.left", violation: "Ngược chiều cao tốc", penalty: "40–50 triệu + trừ 12 điểm")
+                            VStack(spacing: 0) {
+                                PenaltyRow(icon: "light.max", violation: "Vượt đèn đỏ", penalty: "18–20 triệu + trừ 4 điểm")
+                                PenaltyRow(icon: "wineglass", violation: "Nồng độ cồn (cao nhất)", penalty: "30–40 triệu + trừ 12 điểm")
+                                PenaltyRow(icon: "gauge.with.dots.needle.100percent", violation: "Quá tốc độ > 35 km/h", penalty: "12–14 triệu + trừ 10 điểm")
+                                PenaltyRow(icon: "doc.text", violation: "Không có GPLX", penalty: "18–20 triệu")
+                                PenaltyRow(icon: "arrow.uturn.left", violation: "Ngược chiều cao tốc", penalty: "40–50 triệu + trừ 12 điểm")
+                            }
+                            .glassCard()
                         }
-                        .glassCard()
                     }
             }
             .padding(.horizontal, metrics.contentPadding)
@@ -170,6 +168,25 @@ struct SpeedDistanceReferenceView: View {
 
 // MARK: - Ref Section (grouped table)
 
+/// Shared section header (accent icon + bold title) used by every section on this
+/// screen so the speed tables, rules, and penalties all read the same way.
+private struct RefSectionHeader: View {
+    let icon: String
+    let title: String
+    var accentColor: Color = .appPrimary
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Image(systemName: icon)
+                .font(.appSans(size: 14, weight: .semibold))
+                .foregroundStyle(accentColor)
+            Text(title)
+                .font(.appSans(size: 15, weight: .bold))
+                .foregroundStyle(Color.appTextDark)
+        }
+    }
+}
+
 private struct RefSection<Content: View>: View {
     let title: String
     let icon: String
@@ -178,14 +195,7 @@ private struct RefSection<Content: View>: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            HStack(spacing: 8) {
-                Image(systemName: icon)
-                    .font(.appSans(size: 14, weight: .semibold))
-                    .foregroundStyle(accentColor)
-                Text(title)
-                    .font(.appSans(size: 15, weight: .bold))
-                    .foregroundStyle(Color.appTextDark)
-            }
+            RefSectionHeader(icon: icon, title: title, accentColor: accentColor)
 
             VStack(spacing: 0) {
                 content()

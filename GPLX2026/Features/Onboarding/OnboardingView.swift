@@ -6,6 +6,7 @@ import SwiftUI
 struct OnboardingView: View {
     @Environment(QuestionStore.self) private var questionStore
     @Environment(ProgressStore.self) private var progressStore
+    @Environment(ThemeStore.self) private var themeStore
 
     @AppStorage(AppConstants.StorageKey.hasCompletedOnboarding) private var hasCompletedOnboarding = false
     @AppStorage(AppConstants.StorageKey.licenseType) private var licenseType = "b2"
@@ -30,7 +31,7 @@ struct OnboardingView: View {
 
     var body: some View {
         ZStack {
-            ScaffoldBackground()
+            ScaffoldBackground(glow: themeStore.primaryColor)
             currentStep
                 .id(step)
                 .transition(.asymmetric(

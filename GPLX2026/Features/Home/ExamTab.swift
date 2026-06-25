@@ -185,7 +185,18 @@ struct ExamTab: View {
     private var questionHistory: some View {
         if !progressStore.examHistory.isEmpty {
             VStack(alignment: .leading, spacing: 12) {
-                SectionTitle(title: "Lịch sử câu hỏi")
+                HStack(spacing: 8) {
+                    SectionTitle(title: "Lịch sử câu hỏi")
+                    NavigationLink { ExamHistoryView() } label: {
+                        HStack(spacing: 2) {
+                            Text("Xem tất cả").font(.appSans(size: 12, weight: .semibold))
+                            Image(systemName: "chevron.right").font(.appSans(size: 10, weight: .semibold))
+                        }
+                        .foregroundStyle(themeStore.primaryColor)
+                        .fixedSize()
+                    }
+                    .buttonStyle(.plain)
+                }
                 HistoryList(
                     results: Array(progressStore.examHistory.prefix(5)),
                     scoreText: { "\($0.score)/\($0.totalQuestions) đúng" },

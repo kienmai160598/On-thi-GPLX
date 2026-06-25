@@ -301,6 +301,10 @@ extension View {
 /// The app's full-screen background: a subtle warm-neutral diagonal gradient.
 /// Single source of truth so every screen shares the same backdrop.
 struct ScaffoldBackground: View {
+    /// Corner-glow tint. Defaults to the brand color; pass `themeStore.primaryColor`
+    /// to make the glow follow the user's chosen accent.
+    var glow: Color = .appPrimary
+
     var body: some View {
         ZStack {
             LinearGradient(
@@ -311,7 +315,7 @@ struct ScaffoldBackground: View {
             // Soft branded glow in the top-trailing corner so the gradient
             // reads clearly (and warmly) even behind dense content.
             RadialGradient(
-                colors: [Color.appPrimary.opacity(0.16), .clear],
+                colors: [glow.opacity(0.16), .clear],
                 center: .topTrailing,
                 startRadius: 0,
                 endRadius: 480

@@ -36,7 +36,10 @@ targets:
         INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents: true
         INFOPLIST_KEY_UILaunchScreen_Generation: true
         INFOPLIST_KEY_UISupportedInterfaceOrientations: "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortraitUpsideDown"
-        INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad: "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
+        # iPhone-only app. Advertising only the iPhone device family means the
+        # binary's UIDeviceFamily excludes iPad, so App Store Connect no longer
+        # requires iPad screenshots. (The iPad orientation key is dropped with it.)
+        TARGETED_DEVICE_FAMILY: "1"
         INFOPLIST_KEY_CFBundleDisplayName: "Ôn Thi Lái Xe 2026"
         INFOPLIST_KEY_ITSAppUsesNonExemptEncryption: false
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon

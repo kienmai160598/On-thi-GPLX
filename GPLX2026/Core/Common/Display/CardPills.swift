@@ -16,9 +16,10 @@ struct CountPill: View {
     }
 }
 
-/// Accuracy chip: gold "X% đúng" when attempted, neutral "Chưa làm" otherwise.
+/// Accuracy chip: accent "X% đúng" when attempted, neutral "Chưa làm" otherwise.
 /// Shared by Luyện tập's topic rows and Mô phỏng's chapter cards.
 struct AccuracyPill: View {
+    @Environment(ThemeStore.self) private var themeStore
     /// nil = not yet attempted.
     let accuracy: Double?
 
@@ -26,10 +27,10 @@ struct AccuracyPill: View {
         if let acc = accuracy {
             Text("\(Int(acc * 100))% đúng")
                 .font(.appSans(size: 11.5, weight: .bold))
-                .foregroundStyle(Color(hex: 0x7A4A00))
+                .foregroundStyle(themeStore.primaryColor)
                 .padding(.horizontal, 9)
                 .padding(.vertical, 4)
-                .background(Color(hex: 0xFFE9B0), in: Capsule())
+                .background(themeStore.primaryColor.opacity(0.14), in: Capsule())
         } else {
             Text("Chưa làm")
                 .font(.appSans(size: 12, weight: .medium))

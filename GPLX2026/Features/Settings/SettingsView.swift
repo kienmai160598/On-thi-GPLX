@@ -105,6 +105,14 @@ struct SettingsView: View {
                     .buttonStyle(.plain)
                 }
 
+                // ── DỮ LIỆU ───────────────────────────────────────────
+                settingsSection("DỮ LIỆU") {
+                    NavigationLink(destination: DataManagementView()) {
+                        settingsNavRow(label: "Xoá dữ liệu", value: "")
+                    }
+                    .buttonStyle(.plain)
+                }
+
                 // ── VỀ ỨNG DỤNG ────────────────────────────────────────
                 settingsSection("VỀ ỨNG DỤNG") {
                     aboutRow(label: "Nhà phát triển", value: "Mai Trung Kiên")
