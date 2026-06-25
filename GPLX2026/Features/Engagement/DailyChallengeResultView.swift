@@ -13,27 +13,63 @@ struct DailyChallengeResultView: View {
 
     private var correctCount: Int { result.score }
 
+    // MARK: - Stat card (frosted material)
+
     private var scoreDetails: some View {
         VStack(spacing: 0) {
-            ScoreRow(label: "Câu đúng", value: "\(correctCount)/\(questions.count)", color: Color.appSuccess)
+            ScoreRow(
+                label: "Câu đúng",
+                value: "\(correctCount)/\(questions.count)",
+                color: Color.appSuccess
+            )
             Divider().padding(.horizontal, 16)
-            ScoreRow(label: "Câu sai", value: "\(questions.count - correctCount)/\(questions.count)", color: Color.appError)
+
+            ScoreRow(
+                label: "Câu sai",
+                value: "\(questions.count - correctCount)/\(questions.count)",
+                color: Color.appError
+            )
             Divider().padding(.horizontal, 16)
 
             let minutes = timeUsedSeconds / 60
             let seconds = timeUsedSeconds % 60
-            ScoreRow(label: "Thời gian", value: String(format: "%02d:%02d", minutes, seconds), color: Color.appTextMedium)
+            ScoreRow(
+                label: "Thời gian",
+                value: String(format: "%02d:%02d", minutes, seconds),
+                color: Color.appTextMedium
+            )
             Divider().padding(.horizontal, 16)
 
-            ScoreRow(
-                label: "Chuỗi thử thách",
-                value: "\(progressStore.dailyChallengeStreak) ngày",
-                color: themeStore.primaryColor
-            )
+            // Streak row with fire accent
+            HStack {
+                HStack(spacing: 8) {
+                    IconBox(
+                        icon: "flame.fill",
+                        color: Color.appWarning,
+                        size: 28,
+                        cornerRadius: 8,
+                        iconFontSize: 14
+                    )
+                    Text("Chuỗi thử thách")
+                        .font(.appMono(size: 15, weight: .medium))
+                        .foregroundStyle(Color.appTextMedium)
+                }
+                Spacer()
+                Text("\(progressStore.dailyChallengeStreak) ngày")
+                    .font(.appMono(size: 15, weight: .bold))
+                    .foregroundStyle(Color.appWarning)
+                    .contentTransition(.numericText())
+                    .animation(.snappy, value: progressStore.dailyChallengeStreak)
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 14)
         }
         .padding(.vertical, 4)
-        .glassCard()
+        .background(.ultraThinMaterial)
+        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
     }
+
+    // MARK: - Body
 
     var body: some View {
         ScrollView {
@@ -43,19 +79,23 @@ struct DailyChallengeResultView: View {
                 if metrics.isIPadLayout {
                     HStack(alignment: .top, spacing: metrics.gridSpacing) {
                         ResultHero(
-                            isPassed: true,
+                            isPassed: result.passed,
                             score: correctCount,
                             total: questions.count,
-                            subtitle: "Thử thách hôm nay hoàn thành!"
+                            subtitle: result.passed
+                                ? "Thử thách hôm nay hoàn thành!"
+                                : "Cố gắng hơn vào ngày mai nhé!"
                         )
                         scoreDetails
                     }
                 } else {
                     ResultHero(
-                        isPassed: true,
+                        isPassed: result.passed,
                         score: correctCount,
                         total: questions.count,
-                        subtitle: "Thử thách hôm nay hoàn thành!"
+                        subtitle: result.passed
+                            ? "Thử thách hôm nay hoàn thành!"
+                            : "Cố gắng hơn vào ngày mai nhé!"
                     )
                     scoreDetails
                 }
@@ -71,7 +111,8 @@ struct DailyChallengeResultView: View {
                             status: selectedId == nil ? .unanswered : isCorrect ? .correct : .wrong,
                             selectedAnswerId: selectedId
                         )
-                        .glassCard()
+                        .background(.ultraThinMaterial)
+                        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
                     }
                 }
             }
@@ -92,6 +133,7 @@ struct DailyChallengeResultView: View {
                     Image(systemName: "checkmark")
                         .font(.appSans(size: 15, weight: .semibold))
                 }
+                .accessibilityLabel("Hoàn thành")
             }
         }
     }

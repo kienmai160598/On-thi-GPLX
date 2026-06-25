@@ -74,7 +74,7 @@ struct QuestionReviewRow: View {
                             Text("Đáp án: \(correctAnswer.text)")
                                 .font(.appSans(size: 12, weight: .medium))
                                 .foregroundStyle(Color.appSuccess)
-                                .lineLimit(1)
+                                .lineLimit(2)
                         }
                     }
 
@@ -130,6 +130,8 @@ struct QuestionReviewRow: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .accessibilityValue(isExpanded ? "Đã mở rộng" : "Đã thu lại")
+        .accessibilityHint("Nhấn đôi để xem hoặc ẩn chi tiết")
     }
 
     // MARK: - Answer styling

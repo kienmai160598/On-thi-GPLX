@@ -3,6 +3,7 @@ import SwiftUI
 struct BackgroundAnimationPicker: View {
     @Binding var selected: String
     @Binding var speedKey: String
+    @Environment(ThemeStore.self) private var themeStore
     private static let styles: [(key: String, label: String, icon: String)] = [
         ("none", "Tắt", "xmark"),
         ("bubbles", "Bong bóng", "bubbles.and.sparkles"),
@@ -15,7 +16,7 @@ struct BackgroundAnimationPicker: View {
         ("fast", "Nhanh"),
     ]
 
-    private var accentColor: Color { .appPrimary }
+    private var accentColor: Color { themeStore.primaryColor }
     private let columns = Array(repeating: GridItem(.flexible(), spacing: 12), count: 3)
 
     var body: some View {

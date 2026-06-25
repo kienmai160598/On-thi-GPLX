@@ -90,11 +90,17 @@ struct ExamResult: Codable, Identifiable {
     // MARK: - Factory
 
     /// Calculate an ExamResult from the user's answers.
+    ///
+    /// - Parameter passThreshold: Override the minimum correct-answer count
+    ///   required to pass. When `nil` (the default), the value from
+    ///   `LicenseType.current.passThreshold` is used. Pass an explicit value
+    ///   for daily challenges (10 questions, 80 % threshold → 8).
     static func calculate(
         questions: [Question],
         answers: [Int: Int],
         timeUsedSeconds: Int,
-        examSetId: Int? = nil
+        examSetId: Int? = nil,
+        passThreshold: Int? = nil
     ) -> ExamResult {
         var correctCount = 0
         var wrongDiemLietCount = 0
@@ -114,7 +120,8 @@ struct ExamResult: Codable, Identifiable {
                 correct: isCorrect
             ))
         }
-        let passed = correctCount >= LicenseType.current.passThreshold && wrongDiemLietCount == 0
+        let threshold = passThreshold ?? LicenseType.current.passThreshold
+        let passed = correctCount >= threshold && wrongDiemLietCount == 0
         return ExamResult(
             date: Date(),
             score: correctCount,

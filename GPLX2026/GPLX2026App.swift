@@ -25,13 +25,15 @@ extension Font {
     }
 
     /// Titles, headings, hero text.
+    /// Uses `size:` (not `fixedSize:`) so text scales with the active
+    /// `dynamicTypeSize` — that's how the in-app "Cỡ chữ" setting takes effect.
     static func appSerif(size: CGFloat, weight: Weight = .regular) -> Font {
-        .custom(beVietnamPro(weight), fixedSize: size)
+        .custom(beVietnamPro(weight), size: size)
     }
 
-    /// Body, labels, buttons (default UI font).
+    /// Body, labels, buttons (default UI font). Scales with `dynamicTypeSize`.
     static func appSans(size: CGFloat, weight: Weight = .regular) -> Font {
-        .custom(beVietnamPro(weight), fixedSize: size)
+        .custom(beVietnamPro(weight), size: size)
     }
 
     /// Mono: numbers, scores, timers.
@@ -116,6 +118,7 @@ struct GPLX2026App: App {
     @State private var themeStore = ThemeStore()
     @State private var layoutMetrics = LayoutMetrics()
     @AppStorage(AppConstants.StorageKey.themeMode) private var themeMode: String = "system"
+    @AppStorage(AppConstants.StorageKey.fontSize) private var fontSize: String = "medium"
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
     @AppStorage(AppConstants.StorageKey.dailyReminderEnabled) private var dailyReminderEnabled = false
     @AppStorage(AppConstants.StorageKey.dailyReminderHour) private var dailyReminderHour = 20
@@ -129,6 +132,17 @@ struct GPLX2026App: App {
         case "light": return .light
         case "dark": return .dark
         default: return nil
+        }
+    }
+
+    /// Maps the in-app "Cỡ chữ" preference to a Dynamic Type size. Injected into
+    /// the environment so every `.appSans`/`.appSerif` font (which now use `size:`)
+    /// scales accordingly. "medium" == `.large` is the system reference (1.0×).
+    private var fontDynamicTypeSize: DynamicTypeSize {
+        switch fontSize {
+        case "small": return .small
+        case "large": return .xLarge
+        default:      return .large
         }
     }
 
@@ -167,6 +181,8 @@ struct GPLX2026App: App {
             .animation(.easeOut(duration: 0.3), value: splashFinished)
             .preferredColorScheme(colorScheme)
             .animation(.easeInOut(duration: 0.3), value: themeMode)
+            .environment(\.dynamicTypeSize, fontDynamicTypeSize)
+            .animation(.easeInOut(duration: 0.2), value: fontSize)
             .font(.appSans(size: 16))
             .environment(\.locale, Locale(identifier: "vi"))
             .onChange(of: scenePhase) { _, phase in

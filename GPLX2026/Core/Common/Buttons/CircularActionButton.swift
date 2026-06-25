@@ -21,5 +21,7 @@ struct CircularActionButton: View {
                 subtle ? themeStore.primaryColor.opacity(0.14) : themeStore.primaryColor,
                 in: Circle()
             )
+            // Make the whole circle tappable, not just the glyph pixels.
+            .contentShape(Circle())
     }
 }

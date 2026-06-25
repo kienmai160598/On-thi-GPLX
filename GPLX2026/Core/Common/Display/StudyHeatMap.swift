@@ -11,10 +11,9 @@ struct StudyHeatMap: View {
     // rather than on every render.
     @State private var days: [DayData] = []
     @State private var totalCount = 0
+    @State private var maxCount = 1
 
     var body: some View {
-        let maxCount = max(days.map(\.count).max() ?? 1, 1)
-
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Text("Hoạt động học tập")
@@ -44,6 +43,8 @@ struct StudyHeatMap: View {
                     }
                 }
             }
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("Lịch học: \(totalCount) câu trong \(weeks) tuần qua")
 
             HStack(spacing: 4) {
                 Text("Ít")
@@ -58,6 +59,7 @@ struct StudyHeatMap: View {
                     .font(.appSans(size: 12))
                     .foregroundStyle(Color.appTextLight)
             }
+            .accessibilityHidden(true)
         }
         .padding(12)
         .glassCard()
@@ -67,7 +69,8 @@ struct StudyHeatMap: View {
 
     private func rebuild() {
         days = generateDays()
-        totalCount = progressStore.totalActivity(lastDays: weeks * 7)
+        totalCount = days.reduce(0) { $0 + $1.count }
+        maxCount = max(days.map(\.count).max() ?? 1, 1)
     }
 
     private struct DayData {

@@ -65,6 +65,11 @@ extension Color {
     static let appBgColor    = scaffoldBg
     static let cardBg        = adaptive(light: 0xFAF9F7, dark: 0x292524)
     static let statsBg       = adaptive(light: 0xF0EDE8, dark: 0x231F1C)
+    /// Frosted card fill: a translucent surface over the app background so cards
+    /// read as glass (design uses white ~80%). Adaptive for dark mode.
+    static let cardTranslucent = adaptive(light: 0xFFFFFF, dark: 0x2C2A28).opacity(0.85)
+    /// Hairline border that defines a card edge without adding visual weight.
+    static let cardBorder      = adaptive(light: 0x000000, dark: 0xFFFFFF).opacity(0.08)
 
     /// Warm-neutral gradient stops for the app-wide background. `scaffoldBg`
     /// stays the middle stop so cards/components keep matching the mid-tone.
@@ -76,6 +81,25 @@ extension Color {
     static let appSuccess    = adaptive(light: 0x22C55E, dark: 0x4ADE80)
     static let appWarning    = adaptive(light: 0xF59E0B, dark: 0xFBBF24)
     static let appError      = adaptive(light: 0xEF4444, dark: 0xF87171)
+
+    // ── Amber selection (the design's "selected / active" wash) ──────────
+    // Recurring across onboarding, settings, and exam-set tiles for a chosen
+    // option, distinct from the terracotta primary.
+    static let amberWash     = adaptive(light: 0xFFE9B0, dark: 0x3A2E14)
+    static let amberInk      = adaptive(light: 0x7A4A00, dark: 0xF3C97A)
+    static let amberBorder   = adaptive(light: 0xE8B53D, dark: 0x6E5526)
+
+    // ── Ink (prominent charcoal CTA + dark toggle) ──────────────────────
+    // The onboarding design uses a near-black surface for the primary CTA and
+    // the "on" toggle. It inverts to near-white in dark mode so the control
+    // and its label stay high-contrast in both appearances.
+    static let appInk        = adaptive(light: 0x171717, dark: 0xF5F5F5)
+    static let appOnInk      = adaptive(light: 0xFFFFFF, dark: 0x171717)
+
+    // ── Neutral icon-box wash (pairs with `appTextDark` glyphs) ─────────
+    // Warm light-gray fill for the non-accented icon boxes in onboarding; the
+    // amber boxes use `amberWash` + `amberInk` instead.
+    static let neutralWash   = adaptive(light: 0xF4F2EE, dark: 0x2C2A28)
 
     // ── Neutral helpers ────────────────────────────────────────────────
 
@@ -137,18 +161,20 @@ struct GlassCard: ViewModifier {
     var tint: Color? = nil
 
     func body(content: Content) -> some View {
-        // Flat design: solid fill only, no glass or shadow. Attention cards add
-        // a tinted wash + hairline border.
+        // Translucent "glass" card: a frosted fill over the app background plus a
+        // hairline border. Attention cards add a tinted wash + matching border.
         content
             .frame(maxWidth: .infinity, alignment: .leading)
             .contentShape(Rectangle())
             .background {
                 let shape = RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                shape.fill(Color.cardBg)
+                shape.fill(Color.cardTranslucent)
                     .overlay {
                         if let tint {
                             shape.fill(tint.opacity(0.14))
                             shape.strokeBorder(tint.opacity(0.40), lineWidth: 1)
+                        } else {
+                            shape.strokeBorder(Color.cardBorder, lineWidth: 1)
                         }
                     }
             }
@@ -181,6 +207,10 @@ enum ExamScreen: Identifiable {
     case hazardTest(mode: HazardTestView.Mode)
     case questionView(topicKey: String, startIndex: Int)
     case dailyChallenge
+    /// Settings & search open full-screen (same presentation as a question), so
+    /// they hide the tab bar and slide up over the content.
+    case settings
+    case search
 
     var id: String {
         switch self {
@@ -189,10 +219,12 @@ enum ExamScreen: Identifiable {
         case .hazardTest(let mode): "hazard-\(mode)"
         case .questionView(let key, let idx): "q-\(key)-\(idx)"
         case .dailyChallenge: "daily-challenge"
+        case .settings: "settings"
+        case .search: "search"
         }
     }
 
-    @ViewBuilder
+    @ViewBuilder @MainActor
     var destination: some View {
         switch self {
         case .mockExam(let id): MockExamView(examSetId: id)
@@ -200,6 +232,8 @@ enum ExamScreen: Identifiable {
         case .hazardTest(let mode): HazardTestView(mode: mode)
         case .questionView(let key, let idx): QuestionView(topicKey: key, startIndex: idx)
         case .dailyChallenge: DailyChallengeView()
+        case .settings: SettingsView()
+        case .search: QuestionSearchView()
         }
     }
 }

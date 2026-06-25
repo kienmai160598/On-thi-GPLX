@@ -1,0 +1,74 @@
+[
+  {
+    "file": "GPLX2026/Features/Home/ExamTab.swift",
+    "line": "60",
+    "severity": "high",
+    "title": "Duplicate 'Thi thử' title: inline pageHeader + .screenHeader() both render",
+    "description": "The new `pageHeader` computed property (lines 65-78) renders a 32pt bold 'Thi thử' `Text` inside the `ScrollView`'s `VStack`. The `.screenHeader(\"Thi thử\")` modifier on the `ScrollView` (line 60) also sets a large-mode `navigationTitle`, which iOS renders as its own prominent heading above the scroll content when at rest. Both are simultaneously visible, producing a double title. The old code had `.screenHeader()` only — no inline content header.",
+    "fix": "Remove `.screenHeader(\"Thi thử\")` and add `.navigationBarHidden(true)` (matching the pattern adopted by HomeTab), or — if the nav bar is intentional — remove the inline `pageHeader` view from the VStack and keep `.screenHeader()` alone.",
+    "group": "Home/Practice/Exam tabs"
+  },
+  {
+    "file": "GPLX2026/Features/Home/PracticeTab.swift",
+    "line": "271",
+    "severity": "medium",
+    "title": "Empty navigation bar left visible after removing .screenHeader()",
+    "description": "The previous `PracticeTab` called `.screenHeader(\"Luyện tập\")`, which set the navigation title and applied the bar styling. The new version removed that modifier and introduced an inline `pageHeader`, but did not add `.navigationBarHidden(true)`. The wrapping `NavigationStack` in `HomeView` (line 91) therefore renders an empty, unstyled navigation bar above the content — a blank strip at the top that wastes layout space and breaks the design. HomeTab and (effectively) ExamTab both handle this explicitly.",
+    "fix": "Add `.navigationBarHidden(true)` to the `ScrollView` in `PracticeTab.body`, matching the pattern used by `HomeTab`.",
+    "group": "Home/Practice/Exam tabs"
+  },
+  {
+    "file": "GPLX2026/Features/Home/PracticeTab.swift",
+    "line": "328",
+    "severity": "medium",
+    "title": "Hardcoded placeholder strings 'hôm qua' and '14 phút' shown as real data",
+    "description": "`heroCard` passes `tags: resumeTopic != nil ? [\"hôm qua\", \"14 phút\"] : []` to `LightFeatureCard`. These are dummy strings — not derived from any real `ProgressStore` value — that appear as tag pills visible to the user whenever a `lastTopicKey` is set (i.e. for any returning user). The old `PracticeTab` had no `heroCard` at all, so these strings are entirely new and will display incorrect information (the topic was not necessarily studied 'yesterday' for '14 minutes').",
+    "fix": "Either remove those tags entirely (`tags: []`) or compute them from real store data (e.g. last session date and elapsed time if available). At minimum replace with factual, non-time-specific content such as the question count of the resume topic.",
+    "group": "Home/Practice/Exam tabs"
+  },
+  {
+    "file": "GPLX2026/Features/Engagement/DailyChallengeResultView.swift",
+    "line": "79-99",
+    "severity": "high",
+    "title": "result.passed is always false for daily challenges — caller never passes passThreshold",
+    "description": "The view fix correctly changed `isPassed: true` (hardcoded) to `result.passed`. However, the caller `submitDailyChallenge()` in `BaseExamView.swift` (line 542) calls `ExamResult.calculate(questions:answers:timeUsedSeconds:)` WITHOUT the new `passThreshold` parameter. This means the factory falls through to `LicenseType.current.passThreshold`, which is 26 (B1) or 32 (B2). Because a daily challenge has only 10 questions, `correctCount` can never reach 26 or 32, so `result.passed` is unconditionally `false`. `DailyChallengeResultView` will now always render the fail state (badge, subtitle, hero) for every daily challenge regardless of the user's actual score. The `ExamResult.swift` doc comment (lines 94–97) explicitly documents that callers for daily challenges must pass `passThreshold: 8` (80% of 10 questions), but the call site was not updated.",
+    "fix": "In `BaseExamView.submitDailyChallenge()` (BaseExamView.swift line ~542), add `passThreshold: Int(Double(AppConstants.DailyChallenge.questionsCount) * 0.8)` (i.e. `passThreshold: 8`) to the `ExamResult.calculate(...)` call. Alternatively, define a constant `AppConstants.DailyChallenge.passThreshold = 8` and reference it both here and in `ExamResult.swift`'s doc comment.",
+    "group": "Result screens + ExamResult model"
+  },
+  {
+    "file": "GPLX2026/Features/Hazard/HazardResultView.swift",
+    "line": "250",
+    "severity": "medium",
+    "title": "HazardResultHeroCard background is hardcoded green regardless of isPassed",
+    "description": "Inside `HazardResultHeroCard.body`, the card's background is `.background(Color(hex: 0xE7F5EC))` (mint green) unconditionally (line 250). The badge foreground and score foreground correctly branch on `isPassed`, but the card background does not. A failed hazard result therefore shows a green card background — visually identical to a passing result — which contradicts the pass/fail visual language used by `ExamResultView` (which uses `Color(hex: 0xFCE4E2)` for fail) and by the badge/text colors in the same card.",
+    "fix": "Change line 250 to: `.background(isPassed ? Color(hex: 0xE7F5EC) : Color(hex: 0xFCE4E2))` — the same hex pair used in `ExamResultView.resultHeroCard`.",
+    "group": "Result screens + ExamResult model"
+  },
+  {
+    "file": "GPLX2026/Features/Hazard/HazardResultView.swift",
+    "line": "173-175",
+    "severity": "low",
+    "title": "Retry button label 'Xem lại' contradicts its action (starts a new test, not a review)",
+    "description": "The action button's label was changed from 'Làm lại' (redo / retry) to 'Xem lại' (view again / review). However, the tap action is `openExam(.hazardTest(mode: retryMode ?? .practice))`, which starts a brand-new hazard test session — not a review of the just-completed session. 'Xem lại' is semantically wrong: the user tapping it expects to review the session but instead gets a new exam. The previous label 'Làm lại' accurately described the action.",
+    "fix": "Either revert the label to 'Làm lại' to match the existing action, or change the action to actually navigate to a replay/review of the completed session (e.g. a read-only `HazardResultView` from history) before renaming the label to 'Xem lại'.",
+    "group": "Result screens + ExamResult model"
+  },
+  {
+    "file": "GPLX2026/Features/Exam/ExamResultView.swift",
+    "line": "102",
+    "severity": "low",
+    "title": "Answer review rows still use .glassCard() while all new cards in the same view use .ultraThinMaterial",
+    "description": "The refactor replaced `.glassCard()` with `.background(.ultraThinMaterial).clipShape(...)` in the new stats and topic cards (lines 310, 350, 394). However the `QuestionReviewRow` items in the answer review grid (line 102) still use `.glassCard()`. This is inconsistent within the same view. In the other three result views (`SimulationResultView`, `DailyChallengeResultView`, `HazardResultView`) the equivalent rows were converted away from `.glassCard()`, making this a missed conversion that will produce a visual mismatch in `ExamResultView`.",
+    "fix": "Replace `.glassCard()` on line 102 of `ExamResultView.swift` with the same pattern used in the sibling views: `.frame(maxWidth: .infinity, alignment: .leading).background(.ultraThinMaterial).clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))`.",
+    "group": "Result screens + ExamResult model"
+  },
+  {
+    "file": "GPLX2026/Core/Storage/ProgressStore.swift",
+    "line": "456-467",
+    "severity": "high",
+    "title": "clearAllProgress() never clears spaced-repetition review-dates data",
+    "description": "The refactor replaced the single `invalidateCaches()` call in `clearAllProgress()` with targeted per-domain clears. `invalidateCaches()` reset `_reviewDatesCache = nil` and the call chain through `clearWrongAnswers()` removed the `wrong_answers` key, but neither `clearAllProgress()` nor any function it calls now touches `_reviewDatesCache` or the `\"wrong_answer_review_dates\"` UserDefaults key (owned by `ProgressStore+SpacedRepetition.swift`). After a full progress reset, `wrongAnswers` is correctly empty, but `reviewDates` still returns the old per-question timestamps from UserDefaults. Any subsequent wrong answer recorded after the reset may be sorted against stale review dates, corrupting the `prioritizedWrongAnswers()` order and causing `wrongAnswersDueForReview()` to misfire.",
+    "fix": "Add a `clearReviewDates()` helper (or inline the clear) that sets `_reviewDatesCache = [:]` and calls `safeWrite { $0.removeObject(forKey: \"wrong_answer_review_dates\") }`, and call it from `clearAllProgress()` alongside the other targeted clears.",
+    "group": "Data layer + exam engine"
+  }
+]

@@ -48,6 +48,7 @@ enum AppConstants {
         static let questionsCount = 10
         static let totalTimeSeconds = 600  // 10 minutes
         static let urgencyThresholdSeconds = 120
+        static let passRate = 0.8
     }
 
     // MARK: - Storage
@@ -70,6 +71,7 @@ enum AppConstants {
         static let examCountdownEnabled = "examCountdownEnabled"
         static let dailyGoalNudgeEnabled = "dailyGoalNudgeEnabled"
         static let licenseType = "licenseType"
+        static let experienceLevel = "experienceLevel"
         static let hasRequestedReview = "hasRequestedReview"
         static let hasCompletedOnboarding = "hasCompletedOnboarding"
     }
@@ -81,6 +83,10 @@ enum AppConstants {
         static let bookmarks = "bookmarks"
         static let wrongAnswers = "wrong_answers"
         static let allQuestions = "all_questions"
+        /// The full question set for the active license (B1 = filtered subset, B2 = all).
+        static let currentLicense = "current_license"
+        /// Wrong answers ordered by spaced-repetition priority (never-reviewed first, then oldest).
+        static let wrongAnswersPriority = "wrong_answers_priority"
     }
 }
 
@@ -97,7 +103,7 @@ enum ReviewHelper {
             guard let scene = UIApplication.shared.connectedScenes
                 .first(where: { $0.activationState == .foregroundActive }) as? UIWindowScene
             else { return }
-            SKStoreReviewController.requestReview(in: scene)
+            AppStore.requestReview(in: scene)
         }
     }
 }

@@ -20,6 +20,7 @@ struct ExamToolbar: ViewModifier {
                     } label: {
                         Image(systemName: "xmark")
                     }
+                    .accessibilityLabel("Thoát bài thi")
                 }
 
                 ToolbarItem(placement: .principal) {
@@ -33,6 +34,8 @@ struct ExamToolbar: ViewModifier {
                     } label: {
                         Image(systemName: isBookmarked ? "bookmark.fill" : "bookmark")
                     }
+                    .accessibilityLabel(isBookmarked ? "Bỏ đánh dấu" : "Đánh dấu câu hỏi")
+                    .accessibilityValue(isBookmarked ? "Đã đánh dấu" : "")
                 }
             }
             .alert("Thoát bài thi?", isPresented: $showExitDialog) {

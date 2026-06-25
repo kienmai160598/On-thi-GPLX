@@ -15,6 +15,12 @@ struct SimulationResultView: View {
     private var timedOutCount: Int { simulationResult.timedOutCount }
     private var isPassed: Bool { simulationResult.passed }
 
+    // MARK: - Tinted background color (pass = subtle green, fail = subtle red)
+
+    private var tintColor: Color { isPassed ? .appSuccess : .appError }
+
+    // MARK: - Frosted "Tổng quan" stat card
+
     private var scoreDetails: some View {
         VStack(spacing: 0) {
             ScoreRow(label: "Câu đúng", value: "\(correctCount)/\(questions.count)", color: Color.appSuccess)
@@ -38,12 +44,18 @@ struct SimulationResultView: View {
             Divider().padding(.horizontal, 16)
             ScoreRow(
                 label: "Yêu cầu đạt",
-                value: "\u{2265} 70% (\(Int(Double(questions.count) * 0.7))/\(questions.count))",
+                value: "\u{2265} \(Int(AppConstants.Simulation.passRate * 100))% (\(Int(Double(questions.count) * AppConstants.Simulation.passRate))/\(questions.count))",
                 color: Color.appTextMedium
             )
         }
         .padding(.vertical, 4)
-        .glassCard()
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(.ultraThinMaterial)
+        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .strokeBorder(tintColor.opacity(0.25), lineWidth: 1)
+        )
     }
 
     var body: some View {
@@ -84,7 +96,8 @@ struct SimulationResultView: View {
 
                 AdaptiveGrid {
                     ForEach(Array(questions.enumerated()), id: \.element.no) { index, question in
-                        let selectedId = answers[index]
+                        let rawId = answers[index]
+                        let selectedId: Int? = (rawId == nil || rawId == -1) ? nil : rawId
                         let isCorrect = selectedId != nil && question.answers.contains(where: { $0.id == selectedId && $0.correct })
                         QuestionReviewRow(
                             question: question,
@@ -92,13 +105,22 @@ struct SimulationResultView: View {
                             selectedAnswerId: selectedId,
                             timeUsedBadge: selectedId == nil ? "Hết giờ" : nil
                         )
-                        .glassCard()
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(.ultraThinMaterial)
+                        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
                     }
                 }
             }
             .padding(.horizontal, metrics.contentPadding)
             .padding(.bottom, 32)
         }
+        .background(
+            ZStack {
+                ScaffoldBackground()
+                // Subtle pass/fail tint wash over the scaffold gradient
+                tintColor.opacity(0.07).ignoresSafeArea()
+            }
+        )
         .safeAreaInset(edge: .bottom) {
             if !isFromHistory {
                 VStack(spacing: 8) {
@@ -139,9 +161,9 @@ struct SimulationResultView: View {
                         Image(systemName: "checkmark")
                             .font(.appSans(size: 15, weight: .semibold))
                     }
+                    .accessibilityLabel("Hoàn thành")
                 }
             }
         }
     }
 }
-

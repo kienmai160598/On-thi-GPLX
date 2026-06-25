@@ -1,0 +1,152 @@
+[
+  {
+    "file": "/Users/maitrungkien/Desktop/project/GPLX2026/GPLX2026/Features/Reference/TrafficSignsReferenceView.swift",
+    "line": "18",
+    "severity": "medium",
+    "kind": "ui",
+    "title": "No empty state when search text matches zero signs across all categories",
+    "description": "When the user types into the `.searchable` field and no signs across any category match `filteredSigns()`, every category's `if !signs.isEmpty { ... }` guard (line 20) is false, so the `AdaptiveGrid` renders nothing. The `ScrollView` shows a blank white area with no indication that the search produced zero results. There is no `ContentUnavailableView.search` or any other feedback, unlike `QuestionSearchView` which handles this case.",
+    "fix": "Compute a Boolean before the `ForEach` (e.g., `let hasAnyResults = displayCategories.contains { !filteredSigns($0.signs).isEmpty }`). When `!hasAnyResults && !searchText.isEmpty`, render `ContentUnavailableView.search(text: searchText)` instead of the grid. Place this check inside the `ScrollView` content, after the `AdaptiveGrid`.",
+    "area": "Reference + Search",
+    "verdict": {
+      "isReal": true,
+      "confidence": "high",
+      "reasoning": "The code at /Users/maitrungkien/Desktop/project/GPLX2026/GPLX2026/Features/Reference/TrafficSignsReferenceView.swift confirms the issue exactly as described. The `filteredSigns()` function (lines 69-76) filters per category; the `if !signs.isEmpty` guard (line 20) skips rendering each empty category silently. When the search term matches nothing across all categories, the ForEach produces zero child views and the ScrollView renders a blank white area. There is no ContentUnavailableView, no overlay, no aggregate isEmpty check, and no other empty-state feedback anywhere in the Reference feature folder. The comparison is valid: QuestionSearchView.swift line 86 uses ContentUnavailableView.search(text:) for exactly this case, confirming the pattern is established in the codebase and intentionally or accidentally missing in TrafficSignsReferenceView."
+    }
+  },
+  {
+    "file": "/Users/maitrungkien/Desktop/project/GPLX2026/GPLX2026/Features/Reference/TrafficSignsReferenceView.swift",
+    "line": "87",
+    "severity": "medium",
+    "kind": "performance",
+    "title": "Synchronous disk I/O on main thread for sign images when a category scrolls into view",
+    "description": "`SignRow.body` calls `Bundle.main.path(forResource:ofType:)` and then `UIImage(contentsOfFile:)` synchronously. The inner `ForEach` (line 26) is inside a regular `VStack` (line 25), not a lazy container, so when a category enters the `LazyVStack`/`LazyVGrid` viewport, all of its signs (up to 20 for \"Biển cấm\") trigger simultaneous synchronous PNG reads from disk on the main thread. This can cause a perceptible frame-rate drop as the user scrolls through categories.",
+    "fix": "Replace the file-path lookup + `UIImage(contentsOfFile:)` pattern with `Image(sign.imageName)` backed by an asset catalog, or use `UIImage(named:)` which goes through the OS image cache. If the PNGs must remain in a folder reference, load them on a background actor and deliver the result via `@State var image: UIImage?` with an async `.task` in `SignRow`.",
+    "area": "Reference + Search",
+    "verdict": {
+      "isReal": true,
+      "confidence": "high",
+      "reasoning": "The claim is structurally accurate and the issue is real.\n\nCode verified at the cited lines:\n- Line 87-88 of TrafficSignsReferenceView.swift: `SignRow.body` calls `Bundle.main.path(forResource:ofType:)` and `UIImage(contentsOfFile:)` synchronously, with no async wrapper, no caching, and no guard.\n- Line 25: the inner container is a plain `VStack`, confirmed non-lazy.\n- AdaptiveGrid (Core/Common/Layout/AdaptiveGrid.swift) uses `LazyVStack` on iPhone and `LazyVGrid` on iPad for the outer container, so the outer ForEach over categories IS deferred. When a category scrolls into view its entire inner VStack (all SignRows) is instantiated in one pass, triggering all the synchronous reads.\n\nObserved facts that confirm real impact:\n1. The sign PNG files exist on disk at GPLX2026/Resources/Images/Signs/ (63 files, 1.1 MB total, 4–36 KB each) — not in an Asset Catalog, so UIKit cannot use pre-decoded shared caches or memory-mapped image stores.\n2. \"Biển cấm\" has 20 signs. A single scroll event can trigger up to 20 sequential blocking file reads + PNG decompression on the main thread in one layout cycle.\n3. There is no image cache anywhere in SignRow or its callers — every body re-evaluation re-reads the file from disk.\n4. `UIImage(contentsOfFile:)` does not return a cached image the way `UIImage(named:)` (from asset catalogs) does; each call goes to disk.\n\nThe claim's description of the mechanism (non-lazy VStack inside lazy outer container causing burst synchronous I/O on scroll) is precisely correct. The severity claim (perceptible frame drop) is plausible on a cold first scroll but may be mild on repeat scrolls once the OS page cache is warm. Nevertheless the structural anti-pattern is real, unguarded, and not by design."
+    }
+  },
+  {
+    "file": "/Users/maitrungkien/Desktop/project/GPLX2026/GPLX2026/Features/Reference/SpeedDistanceReferenceView.swift",
+    "line": "84",
+    "severity": "high",
+    "kind": "logic",
+    "title": "Safe-distance table has contradictory label: \"60 km/h\" row conflicts with the \"60–80 km/h\" row",
+    "description": "Line 84 shows `RefRow(\"60 km/h\", value: \"≥ 35\", unit: \"m\")` and line 85 shows `RefRow(\"60–80 km/h\", value: \"≥ 55\", unit: \"m\")`. Both rows include the speed of 60 km/h, displaying two different required following distances (35 m and 55 m) for the same speed. According to Thông tư 38/2024 Điều 9 khoản 2, the correct ranges are: ≤ 60 km/h → tự giữ; 60–80 km/h → ≥ 35 m; 80–100 km/h → ≥ 55 m; > 100 km/h → ≥ 70 m / ≥ 100 m (cao tốc). The current table mislabels the first speed-range row as a single speed point, making the data unambiguously wrong for an exam-prep app whose users must memorise these values exactly.",
+    "fix": "Rename line 84's label from `\"60 km/h\"` to `\"60–80 km/h\"`, rename line 85 to `\"80–100 km/h\"`, rename line 86 to `\"> 100 km/h\"`, and move the `\"Dưới 60 km/h\" → Tự giữ` row to be the first row in the section so the table reads in ascending speed order without overlap.",
+    "area": "Reference + Search",
+    "verdict": {
+      "isReal": true,
+      "confidence": "high",
+      "reasoning": "The code at lines 83-89 of SpeedDistanceReferenceView.swift was read directly and confirms the issue exactly as described. The safe-distance table contains five rows: \"60 km/h\" → ≥ 35 m, \"60–80 km/h\" → ≥ 55 m, \"80–100 km/h\" → ≥ 70 m, \"100–120 km/h\" → ≥ 100 m, and \"Dưới 60 km/h\" → Tự giữ. The first two rows are contradictory: the label \"60 km/h\" (a point) falls inside the range \"60–80 km/h\", so the speed 60 km/h maps to both ≥ 35 m and ≥ 55 m simultaneously. Cross-checking against Thông tư 38/2024 Điều 9 khoản 2 as cited in the claim, the correct mapping is ≤ 60 km/h → tự giữ, 60–80 km/h → ≥ 35 m, 80–100 km/h → ≥ 55 m, >100 km/h → ≥ 70 m. The table's labels and values are shifted: \"60 km/h\" should be labelled \"60–80 km/h\", \"60–80 km/h\" should be \"80–100 km/h\" with ≥ 55 m, \"80–100 km/h\" should be \"100–120 km/h\" (or \"> 100 km/h\") with ≥ 70 m, and \"100–120 km/h\" → ≥ 100 m (cao tốc) appears to be an extra split not present in the cited regulation, or represents the highway variant. In any case, the point label \"60 km/h\" directly conflicts with the range \"60–80 km/h\" beneath it, producing two different legally-mandated distances for the identical speed, which is a real correctness defect in an exam-prep app whose users memorise these values for a government exam."
+    }
+  },
+  {
+    "file": "/Users/maitrungkien/Desktop/project/GPLX2026/GPLX2026/GPLX2026App.swift",
+    "line": "29",
+    "severity": "medium",
+    "kind": "ui",
+    "title": "All custom fonts use `fixedSize:` and therefore do not scale with Dynamic Type",
+    "description": "`appSans` and `appSerif` both call `.custom(beVietnamPro(weight), fixedSize: size)` (lines 29, 34). `fixedSize:` ignores the user's preferred text size set in iOS Accessibility settings. Every label in `TrafficSignsReferenceView`, `SpeedDistanceReferenceView`, and `QuestionSearchView` is affected — including the sign code badge, sign name, description, speed values, penalty text, and search result count. Users who rely on larger text sizes for readability get no benefit from their system setting.",
+    "fix": "Replace `fixedSize: size` with `size: size` in both `appSans` and `appSerif` (and optionally add `relativeTo:` a matching `TextStyle` such as `.body` or `.headline`). This switches to the Dynamic Type-aware overload of `Font.custom(_:size:)` introduced in iOS 14, enabling proportional scaling while keeping the custom typeface.",
+    "area": "Reference + Search",
+    "verdict": {
+      "isReal": true,
+      "confidence": "high",
+      "reasoning": "Confirmed by direct code inspection. `GPLX2026App.swift` lines 29 and 34 both call `Font.custom(_:fixedSize:)`, which is the Apple API overload that permanently pins the point size regardless of the user's Dynamic Type / Accessibility text size preference. `Font.custom(_:fixedSize:)` is explicitly documented to ignore Dynamic Type — contrast with `Font.custom(_:size:)` (scales relative to default body size) or `Font.custom(_:size:relativeTo:)` (fully tracks a named text style). All font calls in `TrafficSignsReferenceView`, `SpeedDistanceReferenceView`, and `QuestionSearchView` route through `appSans`, which uses this fixed-size path. No `@ScaledMetric`, `dynamicTypeSize` environment read, or compensating mechanism exists in those views or in the font helper. The issue is real, app-wide (not limited to the three cited views — every `appSans`/`appSerif` call across the whole app is affected), and degrades accessibility for users who rely on larger system text sizes."
+    }
+  },
+  {
+    "file": "/Users/maitrungkien/Desktop/project/GPLX2026/GPLX2026/Features/Learn/QuestionView.swift",
+    "line": "358",
+    "severity": "high",
+    "kind": "logic",
+    "title": "\"Luyện câu sai\" from Bookmarks session composes an invalid scoped key → empty screen",
+    "description": "When the user finishes a bookmarks session (topicKey = \"bookmarks\") and taps \"Luyện câu sai\", the guard is `topicKey.hasPrefix(AppConstants.TopicKey.wrongAnswers)` — i.e. hasPrefix(\"wrong_answers\"). \"bookmarks\" does not start with \"wrong_answers\", so the else branch fires: scopedKey = \"wrong_answers:bookmarks\". QuestionStore.questions(forTopicKey:) matches the hasPrefix(\"wrong_answers:\") case, strips the prefix, extracts \"bookmarks\" as the inner topic key, then calls questionsForTopic(key: \"bookmarks\") which tries to parse Int IDs from the string — yields an empty array. The user lands on the empty \"Không có câu hỏi\" screen instead of a wrong-answers drill.",
+    "fix": "For a bookmarks session the \"drill wrong answers\" button should route to the global wrong-answers key, not a scoped one. Add a special case before the existing ternary:\n\n  let scopedKey: String\n  if topicKey == AppConstants.TopicKey.bookmarks {\n      // Bookmarks isn't topic-scoped; drill all wrong answers globally.\n      scopedKey = AppConstants.TopicKey.wrongAnswers\n  } else if topicKey.hasPrefix(AppConstants.TopicKey.wrongAnswers) {\n      scopedKey = topicKey  // already a wrong-answers key\n  } else {\n      scopedKey = AppConstants.TopicKey.wrongAnswers + \":\" + topicKey\n  }",
+    "area": "Bookmarks + Topics",
+    "verdict": {
+      "isReal": true,
+      "confidence": "high",
+      "reasoning": "The bug is confirmed by tracing the exact code path.\n\nLine 358 of QuestionView.swift: when topicKey = \"bookmarks\", the condition topicKey.hasPrefix(\"wrong_answers\") is false, so scopedKey is built as \"wrong_answers:bookmarks\".\n\nThe new QuestionView receives topicKey = \"wrong_answers:bookmarks\". Its filterIds computed property (lines 31–38) matches the hasPrefix(\"wrong_answers:\") arm and correctly returns progressStore.wrongAnswers.\n\nQuestionStore.questions(forTopicKey:) at line 148 also matches the hasPrefix(\"wrong_answers:\") arm, strips the prefix to get scopedTopicKey = \"bookmarks\", then calls questionsForTopic(key: \"bookmarks\").\n\nquestionsForTopic(key:) at line 66 splits on \"_\" and calls Int() on each component. Int(\"bookmarks\") returns nil, so ids = []. questionsByTopic(topicIds: []) returns []. Filtering an empty array still gives [].\n\nThe user lands on the \"Không có câu hỏi\" empty state. This is a real UX defect: the \"Luyện câu sai\" button from a bookmarks session silently opens an empty drill screen rather than showing the wrong-answered bookmarked questions. The fix requires a dedicated case in questions(forTopicKey:) for \"wrong_answers:bookmarks\" that filters allQuestions by the intersection of progressStore.bookmarks and the wrong-answer ids, mirroring the logic already present for the plain \"bookmarks\" and \"wrong_answers\" cases."
+    }
+  },
+  {
+    "file": "/Users/maitrungkien/Desktop/project/GPLX2026/GPLX2026/Features/Topics/WeakTopicsView.swift",
+    "line": "72",
+    "severity": "high",
+    "kind": "ui",
+    "title": "Empty state renders simultaneously with the \"Đã tốt\" list when all topics are ≥ 80%",
+    "description": "The empty-state condition is `weakList.isEmpty && notStarted.isEmpty` (line 72). When every topic has been attempted and all reach ≥ 80% accuracy, weakList and notStarted are both empty, but strongList is non-empty. The code renders the \"Đã tốt\" section (lines 36-54) AND then — because the condition is satisfied — also renders the \"Tuyệt vời! Tất cả chủ đề đều trên 80%\" EmptyState below it, inside the same VStack. Both appear on screen at once.",
+    "fix": "Include strongList in the empty-state guard: change the condition to `weakList.isEmpty && strongList.isEmpty && notStarted.isEmpty` so the empty state only shows when there is literally nothing to display. Alternatively restructure with an `else` after the strongList block:\n\n  if weakList.isEmpty && strongList.isEmpty && notStarted.isEmpty {\n      EmptyState(...)\n  }",
+    "area": "Bookmarks + Topics",
+    "verdict": {
+      "isReal": true,
+      "confidence": "high",
+      "reasoning": "The code at /Users/maitrungkien/Desktop/project/GPLX2026/GPLX2026/Features/Topics/WeakTopicsView.swift confirms the bug exactly as described. Lines 36-54 render the \"Đã tốt\" section whenever `!strongList.isEmpty`. Lines 72-78 render the EmptyState (\"Tuyệt vời! Tất cả chủ đề đều trên 80%\") whenever `weakList.isEmpty && notStarted.isEmpty`. These two conditions are not mutually exclusive: when all topics are attempted and all have accuracy >= 80%, strongList is non-empty (triggering the first block) AND weakList + notStarted are both empty (triggering the second block). The two `if` blocks are plain siblings in the same VStack with no `else` linkage between them, so both render simultaneously. The EmptyState condition should include `&& strongList.isEmpty` to guard against this, or the outer structure should use `else if`. This is a real UX defect — a success-state banner appears below a populated list of topics, which is confusing and semantically incorrect."
+    }
+  },
+  {
+    "file": "/Users/maitrungkien/Desktop/project/GPLX2026/GPLX2026/Features/Bookmarks/WrongAnswersView.swift",
+    "line": "11",
+    "severity": "low",
+    "kind": "logic",
+    "title": "`totalWrong` is computed but never read — unused variable",
+    "description": "`let totalWrong = progressStore.wrongAnswers.count` is declared in the body on line 11 and then never referenced anywhere in the view. Swift will silently omit it; this dead computation exists with no effect and can be confusing since `wrongByTopic` is the grouping already used to drive the UI.",
+    "fix": "Remove the `let totalWrong = progressStore.wrongAnswers.count` line. If a total count is needed in the future (e.g. for a header), derive it from `wrongByTopic.reduce(0) { $0 + $1.questions.count }` to stay consistent with the displayed groups.",
+    "area": "Bookmarks + Topics",
+    "verdict": {
+      "isReal": true,
+      "confidence": "high",
+      "reasoning": "Reading the full file confirms the claim exactly. `let totalWrong = progressStore.wrongAnswers.count` is declared on line 11 of the view body, and the identifier `totalWrong` does not appear anywhere else in the file — not in the ScrollView, EmptyState, AdaptiveGrid, ForEach, WrongTopicCard usages, or any modifier. The UI is driven solely by `wrongByTopic`. This is genuine dead code: the binding exists, the value is computed, but it is never consumed. The perf impact is negligible (`.count` on an in-memory Set/Array), but it is a real unused-variable issue that Swift will warn about and that adds no value to the view."
+    }
+  },
+  {
+    "file": "/Users/maitrungkien/Desktop/project/GPLX2026/GPLX2026/Features/Exam/ExamHistoryDetailView.swift",
+    "line": "8-19",
+    "severity": "high",
+    "kind": "logic",
+    "title": "Answer-to-question index mismatch when a question is missing from the store",
+    "description": "The `answers` dict is keyed by positional index `i` over `result.questionDetails` (line 14). The `questions` array is built via `questionStore.questions(byNos:)` which calls `compactMap` over the question-no list (QuestionStore.swift line 238), silently dropping any question whose `no` is absent from `_questionsByNo`. If even one question is missing, the `questions` array is shorter than `questionDetails`, and every element after the first gap is shifted left by one. In `ExamResultView`, both the answer-review grid (line 95: `answers[index]`) and the topic-stats computation (line 48: `answers[index]`) use the enumerated index of the (compacted) `questions` array to look up the answer. Result: after any gap, each question is displayed with the answer that belongs to the next question in the original session — wrong answer shown, wrong correctness badge, wrong topic stats.",
+    "fix": "Replace the compactMap-based reconstruction with one that preserves alignment. Build a `[(Question, Int?)]` pairing by zipping `result.questionDetails` with their matched questions, keeping entries where the question is nil (skip rendering or mark as 'question removed'). Alternatively, key the `answers` dict by `questionNo` instead of positional index, then look up by `question.no` in the result view.",
+    "area": "History detail + Learn + Engagement",
+    "verdict": {
+      "isReal": true,
+      "confidence": "high",
+      "reasoning": "The logic flaw is confirmed by reading all three relevant files.\n\nExamHistoryDetailView.swift (lines 12-19): The `answers` dict is keyed by the positional index `i` over `result.questionDetails`. Entry at original position 0 gets key 0, position 1 gets key 1, and so on, regardless of whether the corresponding question exists in the store.\n\nQuestionStore.swift (line 238): `questions(byNos:)` is `nos.compactMap { _questionsByNo[$0] }`. Any question number not present in `_questionsByNo` is silently dropped. The returned array can be shorter than the input `nos` array.\n\nExamResultView.swift (lines 45/48 for topic stats; line 94-95 for the answer-review grid): Both sites enumerate the (potentially shorter) `questions` array and use the loop-local index to look up `answers[index]`. After a gap at original position `k`, the question now sitting at index `k` in the compacted array is `q_{k+1}` from the original session, but `answers[k]` holds the selected answer for the missing question `q_k`, not for `q_{k+1}`. Every subsequent question is shifted left by one in the `questions` array while the `answers` dict retains the original indices, so every question after the first gap shows the wrong answer, wrong correctness badge, and wrong topic-stats contribution.\n\nThis can realistically occur: `ExamResult.questionDetails` stores question numbers from a past session against the bundled `questions.json` at the time of that session. If the app is updated and any question is removed or renumbered in `questions.json`, old saved results will reference question numbers that are no longer in `_questionsByNo`, triggering the mismatch. There is also a narrow window during app launch where `loadQuestions()` (which is async) has not yet finished, so `_questionsByNo` may be empty when the view first renders — though this race condition is secondary to the more durable update-triggered scenario. No guard anywhere checks that `questions.count == result.questionDetails.count` before the two arrays are used in parallel."
+    }
+  },
+  {
+    "file": "/Users/maitrungkien/Desktop/project/GPLX2026/GPLX2026/Core/Common/Exam/ExamQuestionGridSheet.swift",
+    "line": "18-19",
+    "severity": "high",
+    "kind": "logic",
+    "title": "Legend overcounts answered+unanswered when current question is already answered",
+    "description": "answeredCount = answeredIndices.count and unansweredCount = totalQuestions - answeredCount. When the currently-active question (currentIndex) is in answeredIndices, the grid renders it as blue (current), not green. But answeredCount still includes it, so the legend sum is 1 ('Đang làm') + answeredCount + unansweredCount = totalQuestions + 1 — overcounting by 1. For a 40-question exam where the user has answered 6 questions including the current one, the legend shows '1 Đang làm + 6 Đã xong + 34 Chưa làm = 41', which contradicts the visual grid.",
+    "fix": "Exclude currentIndex from answered/unanswered counts in the legend. Add two private computed properties: `private var answeredCountExcludingCurrent: Int { answeredIndices.contains(currentIndex) ? answeredIndices.count - 1 : answeredIndices.count }` and `private var unansweredCountExcludingCurrent: Int { totalQuestions - answeredCountExcludingCurrent - 1 }`. Replace line 57–58 with `legendItem(color: .appSuccess, count: answeredCountExcludingCurrent, label: \"Đã xong\")` and `legendItem(color: Color.appDisabled, textColor: .appTextMedium, count: unansweredCountExcludingCurrent, label: \"Chưa làm\")`.",
+    "area": "Shared Core/Common widgets",
+    "verdict": {
+      "isReal": true,
+      "confidence": "high",
+      "reasoning": "The bug is real and verified by reading the source directly. Line 18 computes answeredCount = answeredIndices.count with no exclusion for currentIndex. Line 19 computes unansweredCount = totalQuestions - answeredCount. The legend (lines 56-58) then displays 1 (hardcoded \"Đang làm\") + answeredCount (\"Đã xong\") + unansweredCount (\"Chưa làm\"). When currentIndex is already in answeredIndices, the legend sum is 1 + answeredIndices.count + (totalQuestions - answeredIndices.count) = totalQuestions + 1, overcounting by exactly 1. The grid cell coloring (lines 76-86) correctly prioritises the currentIndex check over the answeredIndices check, so the current cell renders blue rather than green — but that visual deduction from the \"Đã xong\" count is never reflected in the legend arithmetic. There is no guard or conditional anywhere in the file that compensates for this. The discrepancy is user-visible: a 40-question exam where 6 questions including the current one are answered would show \"1 Đang làm + 6 Đã xong + 34 Chưa làm = 41\" in the legend despite the grid containing exactly 40 cells."
+    }
+  },
+  {
+    "file": "/Users/maitrungkien/Desktop/project/GPLX2026/GPLX2026/Core/Common/Display/StudyHeatMap.swift",
+    "line": "70",
+    "severity": "medium",
+    "kind": "logic",
+    "title": "Activity count stat includes days not visible in the heatmap grid",
+    "description": "`totalCount = progressStore.totalActivity(lastDays: weeks * 7)` queries the last 112 days back from today. The grid's startDate is `currentMonday - 105`, which is today - (105 + daysFromMonday). On all days except Sunday (daysFromMonday = 6 → startDate = today-111), startDate is more recent than today-111, so between 1 and 6 days of activity are counted in the stat header but not rendered in any grid cell. On a Monday (daysFromMonday=0, startDate=today-105), 6 days are counted but hidden. The label '1234 câu · 16 tuần' therefore overstates visible activity on 6 out of 7 weekdays.",
+    "fix": "Compute totalCount from the generated days array instead of calling totalActivity with a fixed window. In `rebuild()`, after `days = generateDays()`, replace the totalActivity call with: `totalCount = days.reduce(0) { $0 + $1.count }`. This guarantees the number matches exactly the cells shown in the grid. The DayData.count is already set to 0 for future dates, so future padding cells do not inflate the sum.",
+    "area": "Shared Core/Common widgets",
+    "verdict": {
+      "isReal": true,
+      "confidence": "high",
+      "reasoning": "The code confirms the mismatch. `totalActivity(lastDays: 112)` at line 48 of ProgressStore+Activity.swift computes a cutoff of `today - 111` (using `-(lastDays - 1)`), so it sums activity from today-111 through today inclusive (112 days). The grid's startDate in generateDays() is `currentMonday - 105 = today - daysFromMonday - 105`. On every weekday except Sunday (daysFromMonday 6), startDate is later than today-111: Monday gives startDate=today-105 (6 days hidden), Tuesday today-106 (5 hidden), Wednesday today-107 (4 hidden), Thursday today-108 (3 hidden), Friday today-109 (2 hidden), Saturday today-110 (1 hidden). Only on Sunday does startDate equal today-111, matching the totalActivity window exactly. So on 6 out of 7 weekdays the stat label counts 1–6 days of activity that are never rendered as grid cells, directly overstating \"visible\" activity. No guard or design comment excuses the asymmetry; the intent is clearly to count the same window the grid shows."
+    }
+  }
+]

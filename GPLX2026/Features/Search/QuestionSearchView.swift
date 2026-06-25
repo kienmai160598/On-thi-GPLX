@@ -6,6 +6,7 @@ struct QuestionSearchView: View {
     @Environment(ThemeStore.self) private var themeStore
     @Environment(LayoutMetrics.self) private var metrics
     @Environment(\.openExam) private var openExam
+    @Environment(\.dismiss) private var dismiss
 
     @State private var searchText = ""
     @State private var selectedFilter: FilterOption = .all
@@ -119,6 +120,14 @@ struct QuestionSearchView: View {
         .onChange(of: selectedFilter) { applyFilter() }
         .screenHeader("Tìm kiếm")
         .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                Button { dismiss() } label: {
+                    Image(systemName: "chevron.left")
+                        .font(.appSans(size: 16, weight: .semibold))
+                        .foregroundStyle(Color.appTextDark)
+                }
+                .accessibilityLabel("Đóng")
+            }
             ToolbarItem(placement: .topBarTrailing) {
                 Menu {
                     Picker(selection: $selectedFilter) {

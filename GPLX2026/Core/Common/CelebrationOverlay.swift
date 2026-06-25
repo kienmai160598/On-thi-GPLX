@@ -23,23 +23,23 @@ struct CelebrationOverlay: View {
                         .rotationEffect(.degrees(isAnimating ? particle.rotation : 0))
                 }
             }
+            .onAppear {
+                let viewWidth = geo.size.width
+                particles = (0..<40).map { _ in
+                    ConfettiParticle(
+                        x: CGFloat.random(in: 0...viewWidth),
+                        startY: CGFloat.random(in: -100...(-10)),
+                        size: CGFloat.random(in: 5...12),
+                        color: confettiColors.randomElement()!,
+                        rotation: Double.random(in: 180...720)
+                    )
+                }
+                withAnimation(.easeIn(duration: 2.5)) {
+                    isAnimating = true
+                }
+            }
         }
         .allowsHitTesting(false)
-        .onAppear {
-            let screenWidth = UIScreen.main.bounds.width
-            particles = (0..<40).map { _ in
-                ConfettiParticle(
-                    x: CGFloat.random(in: 0...screenWidth),
-                    startY: CGFloat.random(in: -100...(-10)),
-                    size: CGFloat.random(in: 5...12),
-                    color: confettiColors.randomElement()!,
-                    rotation: Double.random(in: 180...720)
-                )
-            }
-            withAnimation(.easeIn(duration: 2.5)) {
-                isAnimating = true
-            }
-        }
     }
 }
 
@@ -71,6 +71,7 @@ struct DailyGoalCelebrationModifier: ViewModifier {
             .onChange(of: isDone) { _, done in
                 if done && !hasShownCelebration {
                     hasShownCelebration = true
+                    NotificationManager.cancelGoalNudge()
                     if !reduceMotion {
                         withAnimation { showCelebration = true }
                         Task { @MainActor in

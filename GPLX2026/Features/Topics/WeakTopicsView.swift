@@ -69,7 +69,7 @@ struct WeakTopicsView: View {
                     }
                 }
 
-                if weakList.isEmpty && notStarted.isEmpty {
+                if weakList.isEmpty && strongList.isEmpty && notStarted.isEmpty {
                     EmptyState(
                         icon: "checkmark.circle.fill",
                         message: "Tuyệt vời! Tất cả chủ đề đều trên 80%",

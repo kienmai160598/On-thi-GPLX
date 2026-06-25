@@ -28,6 +28,10 @@ final class HazardVideoCache {
 
     // PERF5: Lazy stats — don't scan files in init()
     private var _statsLoaded = false
+    // Generation counter: incremented by clearCache() so any in-flight
+    // Task.detached scan started before the clear can detect it is stale
+    // and discard its results rather than overwriting the zeroed state.
+    private var _statsScanGeneration: Int = 0
 
     // PERF4: Shared session + delegate
     private let downloadDelegate = SharedDownloadDelegate()
@@ -85,6 +89,9 @@ final class HazardVideoCache {
     func ensureStatsLoaded() {
         guard !_statsLoaded else { return }
         _statsLoaded = true
+        // Capture the current generation so the callback can detect if
+        // clearCache() ran while the scan was in-flight and discard stale results.
+        let generation = _statsScanGeneration
         let cacheDir = Self.cacheDir
         let allSituations = HazardSituation.all
         Task.detached {
@@ -97,7 +104,7 @@ final class HazardVideoCache {
             }
             let sizeMB = Self.computeCacheSizeMB(cacheDir: cacheDir)
             await MainActor.run { [weak self] in
-                guard let self else { return }
+                guard let self, self._statsScanGeneration == generation else { return }
                 self.cachedIds = ids
                 self.cachedCount = ids.count
                 self.cacheSizeMB = sizeMB
@@ -159,12 +166,19 @@ final class HazardVideoCache {
 
     func downloadVideo(for situation: HazardSituation) async {
         guard localURL(for: situation) == nil else { return }
+
         downloadProgress[situation.id] = 0
         failedIds.remove(situation.id)
 
+        // Honour the "Wi-Fi only" preference: disallow cellular when enabled so
+        // the request fails on mobile data (surfaced via failedIds) and only
+        // proceeds over Wi-Fi.
+        var request = URLRequest(url: situation.videoURL)
+        request.allowsCellularAccess = !UserDefaults.standard.bool(forKey: "wifiOnlyDownload")
+
         do {
             let tempURL: URL = try await withCheckedThrowingContinuation { continuation in
-                let task = downloadSession.downloadTask(with: situation.videoURL)
+                let task = downloadSession.downloadTask(with: request)
                 downloadDelegate.register(
                     taskId: task.taskIdentifier,
                     onProgress: { [weak self] bytesWritten, totalWritten, expected in
@@ -240,26 +254,35 @@ final class HazardVideoCache {
 
     func pauseAll() {
         isPausedAll = true
-        isDownloadingAll = false
-        activeTasks.values.forEach { $0.cancel() }
-        activeTasks.removeAll()
-        downloadProgress.removeAll()
-        downloadingChapters.removeAll()
-        resetSpeedIfIdle()
+        stopAllTasks()
     }
 
     func cancelAll() {
         isPausedAll = false
         pausedChapters.removeAll()
+        stopAllTasks()
+    }
+
+    /// Cancels every in-flight download and clears the per-download tracking
+    /// state (shared by pauseAll / cancelAll).
+    private func stopAllTasks() {
+        isDownloadingAll = false
         activeTasks.values.forEach { $0.cancel() }
         activeTasks.removeAll()
         downloadProgress.removeAll()
         downloadingChapters.removeAll()
-        isDownloadingAll = false
         resetSpeedIfIdle()
     }
 
     func clearCache() {
+        // Bump the generation BEFORE zeroing in-memory state so that any
+        // in-flight Task.detached scan (started by ensureStatsLoaded) will
+        // see a mismatched generation in its MainActor.run callback and
+        // discard its stale results instead of overwriting the zeroed values.
+        _statsScanGeneration += 1
+        // Reset the loaded flag so the next ensureStatsLoaded() call triggers
+        // a fresh scan that correctly reflects the now-empty cache directory.
+        _statsLoaded = false
         try? FileManager.default.removeItem(at: Self.cacheDir)
         try? FileManager.default.createDirectory(at: Self.cacheDir, withIntermediateDirectories: true)
         downloadProgress.removeAll()

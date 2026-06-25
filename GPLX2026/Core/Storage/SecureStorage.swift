@@ -47,6 +47,12 @@ struct SecureStorage {
         if let existing = loadKeyFromKeychain() { return existing }
         let newKey = SymmetricKey(size: .bits256)
         try saveKeyToKeychain(newKey)
+        // `saveKeyToKeychain` tolerates errSecDuplicateItem — a concurrent caller
+        // may have created the key first. In that race the persisted key is NOT
+        // `newKey`, so always re-read the canonical key from the Keychain and use
+        // it; otherwise we'd encrypt with a key that was never stored and later
+        // fail to decrypt.
+        if let stored = loadKeyFromKeychain() { return stored }
         return newKey
     }
 

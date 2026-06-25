@@ -15,7 +15,7 @@ enum NotificationManager {
     // MARK: - Identifiers
 
     private static let dailyReminderID = "daily-practice-reminder"
-    private static let goalNudgeID = "daily-goal-nudge"
+    static let goalNudgeID = "daily-goal-nudge"
     private static let examCountdownOffsets = [7, 3, 1, 0]   // days before exam
     private static func examCountdownID(_ offset: Int) -> String { "exam-countdown-\(offset)" }
 
@@ -81,6 +81,12 @@ enum NotificationManager {
     static func cancelAll() {
         UNUserNotificationCenter.current()
             .removePendingNotificationRequests(withIdentifiers: managedIdentifiers)
+    }
+
+    /// Cancel only the daily-goal nudge — call when the goal is met intra-session.
+    static func cancelGoalNudge() {
+        UNUserNotificationCenter.current()
+            .removePendingNotificationRequests(withIdentifiers: [goalNudgeID])
     }
 
     // MARK: - Schedulers

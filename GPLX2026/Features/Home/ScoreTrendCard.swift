@@ -8,13 +8,13 @@ struct ScoreTrendCard: View {
     @Environment(ThemeStore.self) private var themeStore
 
     var body: some View {
-        let examData = progressStore.examHistory.suffix(10).reversed().map { result in
+        let examData = progressStore.examHistory.prefix(10).reversed().map { result in
             ScorePoint(date: result.date, score: result.accuracy, label: "Lý thuyết")
         }
-        let simData = progressStore.simulationHistory.suffix(10).reversed().map { result in
+        let simData = progressStore.simulationHistory.prefix(10).reversed().map { result in
             ScorePoint(date: result.date, score: result.accuracy, label: "Mô phỏng")
         }
-        let hazardData = progressStore.hazardHistory.suffix(10).reversed().map { result in
+        let hazardData = progressStore.hazardHistory.prefix(10).reversed().map { result in
             ScorePoint(date: result.date, score: result.scorePercentage, label: "Tình huống")
         }
 

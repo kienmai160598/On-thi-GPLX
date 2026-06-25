@@ -20,6 +20,8 @@ struct QuestionView: View {
     @State private var showExitConfirmation = false
     @State private var canAdvance = true
     @State private var sessionQuestions: [Question] = []
+    @State private var pendingStudyKey: String?
+    @State private var showMemoryTips = false
 
     init(topicKey: String, startIndex: Int) {
         self.topicKey = topicKey
@@ -30,7 +32,7 @@ struct QuestionView: View {
     private var filterIds: Set<Int>? {
         switch topicKey {
         case AppConstants.TopicKey.bookmarks: return progressStore.bookmarks
-        case AppConstants.TopicKey.wrongAnswers: return progressStore.wrongAnswers
+        case AppConstants.TopicKey.wrongAnswers, AppConstants.TopicKey.wrongAnswersPriority: return progressStore.wrongAnswers
         case let key where key.hasPrefix(AppConstants.TopicKey.wrongAnswers + ":"): return progressStore.wrongAnswers
         default: return nil
         }
@@ -40,8 +42,18 @@ struct QuestionView: View {
         questionStore.questions(forTopicKey: topicKey, filterIds: filterIds)
     }
 
+    /// Session question list. For the spaced-repetition priority key, reorder the
+    /// wrong answers by review priority (never-reviewed first, then oldest review).
+    private var orderedSessionQuestions: [Question] {
+        guard topicKey == AppConstants.TopicKey.wrongAnswersPriority else { return liveQuestions }
+        let order = progressStore.prioritizedWrongAnswers()
+        let byNo = Dictionary(liveQuestions.map { ($0.no, $0) }, uniquingKeysWith: { first, _ in first })
+        return order.compactMap { byNo[$0] }
+    }
+
     private var topicName: String {
         switch topicKey {
+        case AppConstants.TopicKey.wrongAnswersPriority: return "Ôn theo ưu tiên"
         case AppConstants.TopicKey.allQuestions: return "Tất cả câu hỏi"
         case AppConstants.TopicKey.diemLiet: return "Câu điểm liệt"
         case AppConstants.TopicKey.bookmarks: return "Đánh dấu"
@@ -69,7 +81,7 @@ struct QuestionView: View {
 
     private func loadQuestions() {
         if sessionQuestions.isEmpty {
-            sessionQuestions = liveQuestions
+            sessionQuestions = orderedSessionQuestions
         }
     }
 
@@ -98,7 +110,7 @@ struct QuestionView: View {
         let shuffledAnswers = question.shuffledAnswers
         let isBookmarked = progressStore.isBookmarked(questionNo: question.no)
         let isLast = currentIndex + 1 >= allQuestions.count
-        let isSpecial = topicKey == AppConstants.TopicKey.diemLiet || topicKey == AppConstants.TopicKey.bookmarks || topicKey == AppConstants.TopicKey.wrongAnswers || topicKey.hasPrefix(AppConstants.TopicKey.wrongAnswers + ":")
+        let isSpecial = topicKey == AppConstants.TopicKey.diemLiet || topicKey == AppConstants.TopicKey.bookmarks || topicKey == AppConstants.TopicKey.wrongAnswers || topicKey == AppConstants.TopicKey.wrongAnswersPriority || topicKey.hasPrefix(AppConstants.TopicKey.wrongAnswers + ":")
 
         Group {
             if metrics.isWide {
@@ -143,6 +155,7 @@ struct QuestionView: View {
                         // Right: topic progress sidebar
                         topicProgressSidebar(allQuestions: allQuestions)
                             .frame(width: rightWidth)
+                            .clipped()
                     }
                     .padding(.horizontal, pad)
                 }
@@ -189,32 +202,39 @@ struct QuestionView: View {
                 }
                 .id(currentIndex)
             } else {
-                // iPhone: existing vertical layout
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 0) {
-                        QuestionCard(label: "Câu \(question.no):", question: question)
-                            .padding(.bottom, 20)
+                // iPhone: existing vertical layout.
+                // The ScrollView is kept alive across question changes (no
+                // `.id(currentIndex)` swap + opacity transition) — that swap
+                // caused a transparent frame that flashed the background on
+                // rapid Prev/Next taps. Scroll position is reset programmatically.
+                ScrollViewReader { proxy in
+                    ScrollView {
+                        VStack(alignment: .leading, spacing: 0) {
+                            QuestionCard(label: "Câu \(question.no):", question: question)
+                                .padding(.bottom, 20)
+                                .id("questionTop")
 
-                        AnswerTileList(
-                            answers: shuffledAnswers,
-                            selectedAnswerId: selectedAnswerId,
-                            isConfirmed: isConfirmed,
-                            showCorrectness: true,
-                            onSelect: { selectAnswer($0) }
-                        )
+                            AnswerTileList(
+                                answers: shuffledAnswers,
+                                selectedAnswerId: selectedAnswerId,
+                                isConfirmed: isConfirmed,
+                                showCorrectness: true,
+                                onSelect: { selectAnswer($0) }
+                            )
 
-                        if isConfirmed && !question.tip.isEmpty {
-                            ExplanationBox(content: question.tip)
-                                .padding(.top, 4)
-                                .transition(.opacity.combined(with: .move(edge: .top)))
+                            if isConfirmed && !question.tip.isEmpty {
+                                ExplanationBox(content: question.tip)
+                                    .padding(.top, 4)
+                                    .transition(.opacity.combined(with: .move(edge: .top)))
+                            }
                         }
+                        .padding(.horizontal, 20)
+                        .padding(.top, 16)
                     }
-                    .padding(.horizontal, 20)
-                    .padding(.top, 16)
+                    .onChange(of: currentIndex) { _, _ in
+                        proxy.scrollTo("questionTop", anchor: .top)
+                    }
                 }
-                .id(currentIndex)
-                .transition(.opacity)
-                .animation(.easeInOut(duration: 0.3), value: currentIndex)
             }
         }
         .safeAreaInset(edge: .bottom) {
@@ -225,6 +245,7 @@ struct QuestionView: View {
                 currentIndex: currentIndex,
                 totalCount: allQuestions.count,
                 answeredIndices: answeredIndices(for: allQuestions),
+                bookmarkedIndices: Set(allQuestions.indices.filter { progressStore.isBookmarked(questionNo: allQuestions[$0].no) }),
                 nextLabel: isConfirmed ? (isLast ? "Xem kết quả" : "Câu tiếp") : "Xác nhận",
                 isNextDisabled: isConfirmed ? !canAdvance : !hasSelected,
                 showPrev: currentIndex > 0,
@@ -249,13 +270,17 @@ struct QuestionView: View {
                     }
                 },
                 leadingWidget: !isSpecial && hasTips ? AnyView(
-                    NavigationLink(destination: MemoryTipsView(topicKey: tipsTopicKey)) {
-                        AppIconButton(icon: "lightbulb", size: metrics.buttonHeight)
+                    AppIconButton(icon: "lightbulb", size: metrics.buttonHeight) {
+                        showMemoryTips = true
                     }
+                    .accessibilityLabel("Xem gợi ý ghi nhớ")
                 ) : nil
             )
         }
         .screenHeaderStyle(titleDisplayMode: .inline, hideBackButton: true)
+        .navigationDestination(isPresented: $showMemoryTips) {
+            MemoryTipsView(topicKey: Topic.keyForTopicId(question.topic))
+        }
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
                 Button {
@@ -269,6 +294,7 @@ struct QuestionView: View {
                         .font(.appSans(size: 16, weight: .semibold))
                         .foregroundStyle(Color.appTextDark)
                 }
+                .accessibilityLabel("Quay lại")
             }
 
             ToolbarItem(placement: .navigationBarTrailing) {
@@ -280,6 +306,8 @@ struct QuestionView: View {
                         .font(.appSans(size: 16))
                         .foregroundStyle(isBookmarked ? themeStore.primaryColor : Color.appTextDark)
                 }
+                .accessibilityLabel(isBookmarked ? "Bỏ đánh dấu" : "Đánh dấu câu hỏi")
+                .accessibilityValue(isBookmarked ? "Đã đánh dấu" : "")
             }
         }
         .alert("Thoát ôn tập?", isPresented: $showExitConfirmation) {
@@ -288,7 +316,12 @@ struct QuestionView: View {
         } message: {
             Text("Tiến trình đã được lưu tự động.")
         }
-        .fullScreenCover(isPresented: $showResultSheet) {
+        .fullScreenCover(isPresented: $showResultSheet, onDismiss: {
+            if let key = pendingStudyKey {
+                pendingStudyKey = nil
+                openExam(.questionView(topicKey: key, startIndex: 0))
+            }
+        }) {
             studyResultSheet(totalCount: allQuestions.count)
         }
         .onDisappear {
@@ -349,9 +382,17 @@ struct QuestionView: View {
                     VStack(spacing: 12) {
                         if wrongCount > 0 {
                             Button {
+                                let scopedKey: String
+                                if topicKey == AppConstants.TopicKey.bookmarks {
+                                    // Bookmarks isn't topic-scoped; drill all wrong answers globally.
+                                    scopedKey = AppConstants.TopicKey.wrongAnswers
+                                } else if topicKey.hasPrefix(AppConstants.TopicKey.wrongAnswers) {
+                                    scopedKey = topicKey  // already a wrong-answers key
+                                } else {
+                                    scopedKey = AppConstants.TopicKey.wrongAnswers + ":" + topicKey
+                                }
+                                pendingStudyKey = scopedKey
                                 showResultSheet = false
-                                let scopedKey = topicKey.hasPrefix(AppConstants.TopicKey.wrongAnswers) ? topicKey : AppConstants.TopicKey.wrongAnswers + ":" + topicKey
-                                openExam(.questionView(topicKey: scopedKey, startIndex: 0))
                             } label: {
                                 Text("Luyện \(wrongCount) câu sai")
                                     .font(.appSans(size: 16, weight: .semibold))
@@ -422,39 +463,41 @@ struct QuestionView: View {
 
             // Legend
             HStack(spacing: 12) {
-                sidebarLegendDot(color: themeStore.primaryColor, label: "Đang làm")
-                sidebarLegendDot(color: .appSuccess, label: "Đã xong")
-                sidebarLegendDot(color: Color.appDisabled, label: "Chưa làm")
+                SidebarLegendDot(color: themeStore.primaryColor, label: "Đang làm")
+                SidebarLegendDot(color: .appSuccess, label: "Đã xong")
+                SidebarLegendDot(color: Color.appDisabled, label: "Chưa làm")
             }
 
             // Grid
-            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 6), count: 5), spacing: 6) {
-                ForEach(0..<allQuestions.count, id: \.self) { index in
-                    Button {
-                        Haptics.selection()
-                        withAnimation(.easeOut(duration: 0.25)) {
-                            currentIndex = index
-                            selectedAnswerId = nil
-                            isConfirmed = false
-                            canAdvance = true
+            ScrollView {
+                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 6), count: 5), spacing: 6) {
+                    ForEach(0..<allQuestions.count, id: \.self) { index in
+                        Button {
+                            Haptics.selection()
+                            withAnimation(.easeOut(duration: 0.25)) {
+                                currentIndex = index
+                                selectedAnswerId = nil
+                                isConfirmed = false
+                                canAdvance = true
+                            }
+                        } label: {
+                            let isCurrent = index == currentIndex
+                            let isAnswered = answered.contains(index)
+                            Text("\(index + 1)")
+                                .font(.appSans(size: 13, weight: .semibold))
+                                .foregroundStyle(
+                                    isCurrent ? themeStore.onPrimaryColor :
+                                    isAnswered ? Color.appSuccess :
+                                    Color.appTextMedium
+                                )
+                                .frame(maxWidth: .infinity, minHeight: 36)
+                                .background(
+                                    isCurrent ? themeStore.primaryColor :
+                                    isAnswered ? Color.appSuccess.opacity(0.12) :
+                                    Color.appDisabled
+                                )
+                                .clipShape(RoundedRectangle(cornerRadius: 6))
                         }
-                    } label: {
-                        let isCurrent = index == currentIndex
-                        let isAnswered = answered.contains(index)
-                        Text("\(index + 1)")
-                            .font(.appSans(size: 13, weight: .semibold))
-                            .foregroundStyle(
-                                isCurrent ? themeStore.onPrimaryColor :
-                                isAnswered ? Color.appSuccess :
-                                Color.appTextMedium
-                            )
-                            .frame(maxWidth: .infinity, minHeight: 36)
-                            .background(
-                                isCurrent ? themeStore.primaryColor :
-                                isAnswered ? Color.appSuccess.opacity(0.12) :
-                                Color.appDisabled
-                            )
-                            .clipShape(RoundedRectangle(cornerRadius: 6))
                     }
                 }
             }
@@ -465,16 +508,6 @@ struct QuestionView: View {
         .padding(.bottom, 12)
     }
 
-    private func sidebarLegendDot(color: Color, label: String) -> some View {
-        HStack(spacing: 4) {
-            Circle()
-                .fill(color)
-                .frame(width: 8, height: 8)
-            Text(label)
-                .font(.appSans(size: 12))
-                .foregroundStyle(Color.appTextMedium)
-        }
-    }
 
     // MARK: - Actions
 
@@ -537,7 +570,7 @@ struct QuestionView: View {
     }
 
     private func resetQuiz() {
-        sessionQuestions = liveQuestions
+        sessionQuestions = orderedSessionQuestions
         currentIndex = 0
         selectedAnswerId = nil
         isConfirmed = false

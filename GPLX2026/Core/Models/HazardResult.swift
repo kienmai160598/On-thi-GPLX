@@ -15,7 +15,8 @@ struct HazardResult: Codable, Identifiable {
     let details: [SituationDetail]
 
     var passed: Bool {
-        totalScore >= AppConstants.Hazard.passScore
+        guard maxScore > 0 else { return false }
+        return Double(totalScore) / Double(maxScore) >= 0.7
     }
 
     var scorePercentage: Double {

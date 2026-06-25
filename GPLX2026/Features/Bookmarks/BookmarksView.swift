@@ -65,7 +65,10 @@ private struct BookmarkQuestionCard: View {
                     Image(systemName: "bookmark.slash.fill")
                         .font(.appSans(size: 14))
                         .foregroundStyle(Color.appTextLight)
+                        .frame(width: 44, height: 44)
+                        .contentShape(Rectangle())
                 }
+                .accessibilityLabel("Bỏ đánh dấu câu \(question.no)")
             }
         }
         .padding(.horizontal, 14)

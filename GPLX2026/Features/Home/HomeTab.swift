@@ -1,13 +1,32 @@
 import SwiftUI
 
 // MARK: - HomeTab
+//
+// Rebuilt to match the Pencil design (node Voun1 · "GPLX · Trang chủ"):
+// an in-content header (greeting + settings + meta chips), a single consolidated
+// "Study Progress" card (mastery summary + four navigation links) and a "Lối tắt"
+// six-tile shortcut grid. The greeting and settings live in the scroll content —
+// not the navigation bar — so the screen starts right under the status bar; the
+// navigation bar is hidden and the app background is supplied directly.
 
 struct HomeTab: View {
     @Environment(QuestionStore.self) private var questionStore
     @Environment(ProgressStore.self) private var progressStore
     @Environment(LayoutMetrics.self) private var metrics
+    @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.openExam) private var openExam
 
-    private var greetingText: String {
+    @State private var greetingText: String = HomeTab.computeGreeting()
+    @State private var dateString: String = HomeTab.computeDateString()
+
+    private static let dayFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "vi_VN")
+        f.dateFormat = "EEEE · dd / MM"
+        return f
+    }()
+
+    private static func computeGreeting() -> String {
         let hour = Calendar.current.component(.hour, from: Date())
         switch hour {
         case 5..<12: return "Chào buổi sáng!"
@@ -16,541 +35,402 @@ struct HomeTab: View {
         }
     }
 
+    private static func computeDateString() -> String {
+        let raw = dayFormatter.string(from: Date())
+        return raw.prefix(1).uppercased() + raw.dropFirst()
+    }
+
     var body: some View {
         let goalDone = progressStore.todayProgress.done >= progressStore.todayProgress.goal
 
-        ScrollView {
-            Group {
-                if metrics.isCompact {
-                    VStack(spacing: metrics.sectionSpacing) {
-                        ProgressOverview()
-                        ExamCountdownCard()
-                        PrimaryActionCard()
-                        QuickActionsGrid()
-                        ShortcutsRow()
-                        RecentResultsCard()
-                    }
-                    .padding(.horizontal, metrics.contentPadding)
-                    .padding(.bottom, 32)
-                } else {
-                    LazyVGrid(
-                        columns: Array(repeating: GridItem(.flexible(), spacing: metrics.gridSpacing),
-                                       count: metrics.columns),
-                        spacing: metrics.gridSpacing
-                    ) {
-                        ProgressOverview()
-                        ExamCountdownCard()
-                        PrimaryActionCard()
-                        QuickActionsGrid()
-                        ShortcutsRow()
-                        RecentResultsCard()
-                    }
-                    .padding(.horizontal, metrics.contentPadding)
-                    .padding(.bottom, 32)
-                }
+        ScrollView(showsIndicators: false) {
+            VStack(spacing: 22) {
+                HomeSubheader(
+                    subtitle: "Sẵn sàng ôn tập hôm nay chưa?",
+                    dateString: dateString,
+                    streakDays: progressStore.streakCount
+                )
+
+                HomeStudyProgressCard()
+
+                HomeQuickActionsSection()
             }
-            .glassContainer()
+            .padding(.horizontal, metrics.contentPadding)
+            .padding(.top, 4)
+            .padding(.bottom, 32)
         }
         .dailyGoalCelebration(isDone: goalDone)
-        .screenHeader(greetingText)
+        // Native Apple navigation: the greeting is the large title (collapses to
+        // inline on scroll) and the search / settings actions live in the toolbar.
+        .screenHeader(greetingText, titleDisplayMode: .large)
+        .tracksTabBarCollapse()
         .toolbar {
-            ToolbarItem(placement: .navigationBarTrailing) {
-                HStack(spacing: 16) {
-                    NavigationLink(destination: QuestionSearchView()) {
-                        Image(systemName: "magnifyingglass")
-                            .font(.appSans(size: 15, weight: .medium))
-                            .foregroundStyle(Color.appTextDark)
+            // Plain native toolbar buttons — the system supplies the tap target
+            // and (on iOS 26) the Liquid Glass background; the accent tint comes
+            // from the enclosing NavigationStack. No custom frame/padding.
+            ToolbarItem(placement: .topBarTrailing) {
+                Button { openExam(.search) } label: {
+                    Image(systemName: "magnifyingglass")
+                }
+                .accessibilityLabel("Tìm kiếm")
+            }
+            ToolbarItem(placement: .topBarTrailing) {
+                Button { openExam(.settings) } label: {
+                    Image(systemName: "gearshape")
+                }
+                .accessibilityLabel("Cài đặt")
+            }
+        }
+        .onAppear {
+            greetingText = HomeTab.computeGreeting()
+            dateString = HomeTab.computeDateString()
+        }
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active {
+                greetingText = HomeTab.computeGreeting()
+                dateString = HomeTab.computeDateString()
+            }
+        }
+    }
+}
+
+// MARK: - Header
+
+private struct HomeSubheader: View {
+    let subtitle: String
+    let dateString: String
+    let streakDays: Int
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            // Subtitle
+            Text(subtitle)
+                .font(.appSans(size: 13.5, weight: .regular))
+                .foregroundStyle(Color.appTextMedium)
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+            // Meta chips
+            HStack(spacing: 8) {
+                // Day chip
+                HStack(spacing: 8) {
+                    Image(systemName: "calendar")
+                        .font(.appSans(size: 12))
+                        .foregroundStyle(Color.appTextMedium)
+                    Text(dateString)
+                        .font(.appSans(size: 12, weight: .semibold))
+                        .foregroundStyle(Color.appTextDark)
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .background(Color.cardBg, in: Capsule())
+                .overlay(Capsule().strokeBorder(Color.cardBorder, lineWidth: 1))
+
+                // Streak chip (only when streak > 0)
+                if streakDays > 0 {
+                    HStack(spacing: 6) {
+                        Image(systemName: "flame.fill")
+                            .font(.appSans(size: 12))
+                            .foregroundStyle(Color.amberInk)
+                        Text("\(streakDays) ngày liên tục")
+                            .font(.appSans(size: 12, weight: .bold))
+                            .foregroundStyle(Color.amberInk)
                     }
-                    if metrics.isCompact {
-                        NavigationLink(destination: SettingsView()) {
-                            Image(systemName: "gearshape")
-                                .font(.appSans(size: 15, weight: .medium))
-                                .foregroundStyle(Color.appTextDark)
-                        }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(Color.amberWash, in: Capsule())
+                }
+            }
+        }
+        .padding(.top, 4)
+    }
+}
+
+// MARK: - Study Progress card
+
+private struct HomeStudyProgressCard: View {
+    @Environment(QuestionStore.self) private var questionStore
+    @Environment(ProgressStore.self) private var progressStore
+    @Environment(\.openExam) private var openExam
+
+    var body: some View {
+        // Scope the headline mastery to the active license so B1 users see their
+        // own bank (for B2, questionsForCurrentLicense == allQuestions, no change).
+        let licenseQuestions = questionStore.questionsForCurrentLicense
+        let totalCount = licenseQuestions.count
+        let masteredCount = progressStore.correctCount(in: licenseQuestions)
+        let fraction = totalCount > 0 ? Double(masteredCount) / Double(totalCount) : 0
+        let percentInt = Int((fraction * 100).rounded())
+        let remaining = max(0, totalCount - masteredCount)
+
+        // Điểm liệt stays global to match its dedicated practice screen.
+        let diemLiet = progressStore.diemLietMastery(questions: questionStore.allQuestions)
+        let wrongCount = progressStore.wrongAnswers.count
+        let bookmarkCount = progressStore.bookmarks.count
+        let lastResult = progressStore.examHistory.first
+
+        VStack(spacing: 16) {
+            // Mastery summary
+            VStack(spacing: 8) {
+                HStack(alignment: .lastTextBaseline, spacing: 4) {
+                    Text("\(percentInt)%")
+                        .font(.appSans(size: 34, weight: .heavy))
+                        .foregroundStyle(Color.appTextDark)
+                        .contentTransition(.numericText())
+                    Text("đã thuộc")
+                        .font(.appSans(size: 14, weight: .bold))
+                        .foregroundStyle(Color.appTextMedium)
+                    Spacer(minLength: 0)
+                }
+
+                HStack {
+                    Text("Lý thuyết · \(masteredCount) / \(totalCount) câu")
+                        .font(.appSans(size: 11.5, weight: .semibold))
+                        .foregroundStyle(Color.appTextMedium)
+                    Spacer(minLength: 8)
+                    Text("Còn \(remaining) câu")
+                        .font(.appSans(size: 11.5, weight: .bold))
+                        .foregroundStyle(Color.appTextDark)
+                }
+            }
+
+            // Navigation links
+            VStack(spacing: 0) {
+                // Kết quả thi thử → last result detail, or start a mock exam.
+                if let result = lastResult {
+                    NavigationLink(destination: ExamHistoryDetailView(result: result)) {
+                        HomeLinkRow(
+                            label: "Kết quả thi thử",
+                            value: "\(result.passed ? "Đạt" : "Chưa đạt") · \(result.score)/\(result.totalQuestions)",
+                            valueColor: result.passed ? Color.appSuccess : Color.appError
+                        )
                     }
+                    .buttonStyle(.plain)
+                } else {
+                    Button {
+                        openExam(.mockExam())
+                    } label: {
+                        HomeLinkRow(label: "Kết quả thi thử", value: "Chưa thi", valueColor: Color.appTextMedium)
+                    }
+                    .buttonStyle(.plain)
+                }
+
+                HomeLinkDivider()
+
+                // Điểm liệt → dedicated practice (red is the điểm-liệt brand color).
+                Button {
+                    openExam(.questionView(topicKey: AppConstants.TopicKey.diemLiet, startIndex: 0))
+                } label: {
+                    HomeLinkRow(
+                        label: "Điểm liệt",
+                        value: "\(diemLiet.correct)/\(diemLiet.total)",
+                        valueColor: Color.appError
+                    )
+                }
+                .buttonStyle(.plain)
+
+                HomeLinkDivider()
+
+                // Câu sai cần ôn → wrong-answers review.
+                NavigationLink(destination: WrongAnswersView()) {
+                    HomeLinkRow(label: "Câu sai cần ôn", value: "\(wrongCount)", valueColor: Color.appTextDark)
+                }
+                .buttonStyle(.plain)
+
+                HomeLinkDivider()
+
+                // Đánh dấu → bookmarks. Last row: no bottom padding.
+                NavigationLink(destination: BookmarksView()) {
+                    HomeLinkRow(label: "Đánh dấu", value: "\(bookmarkCount)", valueColor: Color.appTextDark, isLast: true)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(20)
+        .background(Color.cardBg)
+        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).strokeBorder(Color.cardBorder, lineWidth: 1))
+    }
+}
+
+private struct HomeLinkRow: View {
+    let label: String
+    let value: String
+    let valueColor: Color
+    /// The last row drops its bottom padding so the gap below it equals the
+    /// card's padding (concentric: outer radius − padding = inner spacing).
+    var isLast: Bool = false
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Text(label)
+                .font(.appSans(size: 13.5, weight: .semibold))
+                .foregroundStyle(Color.appTextDark)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            Text(value)
+                .font(.appSans(size: 14, weight: .bold))
+                .foregroundStyle(valueColor)
+                .contentTransition(.numericText())
+            Image(systemName: "chevron.right")
+                .font(.appSans(size: 13, weight: .semibold))
+                .foregroundStyle(Color.appTextLight)
+        }
+        .padding(.top, 12)
+        .padding(.bottom, isLast ? 0 : 12)
+        .contentShape(Rectangle())
+    }
+}
+
+private struct HomeLinkDivider: View {
+    var body: some View {
+        Rectangle()
+            .fill(Color.appDivider.opacity(0.6))
+            .frame(height: 1)
+    }
+}
+
+// MARK: - Quick Actions ("Lối tắt")
+
+private struct HomeQuickActionsSection: View {
+    @Environment(QuestionStore.self) private var questionStore
+    @Environment(ProgressStore.self) private var progressStore
+    @Environment(ThemeStore.self) private var themeStore
+    @Environment(\.openExam) private var openExam
+
+    private var accent: Color { themeStore.primaryColor }
+
+    private var lastTopicName: String {
+        guard let key = progressStore.lastTopicKey, !key.isEmpty else {
+            return "Bắt đầu học"
+        }
+        switch key {
+        case AppConstants.TopicKey.diemLiet: return "Câu điểm liệt"
+        case AppConstants.TopicKey.allQuestions, AppConstants.TopicKey.currentLicense: return "Tất cả câu hỏi"
+        case AppConstants.TopicKey.bookmarks: return "Đánh dấu"
+        case AppConstants.TopicKey.wrongAnswers: return "Câu sai"
+        default: return questionStore.topic(forKey: key)?.name ?? key
+        }
+    }
+
+    var body: some View {
+        let bookmarkCount = progressStore.bookmarks.count
+        let poolCount = questionStore.questionsForCurrentLicense.count
+
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Lối tắt")
+                .font(.appSans(size: 18, weight: .bold))
+                .tracking(-0.2)
+                .foregroundStyle(Color.appTextDark)
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+            LazyVGrid(
+                columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 2),
+                spacing: 8
+            ) {
+                // Ngẫu nhiên — draw the random start from the license-scoped pool so
+                // the count shown matches the session that launches.
+                HomeShortcutTile(icon: "shuffle", accent: accent, title: "Ngẫu nhiên", subtitle: "\(poolCount) câu") {
+                    let randomStart = poolCount == 0 ? 0 : Int.random(in: 0..<poolCount)
+                    openExam(.questionView(topicKey: AppConstants.TopicKey.currentLicense, startIndex: randomStart))
+                }
+
+                // Tốc độ & Quy tắc
+                HomeShortcutLink(icon: "speedometer", accent: accent, title: "Tốc độ & Quy tắc", subtitle: "Học lý thuyết") {
+                    SpeedDistanceReferenceView()
+                }
+
+                // Mô phỏng
+                HomeShortcutTile(icon: "film.stack.fill", accent: accent, title: "Mô phỏng", subtitle: "120 tình huống") {
+                    openExam(.hazardTest(mode: .practice))
+                }
+
+                // Tiếp tục
+                HomeShortcutTile(icon: "play.fill", accent: accent, title: "Tiếp tục", subtitle: lastTopicName) {
+                    openExam(.questionView(
+                        topicKey: progressStore.lastTopicKey ?? AppConstants.TopicKey.currentLicense,
+                        startIndex: progressStore.lastQuestionIndex
+                    ))
+                }
+
+                // Đã lưu
+                HomeShortcutLink(icon: "bookmark.fill", accent: accent, title: "Đã lưu", subtitle: bookmarkCount > 0 ? "\(bookmarkCount) câu" : "Xem lại") {
+                    BookmarksView()
+                }
+
+                // Biển báo
+                HomeShortcutLink(icon: "signpost.right.fill", accent: accent, title: "Biển báo", subtitle: "Giao thông") {
+                    TrafficSignsReferenceView()
                 }
             }
         }
     }
 }
 
-// MARK: - Progress Overview (compact hero)
-
-private struct ProgressOverview: View {
-    @Environment(QuestionStore.self) private var questionStore
-    @Environment(ProgressStore.self) private var progressStore
-    @Environment(ThemeStore.self) private var themeStore
+/// Shared visual for a shortcut tile — accent icon box + title + subtitle in a
+/// white rounded card. Used by both the action (`Button`) and navigation
+/// (`NavigationLink`) variants so every tile looks identical.
+private struct HomeShortcutTileContent: View {
+    let icon: String
+    let accent: Color
+    let title: String
+    let subtitle: String
 
     var body: some View {
-        let status = progressStore.readinessStatus(
-            topics: questionStore.topics,
-            allQuestions: questionStore.allQuestions
-        )
-        let mastery = status.totalQuestions > 0
-            ? Double(status.totalCorrect) / Double(status.totalQuestions)
-            : 0
-        let streak = progressStore.streakCount
-        let daysUntilExam = progressStore.daysUntilExam
-        let today = progressStore.todayProgress
-        let wrongCount = progressStore.wrongAnswers.count
-        let dlDone = status.diemLiet.correct == status.diemLiet.total && status.diemLiet.total > 0
+        HStack(spacing: 8) {
+            IconBox(icon: icon, color: accent, size: 34, cornerRadius: 8, iconFontSize: 17, iconWeight: .medium, background: .neutralWash)
 
-        HStack(spacing: 16) {
-            // Ring left
-            TopicProgressRing(fraction: mastery, color: themeStore.primaryColor, size: 110)
-
-            // All stats right
-            VStack(alignment: .leading, spacing: 10) {
-                // Main count
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Đã thuộc \(status.totalCorrect)/\(status.totalQuestions) câu")
-                        .font(.appSans(size: 15, weight: .bold))
-                        .foregroundStyle(Color.appTextDark)
-                        .contentTransition(.numericText())
-
-                    HStack(spacing: 8) {
-                        if let days = daysUntilExam {
-                            Label(
-                                days <= 0 ? "Hôm nay thi!" : "Còn \(days) ngày",
-                                systemImage: "calendar"
-                            )
-                        }
-                        if streak > 0 {
-                            Label("\(streak) ngày liên tục", systemImage: "flame.fill")
-                        }
-                    }
-                    .font(.appSans(size: 12, weight: .medium))
-                    .foregroundStyle(themeStore.primaryColor)
-                }
-
-                Divider()
-
-                // Stat rows
-                statRow(
-                    icon: "exclamationmark.triangle.fill",
-                    label: "Câu điểm liệt",
-                    value: "\(status.diemLiet.correct)/\(status.diemLiet.total)",
-                    status: dlDone ? "Đạt" : nil,
-                    color: dlDone ? .appSuccess : .appWarning
-                )
-                statRow(
-                    icon: "target",
-                    label: "Hôm nay",
-                    value: "\(today.done)/\(today.goal)",
-                    status: today.done >= today.goal ? "Xong" : nil,
-                    color: today.done >= today.goal ? .appSuccess : themeStore.primaryColor
-                )
-                statRow(
-                    icon: "xmark.circle.fill",
-                    label: "Câu sai",
-                    value: "\(wrongCount)",
-                    status: wrongCount == 0 ? "Tốt" : nil,
-                    color: wrongCount > 0 ? .appError : .appSuccess
-                )
+            VStack(alignment: .leading, spacing: 1) {
+                Text(title)
+                    .font(.appSans(size: 12.5, weight: .bold))
+                    .tracking(-0.2)
+                    .foregroundStyle(Color.appTextDark)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.85)
+                Text(subtitle)
+                    .font(.appSans(size: 11, weight: .semibold))
+                    .foregroundStyle(Color.appTextMedium)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.85)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .padding(16)
-        .glassCard()
-    }
-
-    private func statRow(icon: String, label: String, value: String, status: String?, color: Color) -> some View {
-        HStack(spacing: 8) {
-            Image(systemName: icon)
-                .font(.appSans(size: 14))
-                .foregroundStyle(color)
-                .frame(width: 20)
-            Text(label)
-                .font(.appSans(size: 15, weight: .medium))
-                .foregroundStyle(Color.appTextMedium)
-            Spacer()
-            if let status {
-                Text(status)
-                    .font(.appSans(size: 13, weight: .medium))
-                    .foregroundStyle(color)
-            }
-            Text(value)
-                .font(.appSerif(size: 17, weight: .bold))
-                .foregroundStyle(color)
-                .contentTransition(.numericText())
-        }
+        .padding(.horizontal, 12)
+        .frame(maxWidth: .infinity, minHeight: 60, alignment: .leading)
+        .background(Color.cardBg)
+        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).strokeBorder(Color.cardBorder, lineWidth: 1))
     }
 }
 
-// MARK: - Primary Action (continue learning OR smart nudge)
-
-private struct PrimaryActionCard: View {
-    @Environment(QuestionStore.self) private var questionStore
-    @Environment(ProgressStore.self) private var progressStore
-    @Environment(ThemeStore.self) private var themeStore
-    @Environment(LayoutMetrics.self) private var metrics
-    @Environment(\.openExam) private var openExam
-
-    var body: some View {
-        if let topicKey = progressStore.lastTopicKey, !topicKey.isEmpty {
-            continueCard(topicKey: topicKey)
-        } else {
-            nudgeCard
-        }
-    }
-
-    @ViewBuilder
-    private func continueCard(topicKey: String) -> some View {
-        let index = progressStore.lastQuestionIndex
-        let topicName: String = {
-            switch topicKey {
-            case AppConstants.TopicKey.diemLiet: return "Câu điểm liệt"
-            case AppConstants.TopicKey.allQuestions: return "Tất cả câu hỏi"
-            case AppConstants.TopicKey.bookmarks: return "Đánh dấu"
-            case AppConstants.TopicKey.wrongAnswers: return "Câu sai"
-            default: return questionStore.topic(forKey: topicKey)?.name ?? topicKey
-            }
-        }()
-
-        Button {
-            openExam(.questionView(topicKey: topicKey, startIndex: index))
-        } label: {
-            HStack(spacing: 14) {
-                Image(systemName: "play.circle.fill")
-                    .font(.appSans(size: 36))
-                    .foregroundStyle(themeStore.primaryColor)
-
-                VStack(alignment: .leading, spacing: 3) {
-                    Text("Tiếp tục học")
-                        .font(.appSans(size: 15, weight: .bold))
-                        .foregroundStyle(Color.appTextDark)
-                    Text("\(topicName) · Câu \(index + 1)")
-                        .font(.appSans(size: 14))
-                        .foregroundStyle(Color.appTextMedium)
-                        .lineLimit(1)
-                }
-
-                Spacer(minLength: 4)
-
-                CircularActionButton(icon: "play.fill")
-            }
-            .padding(metrics.cardPadding)
-            .glassCard()
-        }
-        .buttonStyle(.plain)
-    }
-
-    @ViewBuilder
-    private var nudgeCard: some View {
-        let nudge = progressStore.smartNudge(
-            topics: questionStore.topics,
-            allQuestions: questionStore.allQuestions
-        )
-
-        Button { handleNudgeTap(nudge) } label: {
-            HStack(spacing: 14) {
-                Image(systemName: nudge.icon)
-                    .font(.appSans(size: 24))
-                    .foregroundStyle(themeStore.primaryColor)
-                    .symbolRenderingMode(.hierarchical)
-                    .frame(width: 48, height: 48)
-                    .background(themeStore.primaryColor.opacity(0.12))
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
-
-                VStack(alignment: .leading, spacing: 3) {
-                    Text("Gợi ý cho bạn")
-                        .font(.appSans(size: 13, weight: .medium))
-                        .foregroundStyle(Color.appTextLight)
-                    Text(nudge.label)
-                        .font(.appSerif(size: 16, weight: .bold))
-                        .foregroundStyle(Color.appTextDark)
-                        .lineLimit(1)
-                }
-
-                Spacer(minLength: 4)
-
-                CircularActionButton(icon: "arrow.right", size: 40)
-            }
-            .padding(metrics.cardPadding)
-            .glassCard(tint: themeStore.primaryColor)
-        }
-        .buttonStyle(.plain)
-    }
-
-    private func handleNudgeTap(_ nudge: ProgressStore.SmartNudge) {
-        switch nudge {
-        case .masterDiemLiet:
-            openExam(.questionView(topicKey: AppConstants.TopicKey.diemLiet, startIndex: 0))
-        case .weakTopic(_, let key, _), .improveTopic(_, let key, _):
-            openExam(.questionView(topicKey: key, startIndex: 0))
-        case .takeExam, .testWeakestPart, .examReady:
-            openExam(.mockExam())
-        case .startSimulation:
-            let topic6Key = questionStore.topics.first { $0.topicIds.contains(6) }?.key ?? "6"
-            openExam(.questionView(topicKey: topic6Key, startIndex: 0))
-        case .startHazard:
-            openExam(.hazardTest(mode: .practice))
-        }
-    }
-}
-
-// MARK: - Quick Actions (2x2 grid)
-
-private struct QuickActionsGrid: View {
-    @Environment(QuestionStore.self) private var questionStore
-    @Environment(ProgressStore.self) private var progressStore
-    @Environment(ThemeStore.self) private var themeStore
-    @Environment(LayoutMetrics.self) private var metrics
-    @Environment(\.openExam) private var openExam
-
-    private var columns: [GridItem] {
-        Array(repeating: GridItem(.flexible(), spacing: metrics.gridSpacing),
-              count: metrics.columns == 3 ? 4 : 2)
-    }
-
-    var body: some View {
-        LazyVGrid(columns: columns, spacing: metrics.gridSpacing) {
-            HomeActionCard(
-                icon: "book.fill",
-                title: "Ôn câu hỏi",
-                color: themeStore.primaryColor
-            ) {
-                openExam(.questionView(topicKey: AppConstants.TopicKey.allQuestions, startIndex: 0))
-            }
-
-            HomeActionCard(
-                icon: "list.clipboard.fill",
-                title: "Thi thử",
-                color: themeStore.primaryColor
-            ) {
-                openExam(.mockExam())
-            }
-
-            HomeActionCard(
-                icon: "exclamationmark.triangle.fill",
-                title: "Điểm liệt",
-                color: themeStore.primaryColor
-            ) {
-                openExam(.questionView(topicKey: AppConstants.TopicKey.diemLiet, startIndex: 0))
-            }
-
-            NavigationLink(destination: WrongAnswersView()) {
-                VStack(spacing: 10) {
-                    Image(systemName: "xmark.circle.fill")
-                        .font(.appSans(size: 28))
-                        .foregroundStyle(themeStore.primaryColor)
-
-                    Text("Câu sai")
-                        .font(.appSerif(size: 16, weight: .bold))
-                        .foregroundStyle(Color.appTextDark)
-                }
-                .frame(maxWidth: .infinity)
-                .frame(height: metrics.isWide ? 130 : 110)
-                .glassCard()
-            }
-            .buttonStyle(.plain)
-        }
-    }
-}
-
-private struct HomeActionCard: View {
-    @Environment(LayoutMetrics.self) private var metrics
-
+private struct HomeShortcutTile: View {
     let icon: String
+    let accent: Color
     let title: String
-    var subtitle: String? = nil
-    let color: Color
+    let subtitle: String
     let action: () -> Void
 
     var body: some View {
         Button(action: action) {
-            VStack(spacing: 10) {
-                Image(systemName: icon)
-                    .font(.appSans(size: 28))
-                    .foregroundStyle(color)
-
-                Text(title)
-                    .font(.appSerif(size: 16, weight: .bold))
-                    .foregroundStyle(Color.appTextDark)
-
-                if let subtitle {
-                    Text(subtitle)
-                        .font(.appSans(size: 14, weight: .semibold))
-                        .foregroundStyle(color)
-                }
-            }
-            .frame(maxWidth: .infinity)
-            .frame(height: metrics.isWide ? 130 : 110)
-            .glassCard()
+            HomeShortcutTileContent(icon: icon, accent: accent, title: title, subtitle: subtitle)
         }
         .buttonStyle(.plain)
     }
 }
 
-// MARK: - Shortcuts Row
-
-private struct ShortcutsRow: View {
-    @Environment(ProgressStore.self) private var progressStore
-    @Environment(ThemeStore.self) private var themeStore
-
-    var body: some View {
-        let bookmarkCount = progressStore.bookmarks.count
-
-        VStack(spacing: 0) {
-            NavigationLink(destination: BookmarksView()) {
-                shortcutRow(
-                    icon: "bookmark.fill",
-                    title: "Đã lưu",
-                    color: bookmarkCount > 0 ? themeStore.primaryColor : .appTextLight,
-                    trailing: bookmarkCount > 0 ? "\(bookmarkCount)" : nil
-                )
-            }
-            .buttonStyle(.plain)
-
-            Divider().padding(.leading, 44)
-
-            NavigationLink(destination: TrafficSignsReferenceView()) {
-                shortcutRow(icon: "diamond.fill", title: "Biển báo giao thông", color: themeStore.primaryColor)
-            }
-            .buttonStyle(.plain)
-
-            Divider().padding(.leading, 44)
-
-            NavigationLink(destination: SpeedDistanceReferenceView()) {
-                shortcutRow(icon: "speedometer", title: "Tốc độ & Quy tắc", color: themeStore.primaryColor)
-            }
-            .buttonStyle(.plain)
-        }
-        .glassCard()
-    }
-
-    private func shortcutRow(icon: String, title: String, color: Color, trailing: String? = nil) -> some View {
-        HStack(spacing: 8) {
-            Image(systemName: icon)
-                .font(.appSans(size: 16))
-                .foregroundStyle(color)
-
-            Text(title)
-                .font(.appSans(size: 15, weight: .semibold))
-                .foregroundStyle(Color.appTextDark)
-
-            Spacer()
-
-            if let trailing {
-                Text(trailing)
-                    .font(.appSans(size: 14, weight: .semibold))
-                    .foregroundStyle(themeStore.primaryColor)
-            }
-
-            CircularActionButton(icon: "chevron.right", size: 30, subtle: true)
-        }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 12)
-        .contentShape(Rectangle())
-    }
-}
-
-// MARK: - Recent Results
-
-private struct RecentResultsCard: View {
-    @Environment(ProgressStore.self) private var progressStore
-
-    var body: some View {
-        let lastExam = progressStore.examHistory.first
-        let lastSim = progressStore.simulationHistory.first
-        let lastHazard = progressStore.hazardHistory.first
-
-        if lastExam != nil || lastSim != nil || lastHazard != nil {
-            VStack(alignment: .leading, spacing: 14) {
-                Text("Kết quả gần đây")
-                    .font(.appSans(size: 20, weight: .bold))
-                    .foregroundStyle(Color.appTextDark)
-
-                VStack(spacing: 0) {
-                    if let exam = lastExam {
-                        NavigationLink(destination: ExamHistoryDetailView(result: exam)) {
-                            RecentResultRow(
-                                title: "Thi thử",
-                                score: "\(exam.score)/\(exam.totalQuestions)",
-                                passed: exam.passed, date: exam.date
-                            )
-                        }
-                        .buttonStyle(.plain)
-
-                        if lastSim != nil || lastHazard != nil {
-                            Divider().padding(.horizontal, 16)
-                        }
-                    }
-
-                    if let sim = lastSim {
-                        NavigationLink(destination: SimulationHistoryDetailView(result: sim)) {
-                            RecentResultRow(
-                                title: "Mô phỏng",
-                                score: "\(sim.score)/\(sim.totalScenarios)",
-                                passed: sim.passed, date: sim.date
-                            )
-                        }
-                        .buttonStyle(.plain)
-
-                        if lastHazard != nil {
-                            Divider().padding(.horizontal, 16)
-                        }
-                    }
-
-                    if let hazard = lastHazard {
-                        NavigationLink(destination: HazardHistoryDetailView(result: hazard)) {
-                            RecentResultRow(
-                                title: "Tình huống",
-                                score: "\(hazard.totalScore)/\(hazard.maxScore)",
-                                passed: hazard.passed, date: hazard.date
-                            )
-                        }
-                        .buttonStyle(.plain)
-                    }
-                }
-                .glassCard()
-            }
-        }
-    }
-}
-
-private struct RecentResultRow: View {
+/// Navigation variant of `HomeShortcutTile` — same visual, but pushes a
+/// destination instead of running a closure.
+private struct HomeShortcutLink<Destination: View>: View {
+    let icon: String
+    let accent: Color
     let title: String
-    let score: String
-    let passed: Bool
-    let date: Date
-
-    private static let dateFormatter: DateFormatter = {
-        let f = DateFormatter()
-        f.dateFormat = "dd/MM HH:mm"
-        return f
-    }()
+    let subtitle: String
+    @ViewBuilder let destination: () -> Destination
 
     var body: some View {
-        HStack(spacing: 12) {
-            Image(systemName: passed ? "checkmark.circle.fill" : "xmark.circle.fill")
-                .font(.appSans(size: 20))
-                .foregroundStyle(passed ? Color.appSuccess : Color.appError)
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title)
-                    .font(.appSans(size: 15, weight: .semibold))
-                    .foregroundStyle(Color.appTextDark)
-                Text(Self.dateFormatter.string(from: date))
-                    .font(.appSans(size: 12))
-                    .foregroundStyle(Color.appTextLight)
-            }
-
-            Spacer(minLength: 4)
-
-            Text(score)
-                .font(.appSerif(size: 16, weight: .bold))
-                .foregroundStyle(Color.appTextDark)
-
-            StatusBadge(
-                text: passed ? "Đạt" : "Trượt",
-                color: passed ? .appSuccess : .appError,
-                fontSize: 12
-            )
+        NavigationLink {
+            destination()
+        } label: {
+            HomeShortcutTileContent(icon: icon, accent: accent, title: title, subtitle: subtitle)
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 14)
-        .contentShape(Rectangle())
+        .buttonStyle(.plain)
     }
 }
-

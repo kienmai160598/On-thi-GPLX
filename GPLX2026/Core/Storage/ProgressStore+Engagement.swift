@@ -56,7 +56,7 @@ extension ProgressStore {
 
     private func updateDailyChallengeStreak() {
         let today = Self.streakDateFormatter.string(from: Date())
-        let yesterday = Self.streakDateFormatter.string(from: Calendar.current.date(byAdding: .day, value: -1, to: Date())!)
+        let yesterday = Self.streakDateFormatter.string(from: Calendar.current.date(byAdding: .day, value: -1, to: Date()) ?? Date())
 
         var newStreak: Int
         if dailyChallengeLastDate == yesterday {

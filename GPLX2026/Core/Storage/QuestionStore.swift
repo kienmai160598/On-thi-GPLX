@@ -140,6 +140,8 @@ final class QuestionStore {
         switch key {
         case AppConstants.TopicKey.allQuestions:
             return allQuestions
+        case AppConstants.TopicKey.currentLicense:
+            return questionsForCurrentLicense
         case AppConstants.TopicKey.diemLiet:
             return diemLietQuestions
         case AppConstants.TopicKey.bookmarks, AppConstants.TopicKey.wrongAnswers:

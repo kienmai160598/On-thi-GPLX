@@ -7,6 +7,7 @@ import os
 private let logger = Logger(subsystem: "com.gplx2026", category: "ProgressStore")
 
 @Observable
+@MainActor
 final class ProgressStore {
 
     // MARK: - Storage key constants
@@ -31,13 +32,12 @@ final class ProgressStore {
 
     // internal (not private) so extension files can access
     let defaults: UserDefaults
-    let writeQueue = DispatchQueue(label: "com.gplx2026.progressStore.write")
 
-    /// Serializes all UserDefaults writes to prevent data corruption.
-    func safeWrite(_ block: @escaping (UserDefaults) -> Void) {
-        writeQueue.async { [defaults] in
-            block(defaults)
-        }
+    /// Writes run synchronously on the main actor. `UserDefaults` is its own
+    /// thread-safe store, and staying on-actor keeps the in-memory caches and
+    /// the persisted values consistent (no read-after-clear race).
+    func safeWrite(_ block: (UserDefaults) -> Void) {
+        block(defaults)
     }
 
     // MARK: - In-memory caches (lazy-loaded from UserDefaults)
@@ -316,6 +316,7 @@ final class ProgressStore {
             _completedSimSetsCache = result
             return result
         } catch {
+            logger.warning("Failed to decode completed simulation sets: \(error.localizedDescription)")
             _completedSimSetsCache = []
             return []
         }
@@ -342,6 +343,7 @@ final class ProgressStore {
             _completedHazardSetsCache = result
             return result
         } catch {
+            logger.warning("Failed to decode completed hazard sets: \(error.localizedDescription)")
             _completedHazardSetsCache = []
             return []
         }
@@ -461,11 +463,21 @@ final class ProgressStore {
         clearBookmarks()
         clearWrongAnswers()
         clearStreak()
-        invalidateCaches()
+        clearStudyActivity()
+        clearDailyChallengeData()
+        clearExamDateAndGoal()
+        _reviewDatesCache = nil
+        safeWrite { $0.removeObject(forKey: "wrong_answer_review_dates") }
     }
 
     func clearTopicProgress() {
         let topicKeys = Topic.all.map(\.key) + [AppConstants.TopicKey.diemLiet]
+        _topicProgressCache.removeAll()
+        _lastTopicKeyCacheLoaded = true
+        _lastTopicKeyCache = nil
+        _lastQuestionIndexCache = 0
+        _readinessCache = nil
+        _smartNudgeCache = nil
         safeWrite { defaults in
             for key in topicKeys {
                 defaults.removeObject(forKey: Keys.progressPrefix + key)
@@ -473,54 +485,84 @@ final class ProgressStore {
             defaults.removeObject(forKey: Keys.lastTopicKey)
             defaults.removeObject(forKey: Keys.lastQuestionIndex)
         }
-        _topicProgressCache.removeAll()
-        _lastTopicKeyCacheLoaded = false
-        _lastTopicKeyCache = nil
-        _lastQuestionIndexCache = nil
     }
 
     func clearExamHistory() {
+        _examHistoryCache = []
+        _completedExamSetsCache = []
+        _readinessCache = nil
+        _smartNudgeCache = nil
         safeWrite {
             $0.removeObject(forKey: Keys.examHistory)
             $0.removeObject(forKey: Keys.completedExamSets)
         }
-        invalidateCaches()
     }
 
     func clearSimulationHistory() {
+        _simulationHistoryCache = []
+        _completedSimSetsCache = []
+        _smartNudgeCache = nil
         safeWrite {
             $0.removeObject(forKey: Keys.simulationHistory)
             $0.removeObject(forKey: Keys.completedSimSets)
         }
-        invalidateCaches()
     }
 
     func clearHazardHistory() {
+        _hazardHistoryCache = []
+        _completedHazardSetsCache = []
+        _smartNudgeCache = nil
         safeWrite {
             $0.removeObject(forKey: Keys.hazardHistory)
             $0.removeObject(forKey: Keys.completedHazardSets)
         }
-        invalidateCaches()
     }
 
     func clearBookmarks() {
+        _bookmarksCache = []
         safeWrite { $0.removeObject(forKey: Keys.bookmarks) }
-        invalidateCaches()
     }
 
     func clearWrongAnswers() {
+        _wrongAnswersCache = []
         safeWrite { $0.removeObject(forKey: Keys.wrongAnswers) }
-        invalidateCaches()
+    }
+
+    func clearStudyActivity() {
+        _studyActivityCache = [:]
+        safeWrite { $0.removeObject(forKey: "study_activity") }
+    }
+
+    func clearDailyChallengeData() {
+        _dailyChallengeHistoryCache = []
+        _dailyChallengeStreakCache = 0
+        _dailyChallengeLastDateCache = nil
+        _dailyChallengeLastDateLoaded = true
+        safeWrite {
+            $0.removeObject(forKey: "daily_challenge_history")
+            $0.removeObject(forKey: "daily_challenge_last_date")
+            $0.removeObject(forKey: "daily_challenge_streak")
+        }
+    }
+
+    func clearExamDateAndGoal() {
+        _examDateCache = nil
+        _examDateCacheLoaded = true
+        _dailyGoalCache = nil
+        safeWrite {
+            $0.removeObject(forKey: "exam_date")
+            $0.removeObject(forKey: "daily_goal")
+        }
     }
 
     func clearStreak() {
+        _streakCountCache = 0
+        _lastStudyDateCache = nil
+        _lastStudyDateCacheLoaded = true
         safeWrite {
             $0.removeObject(forKey: Keys.streakCount)
             $0.removeObject(forKey: Keys.lastStudyDate)
         }
-        _streakCountCache = nil
-        _lastStudyDateCacheLoaded = false
-        _lastStudyDateCache = nil
     }
 
     // MARK: - Private helpers

@@ -21,5 +21,7 @@ struct ExamTimerCapsule: View {
         content
             .background(isUrgent ? Color.appError.opacity(0.1) : Color.cardBg)
             .clipShape(Capsule())
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(isUrgent ? "Thời gian còn lại \(text), cảnh báo" : "Thời gian còn lại \(text)")
     }
 }

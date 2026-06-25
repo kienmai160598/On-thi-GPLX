@@ -48,7 +48,7 @@ enum LicenseType: String, CaseIterable, Codable {
     var totalExamSets: Int {
         switch self {
         case .b1: return 10   // 300 / 30
-        case .b2: return 17   // 600 / 35 ≈ 17
+        case .b2: return 17   // 600 / 35 floor = 17 full sets; the trailing 5 questions are covered by random exams (an 18th set would be a degenerate 5-question exam)
         }
     }
 

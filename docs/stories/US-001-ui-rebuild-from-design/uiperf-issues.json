@@ -1,0 +1,92 @@
+[
+  {
+    "file": "/Users/maitrungkien/Desktop/project/GPLX2026/GPLX2026/Features/Hazard/HazardResultView.swift",
+    "line": "648-672",
+    "severity": "high",
+    "kind": "ui",
+    "title": "ScoreDistributionChart bar-column VStack overflows its 90 pt frame, clipping count labels",
+    "description": "The HStack that holds the per-score bar columns is constrained to .frame(height: 90). Each column is a VStack(spacing: 4) containing an optional count Text (~17 pt line height), a RoundedRectangle whose height can reach 60 pt via the animate branch, and a fixed score Text (~17 pt). At maximum bar height the column needs 17 + 4 + 60 + 4 + 17 = 102 pt — 12 pt taller than the frame. Because HStack alignment is .bottom, the overflow is drawn upward into the 8 pt spacing gap and over the 'Phân bố điểm' title Text above. The outer VStack does not call .clipped(), so the cards clipShape only cuts overflows that exit the card rectangle; the title overlap happens inside the card and is fully visible as a draw-order collision.",
+    "fix": "Increase the HStack frame to accommodate the full column height: .frame(height: 110) gives comfortable headroom (count label 17 + spacing 4 + bar max 60 + spacing 4 + score label 17 = 102, plus 8 pt margin). Alternatively, remove the fixed frame and let the HStack size intrinsically — callers in a VStack will reflow naturally. A third option is to move the count label outside the bar's VStack and render it absolutely above the bar using ZStack/offset so the label does not contribute to the VStack height.",
+    "area": "UI — layout & adaptivity",
+    "verdict": {
+      "isReal": true,
+      "confidence": "high",
+      "reasoning": "The code at lines 648-672 of HazardResultView.swift confirms the structure. Each VStack column in the HStack contains: an optional count Text (size 12, fixedSize — ~14-15 pt rendered height), a RoundedRectangle bar (up to 60 pt when one score bin holds all entries: max(1/1*60, 4)=60), and a fixed score Text (same ~14-15 pt), with VStack spacing of 4 pt between each. Worst-case column height is approximately 14 + 4 + 60 + 4 + 14 = 96 pt, against a .frame(height: 90) — an overflow of ~6-8 pt (the claim's 102 pt / 12 pt overflow overstates it slightly because it assumes 17 pt line height; at fixedSize: 12, actual rendered height is ~14-15 pt, not 17). The overflow is real regardless.\n\nThe HStack uses alignment: .bottom, so overflow exits upward. No .clipped() is applied to the HStack or the outer VStack (lines 643-683 show only .padding(12), .background(.ultraThinMaterial), and .clipShape(RoundedRectangle(...))). The clipShape operates on the full card rectangle boundary, not on the 90 pt HStack sub-region; the draw-order collision between the bar column and the \"Phân bố điểm\" title Text above happens entirely inside the card bounds and is not clipped away. This is a real layout defect: when one score dominates (e.g., all situations scored 0 or all scored 5 — common in real-world results), that bar column reaches 60 pt and its count label visually overlaps the section title. The fix is either raising the frame height to ~100 pt, reducing max bar height to ~55 pt, or adding .clipped() to the HStack."
+    }
+  },
+  {
+    "file": "/Users/maitrungkien/Desktop/project/GPLX2026/GPLX2026/Features/Home/HomeTab.swift",
+    "line": "735-738",
+    "severity": "medium",
+    "kind": "ui",
+    "title": "SmartNudgeCard label text truncated to one line, hiding actionable guidance",
+    "description": "SmartNudgeCard renders nudge.label with .lineLimit(1). The label strings can be up to ~36 characters at 16 pt appSerif bold (e.g., 'Sẵn sàng thi! Hãy thi thử lần nữa' or 'Ôn điểm liệt — 45 câu chưa thuộc'). In the HStack layout — icon frame (48 pt) + 14 pt spacing + text VStack + Spacer(minLength: 4) + arrow button (40 pt) — the text column gets approximately 375 - 32 (padding) - 62 (icon+gap) - 4 (spacer) - 40 (button) = 237 pt on a 375 pt screen. At 16 pt serif bold, 237 pt fits only about 22–24 Vietnamese characters before truncation, so several nudge labels are silently cut. This matters because the nudge is the screen's primary guidance message; truncating it to an ellipsis makes it unreadable.",
+    "fix": "Change .lineLimit(1) to .lineLimit(2) (or remove lineLimit entirely). The HStack row height is not fixed, so a second text line adds at most ~20 pt to the card — acceptable for a full-width banner card that already has 16 pt padding. Alternatively keep lineLimit(1) but reduce the font to appSans(size: 14) so the single line fits without truncation on SE-class screens.",
+    "area": "UI — layout & adaptivity",
+    "verdict": {
+      "isReal": true,
+      "confidence": "high",
+      "reasoning": "Confirmed by reading the code directly. Line 745 of HomeTab.swift applies `.lineLimit(1)` to `Text(nudge.label)`. The layout math is accurate: HStack padding (32pt) + icon frame (48pt) + spacing (14pt) + Spacer minLength (4pt) + CircularActionButton size:40 (40pt) = 138pt of fixed chrome, leaving ~237pt for text on a 375pt screen and ~252pt on a 390pt screen. The two longest labels — \"Sẵn sàng thi! Hãy thi thử lần nữa\" (33 chars) and \"Ôn điểm liệt — 45 câu chưa thuộc\" (32 chars) — at appSerif 16pt bold easily exceed that budget; Vietnamese serif bold characters with diacritics average 9–11pt wide. Additionally, the SmartNudge enum defines a `subtitle` property (e.g. \"Tất cả phần đều ≥90%\", \"Sai 1 câu điểm liệt = Trượt ngay\") that provides useful secondary context, but SmartNudgeCard never renders it — the truncated single-line label is the only text the user sees. This is the Home screen's primary call-to-action widget and its guidance message is the only actionable copy; truncation to an ellipsis genuinely hides intent. The issue is not by-design (no comment justifying it), not negligible (two of the eight nudge cases are always affected on SE/standard iPhones), and not already handled elsewhere."
+    }
+  },
+  {
+    "file": "/Users/maitrungkien/Desktop/project/GPLX2026/GPLX2026/Features/Hazard/HazardResultView.swift",
+    "line": "299-305",
+    "severity": "medium",
+    "kind": "ui",
+    "title": "SessionProgressCard segment bar is hardcoded to 10 segments regardless of actual situation count",
+    "description": "The progress bar is always drawn with ForEach(0..<10) segments. The card receives completedCount (= situations.count) and totalCount (= result.situationCount). In chapter mode a chapter can have 20–30 situations; in practice mode all 120 are passed. When completedCount > 10, the condition i < completedCount is always true so every one of the 10 segments is colored green, making the bar permanently full-green even for a partial session. This falsely signals 100 % completion to the user.",
+    "fix": "Replace the hardcoded literal with the actual totalCount: ForEach(0..<min(totalCount, 20), id: \\.self) and color with i < completedCount * min(totalCount, 20) / totalCount to show proportional fill, or simply use a continuous ProgressBarView(fraction: fraction) instead of discrete segments when totalCount != 10.",
+    "area": "UI — layout & adaptivity",
+    "verdict": {
+      "isReal": true,
+      "confidence": "high",
+      "reasoning": "The hardcoded ForEach(0..<10) at HazardResultView.swift:300 is confirmed. However, the claim's framing needs correction on one point: HazardResultView is only shown after finishTest(), which is only triggered when the user has completed every situation in the session (advanceOrFinish at line 676 calls finishTest only when isLast). So situations.count always equals result.situationCount — there is no mid-session partial result display. This means completedCount > 10 is only true when the session itself had more than 10 situations (chapter mode: 14–30 situations, practice mode: 120). In those cases every one of the 10 segments IS colored green — which is factually correct (the session is 100% done) but visually meaningless: the bar conveys no granular information and collapses to a flat full-green stripe regardless of how many situations there were. The fraction computed property and the text row \"Đã hoàn thành X/Y tình huống\" are accurate; only the segment bar loses meaning. The claim that it \"falsely signals 100% completion\" is slightly overstated (it IS 100% complete), but the bar is genuinely broken as a UI element for non-exam modes: it should use min(totalCount, someMax) segments or derive segment count from totalCount so that the visual encodes the actual session size. For the standard 10-situation exam mode (AppConstants.Hazard.situationsPerExam == 10) the bar works correctly. For every other mode it degrades to an always-all-green decorative stripe with zero signal value — a real, non-negligible UX defect."
+    }
+  },
+  {
+    "file": "/Users/maitrungkien/Desktop/project/GPLX2026/GPLX2026/Features/Exam/ExamResultView.swift",
+    "line": "359-361",
+    "severity": "low",
+    "kind": "ui",
+    "title": "'Xem lại bài' action button in ExamResultView has an empty action and does nothing when tapped",
+    "description": "The safeAreaInset bottom bar contains a prominently styled secondary AppButton labelled 'Xem lại bài' with icon checkmark.circle. Its Button action closure is empty (/* review grid is already in the scroll */). The review grid is already visible in the scroll content above, but the user receives no feedback or scroll movement when tapping the button — it appears broken. The comment explains the intention was to scroll the content into view, but this is never wired up.",
+    "fix": "Either (a) remove the 'Xem lại bài' button from the action bar, keeping only 'Thi lại' and 'Về trang chủ', or (b) implement the scroll-to-review behavior by injecting a ScrollViewProxy via ScrollViewReader and calling proxy.scrollTo(a known anchor ID placed on the review section header) inside the button action.",
+    "area": "UI — layout & adaptivity",
+    "verdict": {
+      "isReal": true,
+      "confidence": "high",
+      "reasoning": "Verified by reading ExamResultView.swift lines 357–390 and the broader body (lines 62–120). The \"Xem lại bài\" Button at line 360 has a literal empty closure `{ /* review grid is already in the scroll */ }`. A grep for ScrollViewReader, scrollTo, scrollProxy, and any anchor identifier returns zero hits — there is no scroll wiring anywhere in the file. The button is rendered as a styled secondary AppButton in a safeAreaInset bottom bar (line 109), making it visually prominent and clearly interactive. When tapped it silently does nothing. The developer comment acknowledges the intent was to scroll to the review grid but it was never implemented. While the review grid is reachable by manual scrolling, a prominently styled action button that produces no observable response on tap is a genuine UX defect — users will perceive it as broken. The issue is real and non-negligible."
+    }
+  },
+  {
+    "file": "/Users/maitrungkien/Desktop/project/GPLX2026/GPLX2026/Features/Exam/BaseExamView.swift",
+    "line": "357-358",
+    "severity": "medium",
+    "kind": "ui",
+    "title": "ExamResultView 'Xem lại bài' button has no effect",
+    "description": "In ExamResultView's actionButtons (ExamResultView.swift lines 357-368), the 'Xem lại bài' secondary button has an empty action closure: Button { /* review grid is already in the scroll */ } (line 360). The button renders and is fully tappable, but pressing it does nothing. Users reasonably expect either a scroll-to-review-grid animation or some other navigation action. The comment in the source confirms the intent was to scroll down to the review grid, but that is not implemented.",
+    "fix": "Either implement the intended behavior using a ScrollViewReader + scrollTo on the review section's ID, or replace the button with a visual prompt pointing downward (e.g. a chevron.down indicator) that is not interactive, or remove the button until the scroll behavior is wired up.",
+    "area": "UI — state & interaction",
+    "verdict": {
+      "isReal": true,
+      "confidence": "high",
+      "reasoning": "The claim is accurate. At ExamResultView.swift line 360, the \"Xem lại bài\" button has a genuinely empty action closure: `Button { /* review grid is already in the scroll */ } label: { ... }`. The inline comment is not implementation — it is a rationalization for why the author skipped the scroll-to behavior. There is no ScrollViewReader, no scroll anchor, and no programmatic scroll call anywhere in the file. The review answer grid (\"Xem lại đáp án\", lines 89-102) is rendered deep inside the same ScrollView, below the hero card, stats card, and topics card — it is not visible on screen when the result view first appears. The button renders with a checkmark.circle icon and the label \"Xem lại bài\" as a styled AppButton (style: .secondary, height: 50), giving users a clear affordance that tapping it will do something (scroll down to the grid). Pressing it silently does nothing. This is a real UX bug: a fully-styled, prominently positioned CTA button that is completely inert. The intended behavior (scroll to the review grid) was recognized by the author but never implemented. It is not by-design and not negligible — a no-op button with a meaningful label in a post-exam result screen actively misleads users."
+    }
+  },
+  {
+    "file": "/Users/maitrungkien/Desktop/project/GPLX2026/GPLX2026/Features/Home/HomeView.swift",
+    "line": "83-96",
+    "severity": "low",
+    "kind": "ui",
+    "title": "iPhone TabView missing Settings tab — Settings is reachable only via HomeTab NavigationLink, making it unreachable from Exam/Practice/Simulation tabs",
+    "description": "The iPad sidebar (iPadLayout, line 113-130) includes Settings as a SidebarTab and routes to SettingsView. The iPhoneLayout TabView (line 83-96) has only 4 tabs: Trang chủ, Luyện tập, Thi thử, Mô phỏng — Settings is absent. SettingsView is accessible from the iPhone only via a NavigationLink inside HomeTab's header (HomeTab.swift line 98-103), which is only visible when the user is on the Home tab. Users on the Exam or Simulation tab have no path to Settings without first switching tabs, which is non-standard iOS navigation.",
+    "fix": "Add a fifth Tab for Settings in iPhoneLayout, or add a gear icon to the toolbar of each tab's NavigationStack so Settings is always reachable. The simplest fix is to add a Tab('Cài đặt', systemImage: 'gearshape', value: SidebarTab.settings) entry in the iPhoneLayout TabView to match the iPad sidebar behavior.",
+    "area": "UI — state & interaction",
+    "verdict": {
+      "isReal": true,
+      "confidence": "high",
+      "reasoning": "The code confirms the claim exactly. In HomeView.swift lines 83–96, the iPhone TabView has 4 tabs (Home, Practice, Exam, Simulation) with Settings absent. The SidebarTab enum at line 5–10 does define a .settings case, but it is only consumed by the iPad NavigationSplitView (lines 113–130 via tabRoot). On iPhone, Settings is reachable solely via a NavigationLink inside HomeGreetingHeader (HomeTab.swift lines 98–103), which is visible only when the user is on the Home tab. ExamTab.swift, PracticeTab.swift, and MoPhongTab.swift contain no path to SettingsView. The ExamCountdownCard also has a NavigationLink to SettingsView, but that view is never instantiated anywhere in the codebase — it is dead code. The degradation is real and non-trivial: a user mid-exam who needs to change settings (e.g., exam date, theme, daily goal) must abandon the current tab context, navigate Home, tap the gear icon, make the change, then navigate back. This breaks a standard iOS UX expectation where global settings are always one gesture away."
+    }
+  }
+]

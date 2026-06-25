@@ -43,7 +43,13 @@ extension ProgressStore {
 
     var daysUntilExam: Int? {
         guard let examDate else { return nil }
-        return max(0, Calendar.current.dateComponents([.day], from: Date(), to: examDate).day ?? 0)
+        let cal = Calendar.current
+        let from = cal.startOfDay(for: Date())
+        let to   = cal.startOfDay(for: examDate)
+        guard let days = cal.dateComponents([.day], from: from, to: to).day else { return nil }
+        // Once the exam day has passed, treat it as unset so the countdown UI
+        // hides instead of pinning to "Hôm nay thi!" indefinitely.
+        return days >= 0 ? days : nil
     }
 
     var todayProgress: (done: Int, goal: Int) {

@@ -11,11 +11,11 @@ final class LayoutMetrics {
     /// iPhone and narrow iPad split-screen (width < 744)
     var isCompact: Bool { windowWidth < 744 }
 
-    /// iPad portrait or medium split-screen (744 ≤ width < 1024)
-    var isMedium: Bool { windowWidth >= 744 && windowWidth < 1024 }
+    /// iPad portrait or medium split-screen (744 ≤ width ≤ 1024)
+    var isMedium: Bool { windowWidth >= 744 && windowWidth <= 1024 }
 
-    /// iPad landscape full-screen (sizeClass == .regular && width ≥ 1024)
-    var isWide: Bool { horizontalSizeClass == .regular && windowWidth >= 1024 }
+    /// iPad landscape full-screen (sizeClass == .regular && width > 1024)
+    var isWide: Bool { horizontalSizeClass == .regular && windowWidth > 1024 }
 
     /// Convenience: true for any iPad-class layout (medium or wide)
     var isIPadLayout: Bool { isMedium || isWide }

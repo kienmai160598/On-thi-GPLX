@@ -1,27 +1,243 @@
 import SwiftUI
 
+// MARK: - Filter Enums
+
+private enum PracticeTypeFilter: String, CaseIterable {
+    case tatCa      = "Tất cả"
+    case cauHoi     = "Câu hỏi"
+    case yeuThich   = "Yêu thích"
+
+    var label: String { rawValue }
+}
+
+private enum MasteryFilter: String, CaseIterable {
+    case tatCa      = "Tất cả"
+    case dangOn     = "Đang ôn"
+    case chuaThuoc  = "Chưa thuộc"
+    case daThuoc    = "Đã thuộc"
+
+    var label: String { rawValue }
+}
+
+// MARK: - Screen-private sub-views
+
+/// Full-width gold primary CTA button (design #FFC233 fill)
+private struct GoldCTAButton: View {
+    let icon: String
+    let label: String
+    let action: () -> Void
+
+    private let goldFill = Color(hex: 0xFFC233)
+    private let goldInk  = Color(hex: 0x7A4A00)
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 8) {
+                Image(systemName: icon)
+                    .font(.appSans(size: 16, weight: .bold))
+                    .foregroundStyle(goldInk)
+                Text(label)
+                    .font(.appSans(size: 14.5, weight: .bold))
+                    .foregroundStyle(goldInk)
+            }
+            .frame(maxWidth: .infinity)
+            .frame(height: 52)
+            .background(goldFill, in: RoundedRectangle(cornerRadius: 25, style: .continuous))
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+/// Single topic row card (flat white/translucent, gold accuracy pill or neutral "Chưa làm")
+private struct TopicRowCard: View {
+    let title: String
+    let questionCount: Int
+    /// nil = unattempted, present = accuracy 0…1
+    let accuracy: Double?
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(alignment: .center, spacing: 12) {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(title)
+                        .font(.appSans(size: 16, weight: .bold))
+                        .foregroundStyle(Color.appTextDark)
+                        .lineLimit(2)
+                        .multilineTextAlignment(.leading)
+
+                    HStack(spacing: 6) {
+                        CountPill("\(questionCount) câu")
+                        AccuracyPill(accuracy: accuracy)
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+                CircularActionButton(icon: "play.fill", size: 44)
+            }
+            .padding(12)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .background(Color.cardBg, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+    }
+}
+
+// MARK: - PracticeTab
+
 struct PracticeTab: View {
     @Environment(QuestionStore.self) private var questionStore
     @Environment(ProgressStore.self) private var progressStore
-    @Environment(HazardVideoCache.self) private var videoCache
-    @Environment(ThemeStore.self) private var themeStore
     @Environment(LayoutMetrics.self) private var metrics
     @Environment(\.openExam) private var openExam
 
-    @State private var showClearCacheAlert = false
+    @State private var selectedTypeFilter: PracticeTypeFilter = .tatCa
+    @State private var selectedMasteryFilter: MasteryFilter = .tatCa
+    @State private var showSaHinhSets = false
+    @State private var showTinhHuongSets = false
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
-                questionSection
-                hazardSection
+                // In-content page header (design: 32pt bold, no nav bar title)
+                pageHeader
+
+                // Global type filter chips
+                PillFilterBar(items: PracticeTypeFilter.allCases, label: \.label, selection: $selectedTypeFilter)
+
+                // Hero recommendation card
+                heroCard
+
+                // Câu hỏi section
+                if selectedTypeFilter == .tatCa || selectedTypeFilter == .cauHoi || selectedTypeFilter == .yeuThich {
+                    questionSection
+                }
+
+                // Tình huống history (under "Tất cả")
+                if selectedTypeFilter == .tatCa {
+                    tinhHuongHistory
+                }
             }
             .padding(.horizontal, metrics.contentPadding)
             .padding(.top, 8)
             .padding(.bottom, 32)
             .glassContainer()
         }
-        .screenHeader("Luyện tập")
+        .screenHeader("Luyện tập", titleDisplayMode: .large)
+        .tracksTabBarCollapse()
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                NavPlayButton(label: "Bắt đầu luyện tập") {
+                    let allTopics = questionStore.topics
+                    let resume = allTopics.first { $0.key == progressStore.lastTopicKey }
+                    let key = resume?.key ?? allTopics.first?.key ?? AppConstants.TopicKey.allQuestions
+                    let idx = resume != nil ? progressStore.lastQuestionIndex : 0
+                    openExam(.questionView(topicKey: key, startIndex: idx))
+                }
+            }
+        }
+    }
+
+    // MARK: - Page Header (subtitle below the native large title)
+
+    private var pageHeader: some View {
+        TabPageSubtitle("Chọn phần để bắt đầu ôn")
+    }
+
+    // MARK: - Hero Card
+
+    private var heroCard: some View {
+        let lastKey = progressStore.lastTopicKey
+        let allTopics = questionStore.topics
+        let resumeTopic = allTopics.first { $0.key == lastKey }
+        let heroTopic = resumeTopic ?? allTopics.first
+
+        let eyebrow = resumeTopic != nil ? "TIẾP TỤC HỌC" : "BẮT ĐẦU NGAY"
+        let heroTitle = heroTopic?.name ?? "Câu hỏi ôn tập"
+        let heroKey = resumeTopic?.key ?? allTopics.first?.key ?? AppConstants.TopicKey.allQuestions
+        let startIndex = resumeTopic != nil ? progressStore.lastQuestionIndex : 0
+
+        // Metadata tags (design: question count + resume position)
+        var tags: [String] = []
+        if let count = heroTopic?.questionCount, count > 0 {
+            tags.append("\(count) câu")
+        }
+        if resumeTopic != nil {
+            tags.append("Tiếp câu \(startIndex + 1)")
+        }
+
+        return LightFeatureCard(
+            eyebrow: eyebrow,
+            title: heroTitle,
+            tags: tags,
+            icon: "play.fill"
+        ) {
+            Haptics.impact(.medium)
+            openExam(.questionView(topicKey: heroKey, startIndex: startIndex))
+        }
+    }
+
+    // MARK: - Sa hình & Tình huống (parent card with nested collapsibles)
+
+    private var practiceSetsSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Sa hình & Tình huống")
+                .font(.appSans(size: 17, weight: .bold))
+                .foregroundStyle(Color.appTextDark)
+                .padding(.horizontal, 2)
+
+            saHinhCollapsible
+            tinhHuongCollapsible
+        }
+        .padding(12)
+        .glassCard(cornerRadius: 22)
+    }
+
+    @ViewBuilder
+    private var saHinhCollapsible: some View {
+        CollapsibleSetList(
+            title: "Sa hình",
+            isExpanded: $showSaHinhSets,
+            totalSets: questionStore.totalSimulationSets,
+            completedSets: progressStore.completedSimulationSets,
+            nested: true
+        ) { setId in
+            openExam(.simulationExam(mode: .examSet(setId)))
+        }
+    }
+
+    @ViewBuilder
+    private var tinhHuongCollapsible: some View {
+        let totalSets = HazardSituation.all.count / AppConstants.Hazard.situationsPerExam
+        CollapsibleSetList(
+            title: "Tình huống",
+            isExpanded: $showTinhHuongSets,
+            totalSets: totalSets,
+            completedSets: progressStore.completedHazardSets,
+            tag: { setId in "TH \((setId - 1) * 10 + 1)-\(setId * 10)" },
+            nested: true
+        ) { setId in
+            openExam(.hazardTest(mode: .examSet(setId)))
+        }
+    }
+
+    // MARK: - Tình huống History
+
+    @ViewBuilder
+    private var tinhHuongHistory: some View {
+        if !progressStore.hazardHistory.isEmpty {
+            VStack(alignment: .leading, spacing: 12) {
+                SectionTitle(title: "Lịch sử tình huống")
+                HistoryList(
+                    results: Array(progressStore.hazardHistory.prefix(5)),
+                    scoreText: { "\($0.totalScore)/\($0.maxScore) điểm" },
+                    passed: \.passed,
+                    date: \.date,
+                    destination: { HazardHistoryDetailView(result: $0) }
+                )
+            }
+        }
     }
 
     // MARK: - Câu hỏi Section
@@ -30,279 +246,87 @@ struct PracticeTab: View {
     private var questionSection: some View {
         let allTopics = questionStore.topics
         let topicStats = progressStore.weakTopics(topics: allTopics)
+            .filter { !$0.topic.topicIds.contains(6) }   // Sa hình (topic 6) handled by the merged card below
             .sorted { $0.topic.topicIds.first ?? 0 < $1.topic.topicIds.first ?? 0 }
         let totalCount = allTopics.reduce(0) { $0 + $1.questionCount }
 
-        VStack(alignment: .leading, spacing: 12) {
-            SectionTitle(title: "Câu hỏi")
+        // When showing 'Yêu thích', restrict to topics that contain at least one bookmarked question.
+        let bookmarkKeys: Set<String> = selectedTypeFilter == .yeuThich
+            ? Set(questionStore.allQuestions
+                .filter { progressStore.bookmarks.contains($0.no) }
+                .map { Topic.keyForTopicId($0.topic) })
+            : []
+        let filteredByType = selectedTypeFilter == .yeuThich
+            ? topicStats.filter { bookmarkKeys.contains($0.topic.key) }
+            : topicStats
 
-            Button {
+        // Apply mastery sub-filter when in favourites or question mode
+        let filteredStats = applyMasteryFilter(filteredByType)
+
+        VStack(alignment: .leading, spacing: 14) {
+            // Section header
+            ContentSectionHeader("Câu hỏi")
+
+            // Mastery sub-filter (shown for Câu hỏi and Tất cả)
+            if selectedTypeFilter != .yeuThich {
+                PillFilterBar(items: MasteryFilter.allCases, label: \.label, selection: $selectedMasteryFilter, style: .compact)
+            }
+
+            // Gold CTA button
+            GoldCTAButton(icon: "play.circle.fill", label: "Ôn tập \(totalCount) câu · Đề tổng hợp") {
+                Haptics.impact(.medium)
                 openExam(.questionView(topicKey: AppConstants.TopicKey.allQuestions, startIndex: 0))
-            } label: {
-                AppButton(icon: "play.fill", label: "Ôn tập \(totalCount) câu", height: metrics.buttonHeight)
             }
 
-            // Topic grid with color-coded progress rings
-            AdaptiveGrid {
-                ForEach(topicStats, id: \.topic.id) { item in
-                    let topicAccuracy = item.total > 0 ? Double(item.correct) / Double(item.total) : 0
-                    let ringColor = topicRingColor(accuracy: topicAccuracy, attempted: item.attempted > 0)
+            // Topic list
+            if filteredStats.isEmpty {
+                EmptyState(
+                    icon: "tray",
+                    message: selectedTypeFilter == .yeuThich
+                        ? "Chưa có câu hỏi yêu thích"
+                        : "Không có chủ đề phù hợp"
+                )
+            } else {
+                VStack(spacing: 10) {
+                    ForEach(filteredStats, id: \.topic.id) { item in
+                        let accuracy: Double? = item.attempted > 0 ? item.accuracy : nil
 
-                    Button {
-                        openExam(.questionView(topicKey: item.topic.key, startIndex: 0))
-                    } label: {
-                        HStack(spacing: 12) {
-                            VStack(alignment: .leading, spacing: 10) {
-                                Text(item.topic.name)
-                                    .font(.appSans(size: 16, weight: .bold))
-                                    .foregroundStyle(Color.appTextDark)
-                                    .lineLimit(2)
-                                    .multilineTextAlignment(.leading)
-
-                                HStack(spacing: 6) {
-                                    TagPill(text: "\(item.total) câu")
-                                    if item.attempted > 0 {
-                                        TagPill(text: "\(Int(topicAccuracy * 100))% đúng", color: ringColor)
-                                    }
-                                }
-                            }
-
-                            Spacer(minLength: 8)
-
-                            CircularActionButton(icon: "play.fill")
+                        TopicRowCard(
+                            title: item.topic.name,
+                            questionCount: item.total,
+                            accuracy: accuracy
+                        ) {
+                            openExam(.questionView(topicKey: item.topic.key, startIndex: 0))
                         }
-                        .padding(metrics.cardPadding)
-                        .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-                    .glassCard()
-                }
-            }
-        }
-    }
-
-    // MARK: - Tình huống Section
-
-    @ViewBuilder
-    private var hazardSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            SectionTitle(title: "Tình huống nguy hiểm")
-
-            // Compact download status bar
-            hazardDownloadBar
-
-            // Chapter grid with progress rings + download indicators
-            AdaptiveGrid {
-                ForEach(HazardSituation.chapters, id: \.id) { chapter in
-                    hazardChapterCard(chapter)
-                }
-            }
-        }
-        .alert("Xoá cache video?", isPresented: $showClearCacheAlert) {
-            Button("Huỷ", role: .cancel) {}
-            Button("Xoá", role: .destructive) {
-                videoCache.clearCache()
-                Haptics.notification(.success)
-            }
-        } message: {
-            Text("Tất cả video đã tải sẽ bị xoá. Bạn có thể tải lại sau.")
-        }
-        .onAppear { videoCache.ensureStatsLoaded() }
-    }
-
-    // MARK: - Download Status Bar
-
-    @ViewBuilder
-    private var hazardDownloadBar: some View {
-        let cached = videoCache.cachedCount
-        let total = videoCache.totalCount
-        let fraction = total > 0 ? Double(cached) / Double(total) : 0
-        let allComplete = cached == total
-
-        HStack(spacing: 10) {
-            Image(systemName: allComplete ? "checkmark.icloud.fill" : "icloud.and.arrow.down")
-                .font(.appSans(size: 14))
-                .foregroundStyle(themeStore.primaryColor)
-                .symbolRenderingMode(.hierarchical)
-
-            VStack(alignment: .leading, spacing: 3) {
-                HStack(spacing: 6) {
-                    Text(allComplete ? "Đã tải \(total) video" : "\(cached)/\(total) video")
-                        .font(.appSans(size: 13, weight: .medium))
-                        .foregroundStyle(Color.appTextDark)
-
-                    if videoCache.isDownloading && videoCache.downloadSpeedMBps > 0 {
-                        Text(String(format: "%.1f MB/s", videoCache.downloadSpeedMBps))
-                            .font(.appSans(size: 12, weight: .medium))
-                            .foregroundStyle(themeStore.primaryColor)
                     }
                 }
-                if !allComplete {
-                    ProgressBarView(fraction: fraction, color: themeStore.primaryColor, height: 4)
-                }
             }
 
-            Spacer(minLength: 4)
-
-            if videoCache.isDownloadingAll {
-                // Pause button
-                Button {
-                    videoCache.pauseAll()
-                    Haptics.impact(.medium)
-                } label: {
-                    Image(systemName: "pause.fill")
-                        .font(.appSans(size: 13))
-                        .foregroundStyle(themeStore.primaryColor)
-                        .frame(width: 32, height: 32)
-                        .contentShape(Rectangle())
-                }
-            } else if videoCache.isPausedAll {
-                // Resume button
-                Button {
-                    Haptics.impact(.medium)
-                    Task { await videoCache.downloadAll() }
-                } label: {
-                    HStack(spacing: 4) {
-                        Image(systemName: "play.fill")
-                            .font(.appSans(size: 12))
-                        Text("Tiếp tục")
-                            .font(.appSans(size: 12, weight: .semibold))
-                    }
-                    .foregroundStyle(themeStore.primaryColor)
-                }
-            } else if !allComplete {
-                Button {
-                    Haptics.impact(.medium)
-                    Task { await videoCache.downloadAll() }
-                } label: {
-                    Text("Tải tất cả")
-                        .font(.appSans(size: 12, weight: .semibold))
-                        .foregroundStyle(themeStore.primaryColor)
-                }
-            }
-
-            if cached > 0 && !videoCache.isDownloading {
-                Text(String(format: "%.0f MB", videoCache.cacheSizeMB))
-                    .font(.appSans(size: 12, weight: .medium))
-                    .foregroundStyle(Color.appTextLight)
-
-                Button { showClearCacheAlert = true } label: {
-                    Image(systemName: "trash")
-                        .font(.appSans(size: 12))
-                        .foregroundStyle(Color.appTextLight)
-                }
+            // Sa hình & Tình huống card (nested within the Câu hỏi section)
+            if selectedTypeFilter != .yeuThich {
+                practiceSetsSection
             }
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 10)
-        .glassCard()
     }
 
-    // MARK: - Chapter Card with Download
+    // MARK: - Mastery Filtering
 
-    private func hazardChapterCard(_ chapter: HazardSituation.Chapter) -> some View {
-        let chapterScore = progressStore.chapterAverageScore(chapterId: chapter.id)
-        let hasPractice = progressStore.chapterHasPractice(chapterId: chapter.id)
-        let chCached = videoCache.cachedCount(forChapter: chapter.id)
-        let chTotal = videoCache.totalCount(forChapter: chapter.id)
-        let chComplete = chCached == chTotal
-        let isDownloading = videoCache.downloadingChapters.contains(chapter.id)
+    private typealias TopicStatItem = (topic: Topic, accuracy: Double, correct: Int, attempted: Int, total: Int)
 
-        return Button { openExam(.hazardTest(mode: .chapter(chapter.id))) } label: {
-            HStack(spacing: 12) {
-                VStack(alignment: .leading, spacing: 10) {
-                    Text(chapter.name)
-                        .font(.appSans(size: 16, weight: .bold))
-                        .foregroundStyle(Color.appTextDark)
-                        .lineLimit(2)
-                        .multilineTextAlignment(.leading)
-
-                    HStack(spacing: 6) {
-                        TagPill(text: "Chương \(chapter.id)")
-                        if hasPractice {
-                            TagPill(text: "\(Int(chapterScore * 100))% đúng", color: .appPrimary)
-                        }
-                        TagPill(text: "\(chCached)/\(chTotal) video", color: chComplete ? .appSuccess : nil)
-                    }
-                }
-
-                Spacer(minLength: 8)
-
-                // Per-chapter download indicator
-                chapterDownloadButton(chapterId: chapter.id, cached: chCached, total: chTotal, complete: chComplete, downloading: isDownloading)
-
-                CircularActionButton(icon: "play.fill")
-            }
-            .padding(metrics.cardPadding)
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .glassCard()
-    }
-
-    @ViewBuilder
-    private func chapterDownloadButton(chapterId: Int, cached: Int, total: Int, complete: Bool, downloading: Bool) -> some View {
-        let isPaused = videoCache.pausedChapters.contains(chapterId)
-
-        Button {
-            Haptics.impact(.light)
-            if downloading {
-                videoCache.pauseChapter(chapterId)
-            } else if !complete {
-                Task { await videoCache.downloadChapter(chapterId) }
-            }
-        } label: {
-            Group {
-                if downloading {
-                    Image(systemName: "pause.fill")
-                        .font(.appSans(size: 12))
-                        .foregroundStyle(themeStore.primaryColor)
-                } else if complete {
-                    Image(systemName: "checkmark.circle.fill")
-                        .font(.appSans(size: 15))
-                        .foregroundStyle(themeStore.primaryColor)
-                } else if isPaused {
-                    HStack(spacing: 3) {
-                        Image(systemName: "play.fill")
-                            .font(.appSans(size: 12))
-                        Text("\(cached)/\(total)")
-                            .font(.appSans(size: 12, weight: .medium))
-                    }
-                    .foregroundStyle(themeStore.primaryColor)
-                } else {
-                    HStack(spacing: 3) {
-                        Image(systemName: "icloud.and.arrow.down")
-                            .font(.appSans(size: 12))
-                        Text("\(cached)/\(total)")
-                            .font(.appSans(size: 12, weight: .medium))
-                    }
-                    .foregroundStyle(themeStore.primaryColor)
-                }
-            }
-            .frame(minWidth: 44, minHeight: 44)
-            .contentShape(Rectangle())
-        }
-        .disabled(complete && !downloading)
-    }
-
-    // MARK: - Helpers
-
-    private func topicRingColor(accuracy: Double, attempted: Bool) -> Color {
-        guard attempted else { return .appPrimary }
-        if accuracy >= 0.8 { return .appSuccess }
-        if accuracy >= 0.5 { return .appWarning }
-        return .appError
-    }
-
-    private func chapterIcon(_ id: Int) -> String {
-        switch id {
-        case 1: return "building.2.fill"
-        case 2: return "road.lanes"
-        case 3: return "car.rear.road.lane"
-        case 4: return "mountain.2.fill"
-        case 5: return "car.2.fill"
-        case 6: return "exclamationmark.triangle.fill"
-        default: return "play.rectangle.fill"
+    private func applyMasteryFilter(_ stats: [TopicStatItem]) -> [TopicStatItem] {
+        switch selectedMasteryFilter {
+        case .tatCa:
+            return stats
+        case .dangOn:
+            // Partially attempted (> 0 answered, accuracy < 1.0)
+            return stats.filter { $0.attempted > 0 && $0.accuracy < 1.0 }
+        case .chuaThuoc:
+            // Attempted but accuracy below 80%
+            return stats.filter { $0.attempted > 0 && $0.accuracy < 0.8 }
+        case .daThuoc:
+            // Accuracy at or above 80%
+            return stats.filter { $0.attempted > 0 && $0.accuracy >= 0.8 }
         }
     }
+
 }

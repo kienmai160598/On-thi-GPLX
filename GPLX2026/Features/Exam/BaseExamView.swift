@@ -33,6 +33,7 @@ struct BaseExamView: View {
     @State private var simulationResult: SimulationResult?
     @State private var dailyChallengeResult: ExamResult?
     @State private var savedRemainingTime: [Int: Int] = [:]
+    @State private var savedSelectedAnswer: [Int: Int] = [:]
     @State private var hasSubmitted = false
 
     // MARK: - Computed
@@ -81,7 +82,7 @@ struct BaseExamView: View {
     private var navTitle: String {
         switch mode {
         case .mockExam: return "Thi thử"
-        case .simulation: return "Phỏng vấn"
+        case .simulation: return "Thi sa hình"
         case .dailyChallenge: return "Thử thách hôm nay"
         }
     }
@@ -98,9 +99,12 @@ struct BaseExamView: View {
         .examToolbar(
             timerText: timerText,
             isUrgent: isUrgent,
-            isBookmarked: !questions.isEmpty && progressStore.isBookmarked(questionNo: questions[currentIndex].no),
+            isBookmarked: questions.indices.contains(currentIndex) && progressStore.isBookmarked(questionNo: questions[currentIndex].no),
             showExitDialog: $showExitDialog,
-            onToggleBookmark: { progressStore.toggleBookmark(questionNo: questions[currentIndex].no) },
+            onToggleBookmark: {
+                guard questions.indices.contains(currentIndex) else { return }
+                progressStore.toggleBookmark(questionNo: questions[currentIndex].no)
+            },
             onDismiss: { dismiss() }
         )
         .task { startExam() }
@@ -288,6 +292,7 @@ struct BaseExamView: View {
                 currentIndex: currentIndex,
                 totalCount: questions.count,
                 answeredIndices: Set(answers.keys),
+                bookmarkedIndices: Set(questions.indices.filter { progressStore.isBookmarked(questionNo: questions[$0].no) }),
                 nextLabel: nextLabel,
                 isNextDisabled: !isMockExam && selectedAnswerId == nil && !isRevealed,
                 showPrev: true,
@@ -310,9 +315,9 @@ struct BaseExamView: View {
         VStack(spacing: 12) {
             // Legend
             HStack(spacing: 12) {
-                sidebarLegendDot(color: themeStore.primaryColor, label: "Đang làm")
-                sidebarLegendDot(color: .appSuccess, label: "Đã xong")
-                sidebarLegendDot(color: Color.appDisabled, label: "Chưa làm")
+                SidebarLegendDot(color: themeStore.primaryColor, label: "Đang làm")
+                SidebarLegendDot(color: .appSuccess, label: "Đã xong")
+                SidebarLegendDot(color: Color.appDisabled, label: "Chưa làm")
             }
             .padding(.top, 12)
 
@@ -357,16 +362,6 @@ struct BaseExamView: View {
         .padding(.bottom, 12)
     }
 
-    private func sidebarLegendDot(color: Color, label: String) -> some View {
-        HStack(spacing: 4) {
-            Circle()
-                .fill(color)
-                .frame(width: 8, height: 8)
-            Text(label)
-                .font(.appSans(size: 12))
-                .foregroundStyle(Color.appTextMedium)
-        }
-    }
 
     private func sidebarCellForeground(for index: Int) -> Color {
         if index == currentIndex { return themeStore.onPrimaryColor }
@@ -541,7 +536,8 @@ struct BaseExamView: View {
         let result = ExamResult.calculate(
             questions: questions,
             answers: answers,
-            timeUsedSeconds: totalTime
+            timeUsedSeconds: totalTime,
+            passThreshold: Int((Double(AppConstants.DailyChallenge.questionsCount) * AppConstants.DailyChallenge.passRate).rounded(.up))
         )
         dailyChallengeResult = result
         progressStore.recordDailyChallengeResult(result)
@@ -599,6 +595,7 @@ struct BaseExamView: View {
     }
 
     private func handleSimulationTimeout() {
+        guard !isRevealed else { return }
         timer?.invalidate()
 
         answers[currentIndex] = -1
@@ -615,6 +612,7 @@ struct BaseExamView: View {
     private func saveCurrentTimerState() {
         if !usesGlobalTimer && !isRevealed && answers[currentIndex] == nil {
             savedRemainingTime[currentIndex] = remainingSeconds
+            savedSelectedAnswer[currentIndex] = selectedAnswerId ?? -1
         }
     }
 
@@ -624,8 +622,8 @@ struct BaseExamView: View {
             isRevealed = true
             timer?.invalidate()
         } else {
-            selectedAnswerId = nil
             isRevealed = false
+            selectedAnswerId = savedSelectedAnswer[currentIndex].flatMap { $0 == -1 ? nil : $0 }
             let saved = savedRemainingTime[currentIndex]
             startScenarioTimer(remainingTime: saved)
         }
