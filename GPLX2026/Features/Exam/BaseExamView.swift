@@ -10,6 +10,7 @@ struct BaseExamView: View {
     enum Mode {
         case mockExam(examSetId: Int?)
         case simulation(SimulationExamView.Mode)
+        case dailyChallenge
     }
 
     let mode: Mode
@@ -30,17 +31,34 @@ struct BaseExamView: View {
     @State private var isRevealed = false
     @State private var examResult: ExamResult?
     @State private var simulationResult: SimulationResult?
+    @State private var dailyChallengeResult: ExamResult?
     @State private var savedRemainingTime: [Int: Int] = [:]
+    @State private var savedSelectedAnswer: [Int: Int] = [:]
+    @State private var hasSubmitted = false
 
     // MARK: - Computed
 
     private var isMockExam: Bool {
-        if case .mockExam = mode { return true }
+        switch mode {
+        case .mockExam, .dailyChallenge: return true
+        default: return false
+        }
+    }
+
+    private var isDailyChallenge: Bool {
+        if case .dailyChallenge = mode { return true }
         return false
     }
 
+    private var usesGlobalTimer: Bool {
+        switch mode {
+        case .mockExam, .dailyChallenge: return true
+        case .simulation: return false
+        }
+    }
+
     private var timerText: String {
-        if isMockExam {
+        if usesGlobalTimer {
             let m = remainingSeconds / 60
             let s = remainingSeconds % 60
             return String(format: "%02d:%02d", m, s)
@@ -49,12 +67,25 @@ struct BaseExamView: View {
     }
 
     private var isUrgent: Bool {
-        isMockExam
-            ? remainingSeconds <= AppConstants.Exam.urgencyThresholdSeconds
-            : remainingSeconds <= AppConstants.Simulation.urgencyThresholdSeconds
+        switch mode {
+        case .mockExam:
+            return remainingSeconds <= AppConstants.Exam.urgencyThresholdSeconds
+        case .dailyChallenge:
+            return remainingSeconds <= AppConstants.DailyChallenge.urgencyThresholdSeconds
+        case .simulation:
+            return remainingSeconds <= AppConstants.Simulation.urgencyThresholdSeconds
+        }
     }
 
     private var isLast: Bool { currentIndex + 1 >= questions.count }
+
+    private var navTitle: String {
+        switch mode {
+        case .mockExam: return "Thi thử"
+        case .simulation: return "Thi sa hình"
+        case .dailyChallenge: return "Thử thách hôm nay"
+        }
+    }
 
     var body: some View {
         Group {
@@ -64,19 +95,29 @@ struct BaseExamView: View {
                 examContent
             }
         }
+        .navigationTitle(navTitle)
         .examToolbar(
             timerText: timerText,
             isUrgent: isUrgent,
-            isBookmarked: !questions.isEmpty && progressStore.isBookmarked(questionNo: questions[currentIndex].no),
+            isBookmarked: questions.indices.contains(currentIndex) && progressStore.isBookmarked(questionNo: questions[currentIndex].no),
             showExitDialog: $showExitDialog,
-            onToggleBookmark: { progressStore.toggleBookmark(questionNo: questions[currentIndex].no) },
+            onToggleBookmark: {
+                guard questions.indices.contains(currentIndex) else { return }
+                progressStore.toggleBookmark(questionNo: questions[currentIndex].no)
+            },
             onDismiss: { dismiss() }
         )
         .task { startExam() }
         .onDisappear { timer?.invalidate(); deadline = nil }
         .alert("Nộp bài?", isPresented: $showSubmitDialog) {
             Button("Quay lại", role: .cancel) {}
-            Button("Nộp bài") { submitMockExam() }
+            Button("Nộp bài") {
+                if isDailyChallenge {
+                    submitDailyChallenge()
+                } else {
+                    submitMockExam()
+                }
+            }
         } message: {
             let unanswered = questions.count - answers.count
             if unanswered > 0 {
@@ -97,7 +138,7 @@ struct BaseExamView: View {
         let question = questions[currentIndex]
         let shuffledAnswers = question.shuffledAnswers
 
-        VStack(spacing: 0) {
+        Group {
             if metrics.isWide {
                 // iPad landscape: 3-panel (question / answers / grid sidebar)
                 GeometryReader { geo in
@@ -245,19 +286,23 @@ struct BaseExamView: View {
                 .id(currentIndex)
             }
 
+        }
+        .safeAreaInset(edge: .bottom) {
             ExamBottomBar(
                 currentIndex: currentIndex,
                 totalCount: questions.count,
                 answeredIndices: Set(answers.keys),
+                bookmarkedIndices: Set(questions.indices.filter { progressStore.isBookmarked(questionNo: questions[$0].no) }),
                 nextLabel: nextLabel,
                 isNextDisabled: !isMockExam && selectedAnswerId == nil && !isRevealed,
+                showPrev: true,
                 onPrev: handlePrev,
                 onNext: handleNext,
                 onSelectIndex: { index in
-                    if !isMockExam { saveCurrentTimerState() }
+                    if !usesGlobalTimer { saveCurrentTimerState() }
                     withAnimation(.easeOut(duration: 0.25)) {
                         currentIndex = index
-                        if !isMockExam { restoreStateForCurrentIndex() }
+                        if !usesGlobalTimer { restoreStateForCurrentIndex() }
                     }
                 }
             )
@@ -270,9 +315,9 @@ struct BaseExamView: View {
         VStack(spacing: 12) {
             // Legend
             HStack(spacing: 12) {
-                sidebarLegendDot(color: themeStore.primaryColor, label: "Đang làm")
-                sidebarLegendDot(color: .appSuccess, label: "Đã xong")
-                sidebarLegendDot(color: Color.appTextLight.opacity(0.25), label: "Chưa làm")
+                SidebarLegendDot(color: themeStore.primaryColor, label: "Đang làm")
+                SidebarLegendDot(color: .appSuccess, label: "Đã xong")
+                SidebarLegendDot(color: Color.appDisabled, label: "Chưa làm")
             }
             .padding(.top, 12)
 
@@ -281,10 +326,10 @@ struct BaseExamView: View {
                 ForEach(0..<questions.count, id: \.self) { index in
                     Button {
                         Haptics.selection()
-                        if !isMockExam { saveCurrentTimerState() }
+                        if !usesGlobalTimer { saveCurrentTimerState() }
                         withAnimation(.easeOut(duration: 0.25)) {
                             currentIndex = index
-                            if !isMockExam { restoreStateForCurrentIndex() }
+                            if !usesGlobalTimer { restoreStateForCurrentIndex() }
                         }
                     } label: {
                         Text("\(index + 1)")
@@ -317,16 +362,6 @@ struct BaseExamView: View {
         .padding(.bottom, 12)
     }
 
-    private func sidebarLegendDot(color: Color, label: String) -> some View {
-        HStack(spacing: 4) {
-            Circle()
-                .fill(color)
-                .frame(width: 8, height: 8)
-            Text(label)
-                .font(.appSans(size: 10))
-                .foregroundStyle(Color.appTextMedium)
-        }
-    }
 
     private func sidebarCellForeground(for index: Int) -> Color {
         if index == currentIndex { return themeStore.onPrimaryColor }
@@ -337,7 +372,7 @@ struct BaseExamView: View {
     private func sidebarCellBackground(for index: Int) -> Color {
         if index == currentIndex { return themeStore.primaryColor }
         if answers[index] != nil { return Color.appSuccess.opacity(0.12) }
-        return Color.appTextLight.opacity(0.25)
+        return Color.appDisabled
     }
 
     private var nextLabel: String {
@@ -363,13 +398,21 @@ struct BaseExamView: View {
                 timePerScenario: timePerScenario,
                 simulationResult: result
             )
+        } else if let result = dailyChallengeResult {
+            DailyChallengeResultView(
+                questions: questions,
+                answers: answers,
+                timeUsedSeconds: result.timeUsedSeconds,
+                result: result
+            )
         }
     }
 
     // MARK: - Navigation
 
     private func handlePrev() {
-        if isMockExam {
+        if usesGlobalTimer {
+            guard currentIndex > 0 else { return }
             withAnimation(.easeOut(duration: 0.25)) { currentIndex -= 1 }
         } else if currentIndex > 0 {
             saveCurrentTimerState()
@@ -420,6 +463,11 @@ struct BaseExamView: View {
             }
             remainingSeconds = AppConstants.Simulation.scenarioTimeSeconds
             startScenarioTimer()
+
+        case .dailyChallenge:
+            questions = Array(questionStore.questionsForCurrentLicense.shuffled().prefix(AppConstants.DailyChallenge.questionsCount))
+            remainingSeconds = AppConstants.DailyChallenge.totalTimeSeconds
+            startGlobalTimer()
         }
     }
 
@@ -435,7 +483,11 @@ struct BaseExamView: View {
                 remainingSeconds = remaining
                 if remaining <= 0 {
                     timer?.invalidate()
-                    submitMockExam()
+                    if isDailyChallenge {
+                        submitDailyChallenge()
+                    } else {
+                        submitMockExam()
+                    }
                 }
             }
         }
@@ -444,6 +496,8 @@ struct BaseExamView: View {
     }
 
     private func submitMockExam() {
+        guard !hasSubmitted else { return }
+        hasSubmitted = true
         timer?.invalidate()
         Haptics.notification(.success)
 
@@ -469,6 +523,32 @@ struct BaseExamView: View {
             progressStore.recordQuestionAnswer(topicKey: topicKey, questionNo: q.no, correct: correct)
         }
 
+        navigateToResult = true
+    }
+
+    // MARK: - Daily Challenge
+
+    private func submitDailyChallenge() {
+        guard !hasSubmitted else { return }
+        hasSubmitted = true
+        timer?.invalidate()
+        let totalTime = AppConstants.DailyChallenge.totalTimeSeconds - remainingSeconds
+        let result = ExamResult.calculate(
+            questions: questions,
+            answers: answers,
+            timeUsedSeconds: totalTime,
+            passThreshold: Int((Double(AppConstants.DailyChallenge.questionsCount) * AppConstants.DailyChallenge.passRate).rounded(.up))
+        )
+        dailyChallengeResult = result
+        progressStore.recordDailyChallengeResult(result)
+        // Record individual answers
+        for (i, q) in questions.enumerated() {
+            let selectedId = answers[i]
+            let correct = selectedId != nil && q.answers.contains(where: { $0.id == selectedId && $0.correct })
+            let topicKey = Topic.keyForTopicId(q.topic)
+            progressStore.recordQuestionAnswer(topicKey: topicKey, questionNo: q.no, correct: correct)
+        }
+        Haptics.notification(result.passed ? .success : .warning)
         navigateToResult = true
     }
 
@@ -515,7 +595,9 @@ struct BaseExamView: View {
     }
 
     private func handleSimulationTimeout() {
+        guard !isRevealed else { return }
         timer?.invalidate()
+
         answers[currentIndex] = -1
         timePerScenario[currentIndex] = AppConstants.Simulation.scenarioTimeSeconds
         Haptics.notification(.warning)
@@ -528,8 +610,9 @@ struct BaseExamView: View {
     }
 
     private func saveCurrentTimerState() {
-        if !isMockExam && !isRevealed && answers[currentIndex] == nil {
+        if !usesGlobalTimer && !isRevealed && answers[currentIndex] == nil {
             savedRemainingTime[currentIndex] = remainingSeconds
+            savedSelectedAnswer[currentIndex] = selectedAnswerId ?? -1
         }
     }
 
@@ -539,8 +622,8 @@ struct BaseExamView: View {
             isRevealed = true
             timer?.invalidate()
         } else {
-            selectedAnswerId = nil
             isRevealed = false
+            selectedAnswerId = savedSelectedAnswer[currentIndex].flatMap { $0 == -1 ? nil : $0 }
             let saved = savedRemainingTime[currentIndex]
             startScenarioTimer(remainingTime: saved)
         }

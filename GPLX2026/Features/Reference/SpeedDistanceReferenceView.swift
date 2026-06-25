@@ -80,30 +80,27 @@ struct SpeedDistanceReferenceView: View {
 
                     // MARK: - Distance
                     if selectedSection == nil || selectedSection == .distance {
-                        RefSection(title: "Khoảng cách an toàn (TT 38/2024)", icon: "arrow.left.and.right") {
-                            RefRow("60 km/h", value: "≥ 35", unit: "m")
-                            RefRow("60–80 km/h", value: "≥ 55", unit: "m")
-                            RefRow("80–100 km/h", value: "≥ 70", unit: "m")
-                            RefRow("100–120 km/h", value: "≥ 100", unit: "m")
-                            RefRow("Dưới 60 km/h", value: "Tự giữ", unit: "khoảng cách")
+                        RefSection(title: "Khoảng cách an toàn (TT 31/2019 Điều 11)", icon: "arrow.left.and.right") {
+                            RefRow("Đến 60 km/h", value: "Tự giữ", unit: "")
+                            RefRow("60–80 km/h", value: "≥ 35", unit: "m")
+                            RefRow("80–100 km/h", value: "≥ 55", unit: "m")
+                            RefRow("100–120 km/h", value: "≥ 70", unit: "m")
                         }
                     }
 
                     // MARK: - Alcohol
                     if selectedSection == nil || selectedSection == .alcohol {
-                        VStack(spacing: 10) {
-                            RefSection(title: "Giới hạn cho phép", icon: "drop.triangle", accentColor: .appError) {
-                                RefRow("Ô tô", value: "0", unit: "mg/lít khí thở", accentColor: .appError)
-                                RefRow("Xe máy", value: "0", unit: "mg/lít khí thở", accentColor: .appError)
-                                RefRow("Trong máu", value: "0", unit: "mg/dl", accentColor: .appError)
-                            }
+                        RefSection(title: "Giới hạn cho phép", icon: "drop.triangle", accentColor: .appError) {
+                            RefRow("Ô tô", value: "0", unit: "mg/lít khí thở", accentColor: .appError)
+                            RefRow("Xe máy", value: "0", unit: "mg/lít khí thở", accentColor: .appError)
+                            RefRow("Trong máu", value: "0", unit: "mg/dl", accentColor: .appError)
                         }
                     }
 
                     // MARK: - Rules
                     if selectedSection == nil || selectedSection == .rules {
                         SectionTitle(title: "Quy tắc quan trọng")
-                            .padding(.bottom, 4)
+                            .padding(.bottom, 10)
 
                         VStack(spacing: 8) {
                             RuleCard(icon: "list.number", title: "Thứ tự ưu tiên điều khiển GT",
@@ -127,7 +124,7 @@ struct SpeedDistanceReferenceView: View {
                     // MARK: - Penalty
                     if selectedSection == nil || selectedSection == .penalty {
                         SectionTitle(title: "Mức phạt ô tô (NĐ 168/2024)")
-                            .padding(.bottom, 4)
+                            .padding(.bottom, 10)
 
                         VStack(spacing: 0) {
                             PenaltyRow(icon: "light.max", violation: "Vượt đèn đỏ", penalty: "18–20 triệu + trừ 4 điểm")
@@ -224,7 +221,7 @@ private struct RefRow: View {
                     .font(.appSans(size: 16, weight: .bold))
                     .foregroundStyle(accentColor)
                 Text(unit)
-                    .font(.appSans(size: 11))
+                    .font(.appSans(size: 12))
                     .foregroundStyle(Color.appTextLight)
             }
         }
@@ -292,6 +289,6 @@ private struct PenaltyRow: View {
             Spacer(minLength: 0)
         }
         .padding(.horizontal, 16)
-        .padding(.vertical, 13)
+        .padding(.vertical, 12)
     }
 }

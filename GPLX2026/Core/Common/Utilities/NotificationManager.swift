@@ -1,40 +1,196 @@
+import Foundation
 import UserNotifications
+import os
 
+/// Schedules and manages the app's local study reminders.
+///
+/// Design: one idempotent `syncReminders(...)` entry point is the single source
+/// of truth — it cancels every reminder we own and reschedules from the current
+/// settings. It is safe to call on every launch, foreground, and settings
+/// change, and no-ops scheduling when notifications aren't authorized.
 enum NotificationManager {
-    private static let dailyReminderID = "daily-practice-reminder"
 
-    static func requestPermission() async -> Bool {
+    private static let logger = Logger(subsystem: "com.gplx2026", category: "Notifications")
+
+    // MARK: - Identifiers
+
+    private static let dailyReminderID = "daily-practice-reminder"
+    static let goalNudgeID = "daily-goal-nudge"
+    private static let examCountdownOffsets = [7, 3, 1, 0]   // days before exam
+    private static func examCountdownID(_ offset: Int) -> String { "exam-countdown-\(offset)" }
+
+    /// `userInfo` key carrying the deep-link destination (a `NotificationDestination` raw value).
+    static let routeKey = "route"
+
+    /// Every identifier this type schedules — removed up-front on each sync.
+    private static var managedIdentifiers: [String] {
+        [dailyReminderID, goalNudgeID] + examCountdownOffsets.map(examCountdownID)
+    }
+
+    // MARK: - Authorization
+
+    static func authorizationStatus() async -> UNAuthorizationStatus {
+        await UNUserNotificationCenter.current().notificationSettings().authorizationStatus
+    }
+
+    /// Request notification permission. Returns `true` if granted.
+    static func requestAuthorization() async -> Bool {
         do {
-            return try await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge])
+            return try await UNUserNotificationCenter.current()
+                .requestAuthorization(options: [.alert, .sound, .badge])
         } catch {
+            logger.error("requestAuthorization failed: \(error.localizedDescription)")
             return false
         }
     }
 
-    /// Schedule a daily reminder with content based on actual learning progress.
-    @MainActor
-    static func scheduleDailyReminder(hour: Int = 20, minute: Int = 0, progressStore: ProgressStore? = nil, questionStore: QuestionStore? = nil) {
-        let center = UNUserNotificationCenter.current()
-        center.removePendingNotificationRequests(withIdentifiers: [dailyReminderID])
+    // MARK: - Sync (single source of truth)
 
+    /// Cancel every reminder we manage, then reschedule from the supplied
+    /// settings. Idempotent. Scheduling is skipped (but cancellation still
+    /// happens) when notifications aren't authorized.
+    @MainActor
+    static func syncReminders(
+        dailyEnabled: Bool,
+        hour: Int,
+        examCountdownEnabled: Bool,
+        dailyGoalNudgeEnabled: Bool,
+        progressStore: ProgressStore,
+        questionStore: QuestionStore
+    ) async {
+        UNUserNotificationCenter.current()
+            .removePendingNotificationRequests(withIdentifiers: managedIdentifiers)
+
+        let status = await authorizationStatus()
+        guard status == .authorized || status == .provisional else {
+            return
+        }
+
+        if dailyEnabled {
+            await scheduleDailyReminder(hour: hour, progressStore: progressStore, questionStore: questionStore)
+        }
+        if examCountdownEnabled {
+            await scheduleExamCountdown(examDate: progressStore.examDate)
+        }
+        if dailyGoalNudgeEnabled {
+            await scheduleDailyGoalNudge(progressStore: progressStore)
+        }
+    }
+
+    /// Remove all reminders this type manages.
+    static func cancelAll() {
+        UNUserNotificationCenter.current()
+            .removePendingNotificationRequests(withIdentifiers: managedIdentifiers)
+    }
+
+    /// Cancel only the daily-goal nudge — call when the goal is met intra-session.
+    static func cancelGoalNudge() {
+        UNUserNotificationCenter.current()
+            .removePendingNotificationRequests(withIdentifiers: [goalNudgeID])
+    }
+
+    // MARK: - Schedulers
+
+    /// Daily repeating reminder whose copy reflects current progress.
+    @MainActor
+    private static func scheduleDailyReminder(
+        hour: Int,
+        minute: Int = 0,
+        progressStore: ProgressStore,
+        questionStore: QuestionStore
+    ) async {
         let content = UNMutableNotificationContent()
         let message = smartMessage(progressStore: progressStore, questionStore: questionStore)
         content.title = message.title
         content.body = message.body
         content.sound = .default
+        content.userInfo = [routeKey: NotificationDestination.practice.rawValue]
 
-        var dateComponents = DateComponents()
-        dateComponents.hour = hour
-        dateComponents.minute = minute
-
-        let trigger = UNCalendarNotificationTrigger(dateMatching: dateComponents, repeats: true)
-        let request = UNNotificationRequest(identifier: dailyReminderID, content: content, trigger: trigger)
-
-        center.add(request)
+        var components = DateComponents()
+        components.hour = hour
+        components.minute = minute
+        let trigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: true)
+        await add(id: dailyReminderID, content: content, trigger: trigger)
     }
 
-    static func cancelDailyReminder() {
-        UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [dailyReminderID])
+    /// A bounded set of one-shot reminders as the exam approaches (T-7, T-3,
+    /// T-1, and the morning of). Well within the 64 pending-notification cap.
+    private static func scheduleExamCountdown(examDate: Date?) async {
+        guard let examDate else { return }
+        let calendar = Calendar.current
+
+        for offset in examCountdownOffsets {
+            guard let day = calendar.date(byAdding: .day, value: -offset, to: examDate) else { continue }
+            var components = calendar.dateComponents([.year, .month, .day], from: day)
+            components.hour = offset == 0 ? 7 : 9   // morning of exam vs. lead-up days
+            components.minute = 0
+            guard let fireDate = calendar.date(from: components), fireDate > Date() else { continue }
+
+            let copy = examCountdownCopy(offset: offset)
+            let content = UNMutableNotificationContent()
+            content.title = copy.title
+            content.body = copy.body
+            content.sound = .default
+            content.userInfo = [routeKey: NotificationDestination.exam.rawValue]
+
+            let triggerComponents = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: fireDate)
+            let trigger = UNCalendarNotificationTrigger(dateMatching: triggerComponents, repeats: false)
+            await add(id: examCountdownID(offset), content: content, trigger: trigger)
+        }
+    }
+
+    /// Evening nudge scheduled only when today's goal isn't met yet. A single
+    /// one-shot, refreshed on every sync — if the goal is already met (or the
+    /// evening has passed) it's aimed at tomorrow instead.
+    @MainActor
+    private static func scheduleDailyGoalNudge(
+        progressStore: ProgressStore,
+        hour: Int = 20,
+        minute: Int = 30
+    ) async {
+        let calendar = Calendar.current
+        let now = Date()
+        var todayComponents = calendar.dateComponents([.year, .month, .day], from: now)
+        todayComponents.hour = hour
+        todayComponents.minute = minute
+        guard let todayFire = calendar.date(from: todayComponents) else { return }
+
+        let (done, goal) = progressStore.todayProgress
+        let fireDate: Date
+        if done < goal && now < todayFire {
+            fireDate = todayFire
+        } else {
+            guard let tomorrow = calendar.date(byAdding: .day, value: 1, to: todayFire) else { return }
+            fireDate = tomorrow
+        }
+
+        let content = UNMutableNotificationContent()
+        content.title = "Mục tiêu hôm nay"
+        content.body = "Bạn đặt mục tiêu \(goal) câu/ngày. Dành vài phút ôn nốt nhé!"
+        content.sound = .default
+        content.userInfo = [routeKey: NotificationDestination.practice.rawValue]
+
+        let triggerComponents = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: fireDate)
+        let trigger = UNCalendarNotificationTrigger(dateMatching: triggerComponents, repeats: false)
+        await add(id: goalNudgeID, content: content, trigger: trigger)
+    }
+
+    private static func add(id: String, content: UNNotificationContent, trigger: UNNotificationTrigger) async {
+        let request = UNNotificationRequest(identifier: id, content: content, trigger: trigger)
+        do {
+            try await UNUserNotificationCenter.current().add(request)
+        } catch {
+            logger.error("Failed to schedule \(id): \(error.localizedDescription)")
+        }
+    }
+
+    private static func examCountdownCopy(offset: Int) -> Message {
+        switch offset {
+        case 7:  return Message(title: "Còn 7 ngày đến ngày thi 📅", body: "Tăng tốc ôn tập tuần này nhé!")
+        case 3:  return Message(title: "Còn 3 ngày đến ngày thi ⏳", body: "Ôn kỹ câu điểm liệt và làm thử vài đề.")
+        case 1:  return Message(title: "Ngày mai là ngày thi! 🚗", body: "Xem lại câu hay sai rồi nghỉ ngơi sớm nhé.")
+        default: return Message(title: "Hôm nay là ngày thi! 🍀", body: "Bình tĩnh, tự tin. Chúc bạn thi đậu!")
+        }
     }
 
     // MARK: - Smart Messages

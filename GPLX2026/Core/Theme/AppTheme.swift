@@ -52,7 +52,7 @@ extension Color {
 
     static let textDark      = adaptive(light: 0x171717, dark: 0xF5F5F5)
     static let textMedium    = adaptive(light: 0x737373, dark: 0xA3A3A3)
-    static let textLight     = adaptive(light: 0xA3A3A3, dark: 0x525252)
+    static let textLight     = adaptive(light: 0xA3A3A3, dark: 0x78716C)
 
     static let appTextDark   = textDark
     static let appTextMedium = textMedium
@@ -60,11 +60,21 @@ extension Color {
 
     // ── Background ─────────────────────────────────────────────────────
 
-    static let scaffoldBg    = adaptive(light: 0xEEECE6, dark: 0x2F2B26)
+    static let scaffoldBg    = adaptive(light: 0xEEECE6, dark: 0x1C1917)
     static let appScaffoldBg = scaffoldBg
     static let appBgColor    = scaffoldBg
-    static let cardBg        = adaptive(light: 0xFAF9F7, dark: 0x3D3935)
-    static let statsBg       = adaptive(light: 0xF0EDE8, dark: 0x2F2B26)
+    static let cardBg        = adaptive(light: 0xFAF9F7, dark: 0x292524)
+    static let statsBg       = adaptive(light: 0xF0EDE8, dark: 0x231F1C)
+    /// Frosted card fill: a translucent surface over the app background so cards
+    /// read as glass (design uses white ~80%). Adaptive for dark mode.
+    static let cardTranslucent = adaptive(light: 0xFFFFFF, dark: 0x2C2A28).opacity(0.85)
+    /// Hairline border that defines a card edge without adding visual weight.
+    static let cardBorder      = adaptive(light: 0x000000, dark: 0xFFFFFF).opacity(0.08)
+
+    /// Warm-neutral gradient stops for the app-wide background. `scaffoldBg`
+    /// stays the middle stop so cards/components keep matching the mid-tone.
+    static let scaffoldGradientTop    = adaptive(light: 0xFBF8F0, dark: 0x332D28)
+    static let scaffoldGradientBottom = adaptive(light: 0xDAD3C4, dark: 0x0E0B0A)
 
     // ── Semantic ───────────────────────────────────────────────────────
 
@@ -72,9 +82,32 @@ extension Color {
     static let appWarning    = adaptive(light: 0xF59E0B, dark: 0xFBBF24)
     static let appError      = adaptive(light: 0xEF4444, dark: 0xF87171)
 
+    // ── Amber selection (the design's "selected / active" wash) ──────────
+    // Recurring across onboarding, settings, and exam-set tiles for a chosen
+    // option, distinct from the terracotta primary.
+    static let amberWash     = adaptive(light: 0xFFE9B0, dark: 0x3A2E14)
+    static let amberInk      = adaptive(light: 0x7A4A00, dark: 0xF3C97A)
+    static let amberBorder   = adaptive(light: 0xE8B53D, dark: 0x6E5526)
+
+    // ── Ink (prominent charcoal CTA + dark toggle) ──────────────────────
+    // The onboarding design uses a near-black surface for the primary CTA and
+    // the "on" toggle. It inverts to near-white in dark mode so the control
+    // and its label stay high-contrast in both appearances.
+    static let appInk        = adaptive(light: 0x171717, dark: 0xF5F5F5)
+    static let appOnInk      = adaptive(light: 0xFFFFFF, dark: 0x171717)
+
+    // ── Neutral icon-box wash (pairs with `appTextDark` glyphs) ─────────
+    // Warm light-gray fill for the non-accented icon boxes in onboarding; the
+    // amber boxes use `amberWash` + `amberInk` instead.
+    static let neutralWash   = adaptive(light: 0xF4F2EE, dark: 0x2C2A28)
+
     // ── Neutral helpers ────────────────────────────────────────────────
 
-    static let appDivider    = adaptive(light: 0xE5E5E5, dark: 0x262626)
+    static let appDivider    = adaptive(light: 0xE5E5E5, dark: 0x44403C)
+
+    /// Disabled / unanswered state color. Meets WCAG AA contrast (≥ 3:1 for large text,
+    /// ≥ 4.5:1 for normal text) against both light and dark backgrounds.
+    static let appDisabled   = adaptive(light: 0x737373, dark: 0x6B6B6B)
 
     // ── Topic Colors ────────────────────────────────────────────────────
 
@@ -91,7 +124,7 @@ extension Color {
 
     // ── Diem Liet ──────────────────────────────────────────────────────
 
-    static let diemLietBg    = adaptive(light: 0xFEF2F2, dark: 0x1C1010)
+    static let diemLietBg    = adaptive(light: 0xFEF2F2, dark: 0x2C1515)
     static let diemLietBadge = appError
 }
 
@@ -103,6 +136,7 @@ private struct GlassContainerModifier: ViewModifier {
     @Environment(QuestionStore.self) private var questionStore
     @Environment(ProgressStore.self) private var progressStore
     @Environment(ThemeStore.self) private var themeStore
+    @Environment(HazardVideoCache.self) private var hazardVideoCache
 
     func body(content: Content) -> some View {
         GlassEffectContainer { content }
@@ -110,6 +144,7 @@ private struct GlassContainerModifier: ViewModifier {
             .environment(questionStore)
             .environment(progressStore)
             .environment(themeStore)
+            .environment(hazardVideoCache)
     }
 }
 
@@ -117,34 +152,39 @@ private struct GlassContainerModifier: ViewModifier {
 
 struct GlassCard: ViewModifier {
     var cornerRadius: CGFloat = 20
+    /// Retained for source compatibility with existing call sites; flat cards
+    /// have no interactive glass so it is ignored.
     var interactive: Bool = true
+    /// When set, the card uses an attention background: a soft wash of `tint`
+    /// over the neutral fill plus a faint matching border, so cards that need
+    /// the user's attention stand out from ordinary flat cards.
+    var tint: Color? = nil
 
     func body(content: Content) -> some View {
-        if #available(iOS 26.0, *) {
-            if interactive {
-                content
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .contentShape(Rectangle())
-                    .glassEffect(.regular.interactive(), in: .rect(cornerRadius: cornerRadius))
-            } else {
-                content
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .contentShape(Rectangle())
-                    .glassEffect(.regular, in: .rect(cornerRadius: cornerRadius))
+        // Translucent "glass" card: a frosted fill over the app background plus a
+        // hairline border. Attention cards add a tinted wash + matching border.
+        content
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .contentShape(Rectangle())
+            .background {
+                let shape = RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                shape.fill(Color.cardTranslucent)
+                    .overlay {
+                        if let tint {
+                            shape.fill(tint.opacity(0.14))
+                            shape.strokeBorder(tint.opacity(0.40), lineWidth: 1)
+                        } else {
+                            shape.strokeBorder(Color.cardBorder, lineWidth: 1)
+                        }
+                    }
             }
-        } else {
-            content
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .contentShape(Rectangle())
-                .background(Color.cardBg)
-                .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
-        }
+            .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
     }
 }
 
 extension View {
-    func glassCard(cornerRadius: CGFloat = 20, interactive: Bool = true) -> some View {
-        modifier(GlassCard(cornerRadius: cornerRadius, interactive: interactive))
+    func glassCard(cornerRadius: CGFloat = 20, interactive: Bool = true, tint: Color? = nil) -> some View {
+        modifier(GlassCard(cornerRadius: cornerRadius, interactive: interactive, tint: tint))
     }
 
     @ViewBuilder
@@ -166,6 +206,11 @@ enum ExamScreen: Identifiable {
     case simulationExam(mode: SimulationExamView.Mode)
     case hazardTest(mode: HazardTestView.Mode)
     case questionView(topicKey: String, startIndex: Int)
+    case dailyChallenge
+    /// Settings & search open full-screen (same presentation as a question), so
+    /// they hide the tab bar and slide up over the content.
+    case settings
+    case search
 
     var id: String {
         switch self {
@@ -173,16 +218,22 @@ enum ExamScreen: Identifiable {
         case .simulationExam(let mode): "sim-\(mode)"
         case .hazardTest(let mode): "hazard-\(mode)"
         case .questionView(let key, let idx): "q-\(key)-\(idx)"
+        case .dailyChallenge: "daily-challenge"
+        case .settings: "settings"
+        case .search: "search"
         }
     }
 
-    @ViewBuilder
+    @ViewBuilder @MainActor
     var destination: some View {
         switch self {
         case .mockExam(let id): MockExamView(examSetId: id)
         case .simulationExam(let mode): SimulationExamView(mode: mode)
         case .hazardTest(let mode): HazardTestView(mode: mode)
         case .questionView(let key, let idx): QuestionView(topicKey: key, startIndex: idx)
+        case .dailyChallenge: DailyChallengeView()
+        case .settings: SettingsView()
+        case .search: QuestionSearchView()
         }
     }
 }
@@ -210,17 +261,63 @@ extension EnvironmentValues {
 // MARK: - Screen Header
 
 extension View {
-    func screenHeader(_ title: String) -> some View {
+    /// Unified navigation bar setup for every screen in the app.
+    /// Ensures every screen gets the Apple system blur backdrop on the navigation bar.
+    /// - Parameters:
+    ///   - title: The navigation bar title text.
+    ///   - titleDisplayMode: `.large` (default) for top-level tabs, `.inline` for detail/exam screens.
+    ///   - hideBackButton: Whether to hide the system back button (default `false`).
+    func screenHeader(
+        _ title: String,
+        titleDisplayMode: NavigationBarItem.TitleDisplayMode = .large,
+        hideBackButton: Bool = false
+    ) -> some View {
         self
             .navigationTitle(title)
-            .navigationBarTitleDisplayMode(.large)
-            .toolbarBackgroundVisibility(.hidden, for: .navigationBar)
+            .screenHeaderStyle(titleDisplayMode: titleDisplayMode, hideBackButton: hideBackButton)
+    }
+
+    /// Applies only the navigation bar style (blur backdrop, background, display mode)
+    /// without setting a title. Use when the title is set separately (e.g. by the caller).
+    func screenHeaderStyle(
+        titleDisplayMode: NavigationBarItem.TitleDisplayMode = .inline,
+        hideBackButton: Bool = false
+    ) -> some View {
+        self
+            .navigationBarTitleDisplayMode(titleDisplayMode)
+            .navigationBarBackButtonHidden(hideBackButton)
+            .toolbarBackgroundVisibility(.automatic, for: .navigationBar)
             .background {
                 ZStack {
-                    Color.scaffoldBg.ignoresSafeArea()
+                    ScaffoldBackground()
                     AnimatedBackground()
                 }
             }
+    }
+}
+
+// MARK: - Scaffold Background (app-wide gradient)
+
+/// The app's full-screen background: a subtle warm-neutral diagonal gradient.
+/// Single source of truth so every screen shares the same backdrop.
+struct ScaffoldBackground: View {
+    var body: some View {
+        ZStack {
+            LinearGradient(
+                colors: [.scaffoldGradientTop, .scaffoldBg, .scaffoldGradientBottom],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+            // Soft branded glow in the top-trailing corner so the gradient
+            // reads clearly (and warmly) even behind dense content.
+            RadialGradient(
+                colors: [Color.appPrimary.opacity(0.16), .clear],
+                center: .topTrailing,
+                startRadius: 0,
+                endRadius: 480
+            )
+        }
+        .ignoresSafeArea()
     }
 }
 
@@ -229,7 +326,7 @@ extension View {
 struct GlassBackground: ViewModifier {
     func body(content: Content) -> some View {
         ZStack {
-            Color.scaffoldBg.ignoresSafeArea()
+            ScaffoldBackground()
             AnimatedBackground()
             content
         }

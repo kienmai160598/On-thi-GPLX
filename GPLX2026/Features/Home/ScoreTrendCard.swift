@@ -8,13 +8,13 @@ struct ScoreTrendCard: View {
     @Environment(ThemeStore.self) private var themeStore
 
     var body: some View {
-        let examData = progressStore.examHistory.suffix(10).reversed().map { result in
+        let examData = progressStore.examHistory.prefix(10).reversed().map { result in
             ScorePoint(date: result.date, score: result.accuracy, label: "Lý thuyết")
         }
-        let simData = progressStore.simulationHistory.suffix(10).reversed().map { result in
+        let simData = progressStore.simulationHistory.prefix(10).reversed().map { result in
             ScorePoint(date: result.date, score: result.accuracy, label: "Mô phỏng")
         }
-        let hazardData = progressStore.hazardHistory.suffix(10).reversed().map { result in
+        let hazardData = progressStore.hazardHistory.prefix(10).reversed().map { result in
             ScorePoint(date: result.date, score: result.scorePercentage, label: "Tình huống")
         }
 
@@ -49,7 +49,7 @@ struct ScoreTrendCard: View {
                             .foregroundStyle(Color.appDivider.opacity(0.3))
                         AxisValueLabel {
                             Text("\(value.as(Int.self) ?? 0)%")
-                                .font(.appSans(size: 10))
+                                .font(.appSans(size: 12))
                                 .foregroundStyle(Color.appTextLight)
                         }
                     }
@@ -59,7 +59,7 @@ struct ScoreTrendCard: View {
                         AxisGridLine()
                             .foregroundStyle(Color.appDivider.opacity(0.2))
                         AxisValueLabel(format: .dateTime.day().month(.abbreviated))
-                            .font(.appSans(size: 10))
+                            .font(.appSans(size: 12))
                             .foregroundStyle(Color.appTextLight)
                     }
                 }
@@ -78,7 +78,9 @@ struct ScoreTrendCard: View {
 }
 
 private struct ScorePoint: Identifiable {
-    let id = UUID()
+    // Stable identity (series + timestamp) so the Chart can diff between
+    // renders instead of re-laying-out from scratch on every body pass.
+    var id: String { "\(label)-\(date.timeIntervalSince1970)" }
     let date: Date
     let score: Double
     let label: String

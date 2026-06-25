@@ -7,6 +7,7 @@ import os
 private let logger = Logger(subsystem: "com.gplx2026", category: "ProgressStore")
 
 @Observable
+@MainActor
 final class ProgressStore {
 
     // MARK: - Storage key constants
@@ -29,7 +30,15 @@ final class ProgressStore {
 
     // MARK: - Private backing store
 
+    // internal (not private) so extension files can access
     let defaults: UserDefaults
+
+    /// Writes run synchronously on the main actor. `UserDefaults` is its own
+    /// thread-safe store, and staying on-actor keeps the in-memory caches and
+    /// the persisted values consistent (no read-after-clear race).
+    func safeWrite(_ block: (UserDefaults) -> Void) {
+        block(defaults)
+    }
 
     // MARK: - In-memory caches (lazy-loaded from UserDefaults)
 
@@ -43,16 +52,25 @@ final class ProgressStore {
     private var _completedSimSetsCache: Set<Int>?
     private var _completedHazardSetsCache: Set<Int>?
     private var _streakCountCache: Int?
-    private var _lastStudyDateCache: String??   // outer nil = not loaded
-    private var _lastTopicKeyCache: String??    // outer nil = not loaded
+    private var _lastStudyDateCacheLoaded = false
+    private var _lastStudyDateCache: String? = nil
+    private var _lastTopicKeyCacheLoaded = false
+    private var _lastTopicKeyCache: String? = nil
     private var _lastQuestionIndexCache: Int?
+    // internal so extension files can access
     var _studyActivityCache: [String: Int]?
-    var _examDateCache: Date??         // outer nil = not loaded
+    var _examDateCacheLoaded = false
+    var _examDateCache: Date? = nil
     var _dailyGoalCache: Int?
     var _reviewDatesCache: [Int: Date]?
     var _readinessCache: ReadinessStatus?
+    var _smartNudgeCache: SmartNudge?
+    var _dailyChallengeHistoryCache: [ExamResult]?
+    var _dailyChallengeStreakCache: Int?
+    var _dailyChallengeLastDateLoaded = false
+    var _dailyChallengeLastDateCache: String? = nil
 
-    private static let streakDateFormatter: DateFormatter = {
+    static let streakDateFormatter: DateFormatter = {
         let f = DateFormatter()
         f.dateFormat = "yyyy-MM-dd"
         return f
@@ -71,15 +89,25 @@ final class ProgressStore {
         _bookmarksCache = nil
         _wrongAnswersCache = nil
         _completedExamSetsCache = nil
+        _completedSimSetsCache = nil
+        _completedHazardSetsCache = nil
         _streakCountCache = nil
+        _lastStudyDateCacheLoaded = false
         _lastStudyDateCache = nil
+        _lastTopicKeyCacheLoaded = false
         _lastTopicKeyCache = nil
         _lastQuestionIndexCache = nil
         _studyActivityCache = nil
+        _examDateCacheLoaded = false
         _examDateCache = nil
         _dailyGoalCache = nil
         _reviewDatesCache = nil
         _readinessCache = nil
+        _smartNudgeCache = nil
+        _dailyChallengeHistoryCache = nil
+        _dailyChallengeStreakCache = nil
+        _dailyChallengeLastDateLoaded = false
+        _dailyChallengeLastDateCache = nil
     }
 
     // MARK: - Topic progress  [questionNo : correct]
@@ -115,128 +143,89 @@ final class ProgressStore {
         let encoded = current.reduce(into: [String: Bool]()) { $0[String($1.key)] = $1.value }
         do {
             let data = try JSONEncoder().encode(encoded)
-            defaults.set(data, forKey: Keys.progressPrefix + topicKey)
+            safeWrite { $0.set(data, forKey: Keys.progressPrefix + topicKey) }
         } catch {
             logger.error("Failed to encode topic progress for '\(topicKey)': \(error.localizedDescription)")
         }
         _readinessCache = nil
+        _smartNudgeCache = nil
     }
 
     // MARK: - Exam history
 
     var examHistory: [ExamResult] {
         if let cached = _examHistoryCache { return cached }
-        guard let data = defaults.data(forKey: Keys.examHistory) else {
+        guard let results = SecureStorage.load([ExamResult].self, forKey: Keys.examHistory, defaults: defaults) else {
             _examHistoryCache = []
             return []
         }
-        do {
-            let results = try JSONDecoder().decode([ExamResult].self, from: data)
-            _examHistoryCache = results
-            return results
-        } catch {
-            logger.warning("Failed to decode exam history: \(error.localizedDescription)")
-            _examHistoryCache = []
-            return []
-        }
+        _examHistoryCache = results
+        return results
     }
 
     func recordExamResult(_ result: ExamResult) {
         var history = examHistory
         history.insert(result, at: 0)
-        if history.count > AppConstants.Storage.historyLimit { history.removeLast() }
+        while history.count > AppConstants.Storage.historyLimit { history.removeLast() }
         _examHistoryCache = history
-        do {
-            let data = try JSONEncoder().encode(history)
-            defaults.set(data, forKey: Keys.examHistory)
-        } catch {
-            logger.error("Failed to encode exam history: \(error.localizedDescription)")
-        }
+        safeWrite { SecureStorage.save(history, forKey: Keys.examHistory, defaults: $0) }
         _readinessCache = nil
+        _smartNudgeCache = nil
     }
 
     // MARK: - Simulation history
 
     var simulationHistory: [SimulationResult] {
         if let cached = _simulationHistoryCache { return cached }
-        guard let data = defaults.data(forKey: Keys.simulationHistory) else {
+        guard let results = SecureStorage.load([SimulationResult].self, forKey: Keys.simulationHistory, defaults: defaults) else {
             _simulationHistoryCache = []
             return []
         }
-        do {
-            let results = try JSONDecoder().decode([SimulationResult].self, from: data)
-            _simulationHistoryCache = results
-            return results
-        } catch {
-            logger.warning("Failed to decode simulation history: \(error.localizedDescription)")
-            _simulationHistoryCache = []
-            return []
-        }
+        _simulationHistoryCache = results
+        return results
     }
 
     func recordSimulationResult(_ result: SimulationResult) {
         var history = simulationHistory
         history.insert(result, at: 0)
-        if history.count > AppConstants.Storage.historyLimit { history.removeLast() }
+        while history.count > AppConstants.Storage.historyLimit { history.removeLast() }
         _simulationHistoryCache = history
-        do {
-            let data = try JSONEncoder().encode(history)
-            defaults.set(data, forKey: Keys.simulationHistory)
-        } catch {
-            logger.error("Failed to encode simulation history: \(error.localizedDescription)")
-        }
+        safeWrite { SecureStorage.save(history, forKey: Keys.simulationHistory, defaults: $0) }
+        _smartNudgeCache = nil
     }
 
     // MARK: - Hazard history
 
     var hazardHistory: [HazardResult] {
         if let cached = _hazardHistoryCache { return cached }
-        guard let data = defaults.data(forKey: Keys.hazardHistory) else {
+        guard let results = SecureStorage.load([HazardResult].self, forKey: Keys.hazardHistory, defaults: defaults) else {
             _hazardHistoryCache = []
             return []
         }
-        do {
-            let results = try JSONDecoder().decode([HazardResult].self, from: data)
-            _hazardHistoryCache = results
-            return results
-        } catch {
-            logger.warning("Failed to decode hazard history: \(error.localizedDescription)")
-            _hazardHistoryCache = []
-            return []
-        }
+        _hazardHistoryCache = results
+        return results
     }
 
     func recordHazardResult(_ result: HazardResult) {
         var history = hazardHistory
         history.insert(result, at: 0)
-        if history.count > AppConstants.Storage.historyLimit { history.removeLast() }
+        while history.count > AppConstants.Storage.historyLimit { history.removeLast() }
         _hazardHistoryCache = history
-        do {
-            let data = try JSONEncoder().encode(history)
-            defaults.set(data, forKey: Keys.hazardHistory)
-        } catch {
-            logger.error("Failed to encode hazard history: \(error.localizedDescription)")
-        }
+        safeWrite { SecureStorage.save(history, forKey: Keys.hazardHistory, defaults: $0) }
+        _smartNudgeCache = nil
     }
 
     // MARK: - Bookmarks
 
     var bookmarks: Set<Int> {
         if let cached = _bookmarksCache { return cached }
-        guard let data = defaults.data(forKey: Keys.bookmarks) else {
+        guard let list = SecureStorage.load([Int].self, forKey: Keys.bookmarks, defaults: defaults) else {
             _bookmarksCache = []
             return []
         }
-        do {
-            let list = try JSONDecoder().decode([Int].self, from: data)
-            let result = Set(list)
-            _bookmarksCache = result
-            return result
-        } catch {
-            logger.warning("Failed to decode bookmarks: \(error.localizedDescription)")
-            _bookmarksCache = []
-            return []
-        }
+        let result = Set(list)
+        _bookmarksCache = result
+        return result
     }
 
     func toggleBookmark(questionNo: Int) {
@@ -247,7 +236,7 @@ final class ProgressStore {
             current.insert(questionNo)
         }
         _bookmarksCache = current
-        saveIntSet(current, forKey: Keys.bookmarks)
+        safeWrite { SecureStorage.save(Array(current), forKey: Keys.bookmarks, defaults: $0) }
     }
 
     func isBookmarked(questionNo: Int) -> Bool {
@@ -258,34 +247,27 @@ final class ProgressStore {
 
     var wrongAnswers: Set<Int> {
         if let cached = _wrongAnswersCache { return cached }
-        guard let data = defaults.data(forKey: Keys.wrongAnswers) else {
+        guard let list = SecureStorage.load([Int].self, forKey: Keys.wrongAnswers, defaults: defaults) else {
             _wrongAnswersCache = []
             return []
         }
-        do {
-            let list = try JSONDecoder().decode([Int].self, from: data)
-            let result = Set(list)
-            _wrongAnswersCache = result
-            return result
-        } catch {
-            logger.warning("Failed to decode wrong answers: \(error.localizedDescription)")
-            _wrongAnswersCache = []
-            return []
-        }
+        let result = Set(list)
+        _wrongAnswersCache = result
+        return result
     }
 
     func addWrongAnswer(_ questionNo: Int) {
         var current = wrongAnswers
         current.insert(questionNo)
         _wrongAnswersCache = current
-        saveIntSet(current, forKey: Keys.wrongAnswers)
+        safeWrite { SecureStorage.save(Array(current), forKey: Keys.wrongAnswers, defaults: $0) }
     }
 
     func removeWrongAnswer(_ questionNo: Int) {
         var current = wrongAnswers
         current.remove(questionNo)
         _wrongAnswersCache = current
-        saveIntSet(current, forKey: Keys.wrongAnswers)
+        safeWrite { SecureStorage.save(Array(current), forKey: Keys.wrongAnswers, defaults: $0) }
     }
 
     // MARK: - Completed exam sets
@@ -334,6 +316,7 @@ final class ProgressStore {
             _completedSimSetsCache = result
             return result
         } catch {
+            logger.warning("Failed to decode completed simulation sets: \(error.localizedDescription)")
             _completedSimSetsCache = []
             return []
         }
@@ -360,6 +343,7 @@ final class ProgressStore {
             _completedHazardSetsCache = result
             return result
         } catch {
+            logger.warning("Failed to decode completed hazard sets: \(error.localizedDescription)")
             _completedHazardSetsCache = []
             return []
         }
@@ -382,9 +366,10 @@ final class ProgressStore {
     }
 
     var lastStudyDate: String? {
-        if let cached = _lastStudyDateCache { return cached }
+        if _lastStudyDateCacheLoaded { return _lastStudyDateCache }
         let value = defaults.string(forKey: Keys.lastStudyDate)
-        _lastStudyDateCache = .some(value)
+        _lastStudyDateCache = value
+        _lastStudyDateCacheLoaded = true
         return value
     }
 
@@ -403,18 +388,22 @@ final class ProgressStore {
             }
         }
 
-        defaults.set(newStreak, forKey: Keys.streakCount)
-        defaults.set(todayStr, forKey: Keys.lastStudyDate)
+        safeWrite {
+            $0.set(newStreak, forKey: Keys.streakCount)
+            $0.set(todayStr, forKey: Keys.lastStudyDate)
+        }
         _streakCountCache = newStreak
-        _lastStudyDateCache = .some(todayStr)
+        _lastStudyDateCache = todayStr
+        _lastStudyDateCacheLoaded = true
     }
 
     // MARK: - Continue learning position
 
     var lastTopicKey: String? {
-        if let cached = _lastTopicKeyCache { return cached }
+        if _lastTopicKeyCacheLoaded { return _lastTopicKeyCache }
         let value = defaults.string(forKey: Keys.lastTopicKey)
-        _lastTopicKeyCache = .some(value)
+        _lastTopicKeyCache = value
+        _lastTopicKeyCacheLoaded = true
         return value
     }
 
@@ -426,9 +415,12 @@ final class ProgressStore {
     }
 
     func saveLastPosition(topicKey: String, index: Int) {
-        defaults.set(topicKey, forKey: Keys.lastTopicKey)
-        defaults.set(index, forKey: Keys.lastQuestionIndex)
-        _lastTopicKeyCache = .some(topicKey)
+        safeWrite {
+            $0.set(topicKey, forKey: Keys.lastTopicKey)
+            $0.set(index, forKey: Keys.lastQuestionIndex)
+        }
+        _lastTopicKeyCache = topicKey
+        _lastTopicKeyCacheLoaded = true
         _lastQuestionIndexCache = index
     }
 
@@ -471,54 +463,106 @@ final class ProgressStore {
         clearBookmarks()
         clearWrongAnswers()
         clearStreak()
-        invalidateCaches()
+        clearStudyActivity()
+        clearDailyChallengeData()
+        clearExamDateAndGoal()
+        _reviewDatesCache = nil
+        safeWrite { $0.removeObject(forKey: "wrong_answer_review_dates") }
     }
 
     func clearTopicProgress() {
         let topicKeys = Topic.all.map(\.key) + [AppConstants.TopicKey.diemLiet]
-        for key in topicKeys {
-            defaults.removeObject(forKey: Keys.progressPrefix + key)
-        }
-        defaults.removeObject(forKey: Keys.lastTopicKey)
-        defaults.removeObject(forKey: Keys.lastQuestionIndex)
         _topicProgressCache.removeAll()
+        _lastTopicKeyCacheLoaded = true
         _lastTopicKeyCache = nil
-        _lastQuestionIndexCache = nil
+        _lastQuestionIndexCache = 0
+        _readinessCache = nil
+        _smartNudgeCache = nil
+        safeWrite { defaults in
+            for key in topicKeys {
+                defaults.removeObject(forKey: Keys.progressPrefix + key)
+            }
+            defaults.removeObject(forKey: Keys.lastTopicKey)
+            defaults.removeObject(forKey: Keys.lastQuestionIndex)
+        }
     }
 
     func clearExamHistory() {
-        defaults.removeObject(forKey: Keys.examHistory)
-        defaults.removeObject(forKey: Keys.completedExamSets)
-        invalidateCaches()
+        _examHistoryCache = []
+        _completedExamSetsCache = []
+        _readinessCache = nil
+        _smartNudgeCache = nil
+        safeWrite {
+            $0.removeObject(forKey: Keys.examHistory)
+            $0.removeObject(forKey: Keys.completedExamSets)
+        }
     }
 
     func clearSimulationHistory() {
-        defaults.removeObject(forKey: Keys.simulationHistory)
-        defaults.removeObject(forKey: Keys.completedSimSets)
-        invalidateCaches()
+        _simulationHistoryCache = []
+        _completedSimSetsCache = []
+        _smartNudgeCache = nil
+        safeWrite {
+            $0.removeObject(forKey: Keys.simulationHistory)
+            $0.removeObject(forKey: Keys.completedSimSets)
+        }
     }
 
     func clearHazardHistory() {
-        defaults.removeObject(forKey: Keys.hazardHistory)
-        defaults.removeObject(forKey: Keys.completedHazardSets)
-        invalidateCaches()
+        _hazardHistoryCache = []
+        _completedHazardSetsCache = []
+        _smartNudgeCache = nil
+        safeWrite {
+            $0.removeObject(forKey: Keys.hazardHistory)
+            $0.removeObject(forKey: Keys.completedHazardSets)
+        }
     }
 
     func clearBookmarks() {
-        defaults.removeObject(forKey: Keys.bookmarks)
-        invalidateCaches()
+        _bookmarksCache = []
+        safeWrite { $0.removeObject(forKey: Keys.bookmarks) }
     }
 
     func clearWrongAnswers() {
-        defaults.removeObject(forKey: Keys.wrongAnswers)
-        invalidateCaches()
+        _wrongAnswersCache = []
+        safeWrite { $0.removeObject(forKey: Keys.wrongAnswers) }
+    }
+
+    func clearStudyActivity() {
+        _studyActivityCache = [:]
+        safeWrite { $0.removeObject(forKey: "study_activity") }
+    }
+
+    func clearDailyChallengeData() {
+        _dailyChallengeHistoryCache = []
+        _dailyChallengeStreakCache = 0
+        _dailyChallengeLastDateCache = nil
+        _dailyChallengeLastDateLoaded = true
+        safeWrite {
+            $0.removeObject(forKey: "daily_challenge_history")
+            $0.removeObject(forKey: "daily_challenge_last_date")
+            $0.removeObject(forKey: "daily_challenge_streak")
+        }
+    }
+
+    func clearExamDateAndGoal() {
+        _examDateCache = nil
+        _examDateCacheLoaded = true
+        _dailyGoalCache = nil
+        safeWrite {
+            $0.removeObject(forKey: "exam_date")
+            $0.removeObject(forKey: "daily_goal")
+        }
     }
 
     func clearStreak() {
-        defaults.removeObject(forKey: Keys.streakCount)
-        defaults.removeObject(forKey: Keys.lastStudyDate)
-        _streakCountCache = nil
+        _streakCountCache = 0
         _lastStudyDateCache = nil
+        _lastStudyDateCacheLoaded = true
+        safeWrite {
+            $0.removeObject(forKey: Keys.streakCount)
+            $0.removeObject(forKey: Keys.lastStudyDate)
+        }
     }
 
     // MARK: - Private helpers
@@ -526,7 +570,7 @@ final class ProgressStore {
     private func saveIntSet(_ set: Set<Int>, forKey key: String) {
         do {
             let data = try JSONEncoder().encode(Array(set))
-            defaults.set(data, forKey: key)
+            safeWrite { $0.set(data, forKey: key) }
         } catch {
             logger.error("Failed to encode int set for key '\(key)': \(error.localizedDescription)")
         }

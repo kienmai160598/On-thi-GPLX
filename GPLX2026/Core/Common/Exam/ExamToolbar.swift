@@ -12,14 +12,7 @@ struct ExamToolbar: ViewModifier {
 
     func body(content: Content) -> some View {
         content
-            .background {
-                ZStack {
-                    Color.scaffoldBg.ignoresSafeArea()
-                    AnimatedBackground()
-                }
-            }
-            .navigationBarBackButtonHidden(true)
-            .navigationBarTitleDisplayMode(.inline)
+            .screenHeaderStyle(titleDisplayMode: .inline, hideBackButton: true)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button {
@@ -27,6 +20,7 @@ struct ExamToolbar: ViewModifier {
                     } label: {
                         Image(systemName: "xmark")
                     }
+                    .accessibilityLabel("Thoát bài thi")
                 }
 
                 ToolbarItem(placement: .principal) {
@@ -40,6 +34,8 @@ struct ExamToolbar: ViewModifier {
                     } label: {
                         Image(systemName: isBookmarked ? "bookmark.fill" : "bookmark")
                     }
+                    .accessibilityLabel(isBookmarked ? "Bỏ đánh dấu" : "Đánh dấu câu hỏi")
+                    .accessibilityValue(isBookmarked ? "Đã đánh dấu" : "")
                 }
             }
             .alert("Thoát bài thi?", isPresented: $showExitDialog) {

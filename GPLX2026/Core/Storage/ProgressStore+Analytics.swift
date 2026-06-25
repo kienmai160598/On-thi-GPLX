@@ -113,6 +113,22 @@ extension ProgressStore {
         topicProgress(for: key).values.filter { $0 }.count
     }
 
+    /// Number of the given questions the user has answered correctly, resolved
+    /// via each question's topic progress. Pass `questionsForCurrentLicense` to
+    /// count mastery within the active license pool (B1 subset vs B2 full set).
+    func correctCount(in questions: [Question]) -> Int {
+        var nosByTopic: [String: [Int]] = [:]
+        for q in questions {
+            nosByTopic[Topic.keyForTopicId(q.topic), default: []].append(q.no)
+        }
+        var count = 0
+        for (key, nos) in nosByTopic {
+            let progress = topicProgress(for: key)
+            for no in nos where progress[no] == true { count += 1 }
+        }
+        return count
+    }
+
     func totalCorrectCount(topics: [Topic]) -> Int {
         topics.reduce(0) { $0 + correctCount(forTopic: $1.key) }
     }

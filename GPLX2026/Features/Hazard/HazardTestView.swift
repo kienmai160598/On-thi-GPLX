@@ -31,7 +31,6 @@ struct HazardTestView: View {
     @State private var restartToken = 0
     @State private var showTapFlash = false
     @State private var isCurrentlyLandscape = false
-    @State private var videoHeight: CGFloat = 0
 
     private var isLast: Bool { currentIndex + 1 >= situations.count }
     private var isPractice: Bool {
@@ -48,14 +47,7 @@ struct HazardTestView: View {
                 testContent
             }
         }
-        .background {
-            ZStack {
-                Color.scaffoldBg.ignoresSafeArea()
-                AnimatedBackground()
-            }
-        }
-        .navigationBarBackButtonHidden(true)
-        .navigationBarTitleDisplayMode(.inline)
+        .screenHeaderStyle(titleDisplayMode: .inline, hideBackButton: true)
         .toolbarVisibility(isCurrentlyLandscape ? .hidden : .visible, for: .navigationBar)
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
@@ -80,7 +72,9 @@ struct HazardTestView: View {
             Text("Kết quả sẽ không được lưu.")
         }
         .onAppear {
-            OrientationManager.shared.allowedOrientations = .allButUpsideDown
+            // The hazard player is landscape-only (design BSxMj): force landscape
+            // on enter and restore portrait on exit.
+            OrientationManager.shared.forceToLandscape()
         }
         .onDisappear { OrientationManager.shared.lock() }
         .task { startTest() }
@@ -104,17 +98,11 @@ struct HazardTestView: View {
     @ViewBuilder
     private var testContent: some View {
         GeometryReader { geo in
-            let isLandscape = geo.size.width > geo.size.height
             let situation = situations[currentIndex]
             let hasTapped = tapTimes[currentIndex] != nil
-
-            // iPad: always use split layout (enough screen space)
-            // iPhone: split in landscape, stacked in portrait
-            if isLandscape || isRegular {
-                landscapeLayout(situation: situation, hasTapped: hasTapped, geo: geo)
-            } else {
-                portraitLayout(situation: situation, hasTapped: hasTapped)
-            }
+            // Landscape-only player (design BSxMj); the view is locked to
+            // landscape on appear, and iPad has the room for it in any orientation.
+            landscapeLayout(situation: situation, hasTapped: hasTapped, geo: geo)
         }
         .onGeometryChange(for: Bool.self) { geo in
             geo.size.width > geo.size.height
@@ -123,177 +111,251 @@ struct HazardTestView: View {
         }
     }
 
-    // MARK: - Landscape Layout
+    // MARK: - Landscape Layout (Design: BSxMj)
 
     @ViewBuilder
     private func landscapeLayout(situation: HazardSituation, hasTapped: Bool, geo: GeometryProxy) -> some View {
-        let isLandscape = geo.size.width > geo.size.height
-        let panelWidth: CGFloat = isRegular
-            ? min(geo.size.width * (isLandscape ? 0.28 : 0.35), 400)
-            : min(geo.size.width * 0.28, 240)
         let btnHeight: CGFloat = metrics.buttonHeight
-        let panelPadding: CGFloat = isRegular ? 20 : 10
-        let panelSpacing: CGFloat = isRegular ? 14 : 8
-        // Video must fit within available height
-        let availableHeight = geo.size.height
-        let videoWidth = geo.size.width - panelWidth
-        let fittedVideoHeight = min(availableHeight, videoWidth * 9 / 16)
+        // The whole layout ignores the safe area, so lift the bottom controls
+        // clear of the landscape home indicator manually.
+        let bottomSafeInset = max(12, geo.safeAreaInsets.bottom + 4)
+        // The video bleeds full-screen, but the overlaid controls must clear the
+        // landscape notch / Dynamic Island, which sits on whichever side is up.
+        let leadingInset = max(20, geo.safeAreaInsets.leading)
+        let trailingInset = max(20, geo.safeAreaInsets.trailing)
+        let topInset = max(20, geo.safeAreaInsets.top + 8)
 
-        HStack(alignment: .center, spacing: 0) {
-            // Left: Video — constrained to available height
+        ZStack(alignment: .bottom) {
+            // ── Video layer fills the entire frame ──────────────────────
             HazardVideoPlayer(
                 url: videoCache.playableURL(for: situation),
                 state: $playerState
             )
-            .aspectRatio(16 / 9, contentMode: .fit)
-            .frame(maxHeight: fittedVideoHeight)
-            .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { videoHeight = $0 }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .ignoresSafeArea()
             .overlay(
                 Color.white
                     .opacity(showTapFlash ? 0.4 : 0)
                     .animation(.easeOut(duration: 0.2), value: showTapFlash)
                     .allowsHitTesting(false)
             )
-            .overlay(alignment: .topLeading) {
-                HStack(spacing: 8) {
-                    Button { showExitDialog = true } label: {
-                        Image(systemName: "xmark")
-                            .font(.appSans(size: isRegular ? 16 : 14, weight: .bold))
-                            .foregroundStyle(.white)
-                            .frame(width: isRegular ? 38 : 32, height: isRegular ? 38 : 32)
-                            .background(Color.black.opacity(0.5), in: Circle())
-                    }
-
-                    Text("TH \(situation.id)  ·  \(currentIndex + 1)/\(situations.count)")
-                        .font(.appSans(size: isRegular ? 14 : 12, weight: .semibold))
-                        .foregroundStyle(.white)
-                        .padding(.horizontal, isRegular ? 14 : 10)
-                        .padding(.vertical, isRegular ? 7 : 5)
-                        .background(Color.black.opacity(0.4), in: Capsule())
-                        .contentTransition(.numericText())
-                }
-                .padding(isRegular ? 12 : 8)
-            }
             .overlay {
                 if playerState.hasError {
                     videoErrorOverlay
                 } else if playerState.isBuffering {
-                    ProgressView().tint(themeStore.primaryColor)
+                    ProgressView().tint(.white)
                 }
             }
-            .frame(maxWidth: .infinity)
 
-            // Right: Controls panel — matched to video height
-            VStack(spacing: panelSpacing) {
-                if !playerState.isFinished {
-                    VStack(spacing: panelSpacing) {
-                        HStack(spacing: 6) {
-                            if playerState.duration > 0 {
-                                HStack(spacing: 4) {
-                                    Circle()
-                                        .fill(hasTapped ? Color.appSuccess : Color.appError)
-                                        .frame(width: isRegular ? 8 : 6, height: isRegular ? 8 : 6)
-                                    Text(timeText)
-                                        .font(.appSans(size: isRegular ? 14 : 11, weight: .semibold))
-                                        .foregroundStyle(Color.appTextDark)
-                                }
-                            }
-                            Spacer()
-                        }
+            // ── Vignette overlay ────────────────────────────────────────
+            LinearGradient(
+                stops: [
+                    .init(color: Color(hex: 0x000000, opacity: 0.50), location: 0.00),
+                    .init(color: Color(hex: 0x000000, opacity: 0.00), location: 0.35),
+                    .init(color: Color(hex: 0x000000, opacity: 0.25), location: 0.60),
+                    .init(color: Color(hex: 0x000000, opacity: 0.80), location: 1.00),
+                ],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .ignoresSafeArea()
+            .allowsHitTesting(false)
 
-                        if playerState.duration > 0 {
-                            HazardPlayingBar(
-                                currentTime: playerState.currentTime,
-                                duration: playerState.duration,
-                                situation: situation,
-                                hasTapped: hasTapped
-                            )
-                        }
+            // ── Top bar overlay ─────────────────────────────────────────
+            HStack(spacing: 10) {
+                // Close button — only shown in landscape (nav bar hidden).
+                // In portrait on iPad the system nav bar xmark handles close.
+                if isCurrentlyLandscape {
+                    Button { showExitDialog = true } label: {
+                        Image(systemName: "xmark")
+                            .font(.appSans(size: 16, weight: .bold))
+                            .foregroundStyle(.white)
+                            .frame(width: 36, height: 36)
+                            .background(Color(hex: 0x000000, opacity: 0.35))
+                            .clipShape(Circle())
+                            .overlay(Circle().strokeBorder(Color.white.opacity(0.10), lineWidth: 1))
+                            .frame(width: 44, height: 44)
+                            .contentShape(Rectangle())
                     }
-                    .padding(.horizontal, panelPadding)
-                    .padding(.vertical, isRegular ? 12 : 8)
-                    .glassCard(cornerRadius: 16, interactive: false)
+                    .accessibilityLabel("Thoát bài thi")
                 }
 
-                if playerState.isFinished {
+                // Situation chip with gold number badge
+                HStack(spacing: 8) {
+                    // Gold number badge
+                    Text("\(situation.id)")
+                        .font(.appSans(size: 11, weight: .black))
+                        .foregroundStyle(Color(hex: 0x3A2400))
+                        .frame(width: 22, height: 22)
+                        .background(Color(hex: 0xFFC233))
+                        .clipShape(Circle())
+
+                    Text(situation.title.count > 24 ? "TH \(situation.id)" : situation.title)
+                        .font(.appSans(size: 13, weight: .bold))
+                        .foregroundStyle(.white)
+                        .lineLimit(1)
+
+                    Text("·")
+                        .font(.appSans(size: 13, weight: .bold))
+                        .foregroundStyle(Color.white.opacity(0.40))
+
+                    Text("\(currentIndex + 1)/\(situations.count)")
+                        .font(.appSans(size: 12, weight: .semibold))
+                        .foregroundStyle(Color.white.opacity(0.70))
+                        .contentTransition(.numericText())
+                }
+                .padding(.leading, 8)
+                .padding(.trailing, 12)
+                .padding(.vertical, 6)
+                .background(Color(hex: 0x000000, opacity: 0.40))
+                .clipShape(Capsule())
+                .overlay(Capsule().strokeBorder(Color.white.opacity(0.10), lineWidth: 1))
+
+                Spacer(minLength: 0)
+            }
+            .padding(.leading, leadingInset)
+            .padding(.trailing, trailingInset)
+            .padding(.top, topInset)
+            .frame(maxHeight: .infinity, alignment: .top)
+
+            // ── Hint card (top-left of video, below status bar) ─────────
+            if !playerState.isFinished && !hasTapped {
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack(spacing: 8) {
+                        Image(systemName: "lightbulb.fill")
+                            .font(.appSans(size: 11))
+                            .foregroundStyle(Color(hex: 0xFFC233))
+                        Text("NHIỆM VỤ")
+                            .font(.appSans(size: 9, weight: .black))
+                            .foregroundStyle(Color(hex: 0xFFC233))
+                            .kerning(1.5)
+                    }
+                    Text("Nhấn NGAY khi thấy nguy hiểm tiềm tàng.")
+                        .font(.appSans(size: 12, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .lineSpacing(3)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .padding(8)
+                .frame(width: 230, alignment: .leading)
+                .background(Color.white.opacity(0.08))
+                .clipShape(RoundedRectangle(cornerRadius: 14))
+                .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(Color.white.opacity(0.12), lineWidth: 1))
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                .padding(.leading, leadingInset)
+                .padding(.top, topInset + 56)
+                .transition(.opacity.combined(with: .scale(scale: 0.97, anchor: .topLeading)))
+            }
+
+            // ── Play/Pause centred overlay (shown when video is paused or loading) ──
+            // (Auto-start is unchanged; this button is purely visual chrome)
+            // Not rendering an explicit play/pause toggle since HazardVideoPlayer auto-plays
+            // and the scoring timing must not be disturbed by any pause state here.
+
+            // ── Bottom panel ─────────────────────────────────────────────
+            if playerState.isFinished {
+                // Score panel replaces the bottom controls
+                VStack(spacing: 0) {
                     if scoreRevealed {
-                        landscapeScoreView(situation: situation, hasTapped: hasTapped)
+                        landscapeScorePanel(situation: situation, hasTapped: hasTapped, btnHeight: btnHeight)
                     } else {
-                        Spacer(minLength: 0)
-                        ProgressView().tint(themeStore.primaryColor)
-                        Spacer(minLength: 0)
-                    }
-                } else {
-                    Spacer(minLength: 0)
-
-                    VStack(spacing: panelSpacing) {
-                        HazardDangerButton(
-                            hasTapped: hasTapped,
-                            compact: !isRegular,
-                            countdown: playerState.currentTime < 3,
-                            countdownSeconds: max(1, 3 - Int(playerState.currentTime))
-                        ) {
-                            handleTap(at: playerState.currentTime)
+                        VStack(spacing: 8) {
+                            ProgressView().tint(.white)
+                            Text("Đang tính điểm...")
+                                .font(.appSans(size: 13, weight: .medium))
+                                .foregroundStyle(Color.white.opacity(0.70))
                         }
-
-                        if hasTapped {
-                            Button {
-                                Haptics.selection()
-                                skipVideo()
-                            } label: {
-                                AppButton(icon: "forward.fill", label: "Bỏ qua", height: btnHeight)
-                            }
-                            .transition(.move(edge: .bottom).combined(with: .opacity))
-                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(16)
                     }
-                    .animation(.spring(duration: 0.35, bounce: 0.15), value: hasTapped)
                 }
+                .background(Color(hex: 0x000000, opacity: 0.50))
+                .clipShape(RoundedRectangle(cornerRadius: 22))
+                .overlay(RoundedRectangle(cornerRadius: 22).strokeBorder(Color.white.opacity(0.10), lineWidth: 1))
+                .padding(.leading, leadingInset)
+                .padding(.trailing, trailingInset)
+                .padding(.bottom, bottomSafeInset)
+            } else {
+                // Playing bottom panel
+                HazardBottomPanel(
+                    situation: situation,
+                    currentTime: playerState.currentTime,
+                    duration: playerState.duration,
+                    hasTapped: hasTapped,
+                    timeText: timeText,
+                    isPractice: isPractice,
+                    isLast: isLast,
+                    onTap: { handleTap(at: playerState.currentTime) },
+                    onSkip: {
+                        Haptics.selection()
+                        skipVideo()
+                    },
+                    onRetry: {
+                        Haptics.selection()
+                        retryCurrent()
+                    },
+                    onAdvance: {
+                        Haptics.selection()
+                        advanceOrFinish()
+                    }
+                )
+                .padding(.leading, leadingInset)
+                .padding(.trailing, trailingInset)
+                .padding(.bottom, bottomSafeInset)
             }
-            .padding(panelPadding)
-            .frame(width: panelWidth, height: videoHeight > 0 ? videoHeight : nil)
         }
-        .frame(maxHeight: availableHeight)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .ignoresSafeArea()
         .id("\(currentIndex)-\(restartToken)")
         .animation(.easeOut(duration: 0.15), value: currentIndex)
     }
 
+    // MARK: - Landscape Score Panel
+
     @ViewBuilder
-    private func landscapeScoreView(situation: HazardSituation, hasTapped: Bool) -> some View {
+    private func landscapeScorePanel(situation: HazardSituation, hasTapped: Bool, btnHeight: CGFloat) -> some View {
         let score = situation.score(tapTime: tapTimes[currentIndex] ?? nil)
         let scoreColor: Color = score >= 4 ? .appSuccess : score >= 2 ? .appWarning : .appError
-        let sectionPad: CGFloat = isRegular ? 14 : 10
-        let btnHeight: CGFloat = metrics.buttonHeight
-        let btnSpacing: CGFloat = isRegular ? 10 : 6
 
-        // Score summary card
         VStack(spacing: 0) {
-            // Score header
-            HStack(spacing: 0) {
+            // Score summary row
+            HStack(spacing: 14) {
+                // Score number
                 Text("\(score)")
-                    .font(.appSans(size: isRegular ? 36 : 28, weight: .heavy))
+                    .font(.appSans(size: isRegular ? 32 : 26, weight: .heavy))
                     .foregroundStyle(scoreColor)
-                    .frame(width: isRegular ? 56 : 44)
 
-                VStack(alignment: .leading, spacing: isRegular ? 5 : 3) {
+                VStack(alignment: .leading, spacing: isRegular ? 4 : 2) {
                     Text(scoreLabelFor(score))
-                        .font(.appSans(size: isRegular ? 15 : 12, weight: .bold))
+                        .font(.appSans(size: isRegular ? 14 : 12, weight: .bold))
                         .foregroundStyle(scoreColor)
 
                     HStack(spacing: isRegular ? 4 : 3) {
                         ForEach(0..<5, id: \.self) { i in
                             RoundedRectangle(cornerRadius: 2)
-                                .fill(i < score ? scoreColor : Color.appDivider)
-                                .frame(height: isRegular ? 6 : 4)
+                                .fill(i < score ? scoreColor : Color.white.opacity(0.20))
+                                .frame(height: isRegular ? 5 : 4)
                         }
                     }
                 }
 
                 Spacer(minLength: 0)
-            }
-            .padding(.horizontal, sectionPad)
-            .padding(.vertical, isRegular ? 12 : 8)
 
-            Divider().foregroundStyle(Color.appDivider.opacity(0.5))
+                // Tap info
+                if let tapTime = tapTimes[currentIndex] ?? nil {
+                    Text(String(format: "Nhấn tại %.1fs", tapTime))
+                        .font(.appSans(size: 11))
+                        .foregroundStyle(Color.white.opacity(0.60))
+                } else {
+                    Text("Không nhấn")
+                        .font(.appSans(size: 11))
+                        .foregroundStyle(Color.appError.opacity(0.80))
+                }
+            }
+            .padding(.horizontal, isRegular ? 16 : 12)
+            .padding(.vertical, isRegular ? 10 : 8)
+
+            Divider().overlay(Color.white.opacity(0.12))
 
             // Timeline
             HazardTimeline(
@@ -301,220 +363,67 @@ struct HazardTestView: View {
                 tapTime: tapTimes[currentIndex] ?? nil,
                 duration: playerState.duration
             )
-            .padding(.horizontal, sectionPad)
-            .padding(.vertical, isRegular ? 12 : 8)
+            .padding(.horizontal, isRegular ? 16 : 12)
+            .padding(.vertical, isRegular ? 10 : 8)
 
-            Divider().foregroundStyle(Color.appDivider.opacity(0.5))
+            Divider().overlay(Color.white.opacity(0.12))
 
-            // Tip
+            // Tip row
             HStack(alignment: .top, spacing: 6) {
                 Image(systemName: "lightbulb.fill")
-                    .font(.appSans(size: isRegular ? 13 : 10))
-                    .foregroundStyle(Color.appWarning)
+                    .font(.appSans(size: isRegular ? 12 : 10))
+                    .foregroundStyle(Color(hex: 0xFFC233))
                     .padding(.top, 1)
                 Text(situation.tip)
-                    .font(.appSans(size: isRegular ? 13 : 10))
-                    .foregroundStyle(Color.appTextMedium)
+                    .font(.appSans(size: isRegular ? 12 : 10))
+                    .foregroundStyle(Color.white.opacity(0.75))
                     .fixedSize(horizontal: false, vertical: true)
             }
-            .padding(.horizontal, sectionPad)
-            .padding(.vertical, isRegular ? 12 : 8)
-        }
-        .glassCard(cornerRadius: 16, interactive: false)
+            .padding(.horizontal, isRegular ? 16 : 12)
+            .padding(.vertical, isRegular ? 10 : 8)
 
-        Spacer(minLength: 0)
+            Divider().overlay(Color.white.opacity(0.12))
 
-        // Nav buttons outside card
-        VStack(spacing: btnSpacing) {
-            if isPractice && currentIndex > 0 {
-                Button {
-                    Haptics.selection()
-                    goToPrevious()
-                } label: {
-                    AppButton(icon: "backward.fill", label: "Trước", style: .secondary, height: btnHeight)
-                }
-            }
-
-            Button {
-                Haptics.selection()
-                retryCurrent()
-            } label: {
-                AppButton(icon: "arrow.counterclockwise", label: "Xem lại", style: .secondary, height: btnHeight)
-            }
-
-            Button {
-                Haptics.selection()
-                advanceOrFinish()
-            } label: {
-                AppButton(
-                    icon: isLast ? "checkmark" : "forward.fill",
-                    label: isLast ? "Kết quả" : "Tiếp theo",
-                    height: btnHeight
-                )
-            }
-        }
-    }
-
-    // MARK: - Portrait Layout
-
-    @ViewBuilder
-    private func portraitLayout(situation: HazardSituation, hasTapped: Bool) -> some View {
-        let hPad: CGFloat = isRegular ? 40 : 16
-        let btnHeight = metrics.buttonHeight
-
-        VStack(spacing: 0) {
-            // MARK: Video Player
-            ZStack {
-                HazardVideoPlayer(
-                    url: videoCache.playableURL(for: situation),
-                    state: $playerState
-                )
-                .aspectRatio(16 / 9, contentMode: .fit)
-                .clipShape(RoundedRectangle(cornerRadius: 14))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 14)
-                        .strokeBorder(Color.white.opacity(0.15), lineWidth: 1)
-                )
-                .overlay(
-                    Color.white
-                        .opacity(showTapFlash ? 0.4 : 0)
-                        .clipShape(RoundedRectangle(cornerRadius: 14))
-                        .animation(.easeOut(duration: 0.2), value: showTapFlash)
-                        .allowsHitTesting(false)
-                )
-                if playerState.hasError {
-                    videoErrorOverlay
-                } else if playerState.isBuffering {
-                    ProgressView()
-                        .tint(themeStore.primaryColor)
-                }
-            }
-            .padding(.horizontal, hPad)
-            .padding(.top, 12)
-
-            if !playerState.isFinished {
-                // MARK: Timer + progress bar
-                HStack(spacing: 8) {
-                    HStack(spacing: 4) {
-                        Circle()
-                            .fill(hasTapped ? Color.appSuccess : Color.appError)
-                            .frame(width: 6, height: 6)
-                        Text(timeText)
-                            .font(.appSans(size: isRegular ? 14 : 12, weight: .semibold))
-                            .foregroundStyle(Color.appTextMedium)
-                    }
-
-                    Spacer()
-                }
-                .padding(.horizontal, hPad)
-                .padding(.top, 12)
-
-                // MARK: Video progress bar
-                if playerState.duration > 0 {
-                    HazardPlayingBar(
-                        currentTime: playerState.currentTime,
-                        duration: playerState.duration,
-                        situation: situation,
-                        hasTapped: hasTapped
-                    )
-                    .padding(.horizontal, hPad)
-                    .padding(.top, 10)
-                }
-            }
-
-            if playerState.isFinished {
-                // MARK: Finished — scrollable score + bottom bar
-                ScrollView {
-                    if scoreRevealed {
-                        let score = situation.score(tapTime: tapTimes[currentIndex] ?? nil)
-                        HazardScoreCard(
-                            score: score,
-                            situation: situation,
-                            tapTime: tapTimes[currentIndex] ?? nil,
-                            duration: playerState.duration
-                        )
-                        .padding(.horizontal, hPad)
-                        .transition(.asymmetric(
-                            insertion: .scale(scale: 0.96).combined(with: .opacity),
-                            removal: .opacity
-                        ))
-                    } else {
-                        VStack(spacing: 8) {
-                            ProgressView()
-                                .tint(themeStore.primaryColor)
-                            Text("Đang tính điểm...")
-                                .font(.appSans(size: isRegular ? 15 : 13, weight: .medium))
-                                .foregroundStyle(Color.appTextLight)
-                        }
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 80)
-                        .transition(.opacity)
+            // Nav buttons row
+            HStack(spacing: isRegular ? 10 : 8) {
+                if isPractice && currentIndex > 0 {
+                    Button {
+                        Haptics.selection()
+                        goToPrevious()
+                    } label: {
+                        HazardGhostButton(icon: "backward.fill", label: "Trước")
                     }
                 }
-                .padding(.top, 16)
 
-                HStack(spacing: isRegular ? 14 : 10) {
-                    if isPractice && currentIndex > 0 {
-                        Button {
-                            Haptics.selection()
-                            goToPrevious()
-                        } label: {
-                            AppButton(icon: "backward.fill", label: "Trước", style: .secondary, height: btnHeight)
-                        }
-                    }
-
+                if isPractice {
                     Button {
                         Haptics.selection()
                         retryCurrent()
                     } label: {
-                        AppButton(icon: "arrow.counterclockwise", label: "Xem lại", style: .secondary, height: btnHeight)
-                    }
-
-                    Button {
-                        Haptics.selection()
-                        advanceOrFinish()
-                    } label: {
-                        AppButton(
-                            icon: isLast ? "checkmark" : "forward.fill",
-                            label: isLast ? "Xem kết quả" : "Tiếp theo",
-                            height: btnHeight
-                        )
+                        HazardGhostButton(icon: "arrow.counterclockwise", label: "Xem lại")
                     }
                 }
-                .padding(.horizontal, hPad)
-                .padding(.top, 12)
-                .padding(.bottom, isRegular ? 16 : 8)
-            } else {
-                // MARK: Playing — action area pinned to bottom
-                Spacer(minLength: 0)
 
-                VStack(spacing: isRegular ? 14 : 12) {
-                    HazardDangerButton(
-                        hasTapped: hasTapped,
-                        countdown: playerState.currentTime < 3,
-                        countdownSeconds: max(1, 3 - Int(playerState.currentTime))
-                    ) {
-                        handleTap(at: playerState.currentTime)
+                Button {
+                    Haptics.selection()
+                    advanceOrFinish()
+                } label: {
+                    HStack(spacing: 8) {
+                        Image(systemName: isLast ? "checkmark" : "chevron.right.2")
+                            .font(.appSans(size: 14, weight: .semibold))
+                        Text(isLast ? "Kết quả" : "Tiếp theo")
+                            .font(.appSans(size: 14, weight: .black))
                     }
-
-                    if hasTapped {
-                        Button {
-                            Haptics.selection()
-                            skipVideo()
-                        } label: {
-                            AppButton(icon: "forward.fill", label: "Bỏ qua", height: btnHeight)
-                        }
-                        .transition(.move(edge: .bottom).combined(with: .opacity))
-                    }
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 12)
+                    .background(Color.appPrimary.opacity(0.85))
+                    .clipShape(RoundedRectangle(cornerRadius: 14))
                 }
-                .padding(.horizontal, hPad)
-                .padding(.bottom, isRegular ? 16 : 8)
-                .animation(.spring(duration: 0.35, bounce: 0.15), value: hasTapped)
             }
+            .padding(.horizontal, isRegular ? 16 : 12)
+            .padding(.vertical, isRegular ? 10 : 8)
         }
-        .id("\(currentIndex)-\(restartToken)")
-        .animation(.spring(duration: 0.35, bounce: 0.15), value: playerState.isFinished && scoreRevealed)
-        .animation(.easeOut(duration: 0.2), value: currentIndex)
     }
 
     // MARK: - Shared Components
@@ -602,10 +511,6 @@ struct HazardTestView: View {
         }
     }
 
-    private func undoTap() {
-        tapTimes.removeValue(forKey: currentIndex)
-    }
-
     private func skipVideo() {
         playerState.isFinished = true
     }
@@ -648,6 +553,8 @@ struct HazardTestView: View {
             progressStore.addCompletedHazardSet(setId)
         }
 
+        // Leaving the video for the portrait result screen — rotate back.
+        OrientationManager.shared.lock()
         navigateToResult = true
     }
 
@@ -679,101 +586,226 @@ struct PlayerState {
     var hasError = false
 }
 
-// MARK: - Playing Progress Bar (3-state after tap)
+// MARK: - Hazard Bottom Panel (landscape playing state)
 
-private struct HazardPlayingBar: View {
+private struct HazardBottomPanel: View {
+    let situation: HazardSituation
+    let currentTime: Double
+    let duration: Double
+    let hasTapped: Bool
+    let timeText: String
+    let isPractice: Bool
+    let isLast: Bool
+    let onTap: () -> Void
+    let onSkip: () -> Void
+    let onRetry: () -> Void
+    let onAdvance: () -> Void
+
+    @Environment(\.horizontalSizeClass) private var sizeClass
+    private var isRegular: Bool { sizeClass == .regular }
+
+    var body: some View {
+        VStack(spacing: 10) {
+            // Sub-layer 7a: Meta row
+            metaRow
+
+            // Sub-layer 7b: Zones timeline bar
+            if duration > 0 {
+                HazardZonesBar(
+                    currentTime: currentTime,
+                    duration: duration,
+                    situation: situation,
+                    hasTapped: hasTapped
+                )
+            }
+
+            // Sub-layer 7c: Action row
+            actionRow
+        }
+        .padding(8)
+        .background(Color(hex: 0x000000, opacity: 0.50))
+        .clipShape(RoundedRectangle(cornerRadius: 22))
+        .overlay(RoundedRectangle(cornerRadius: 22).strokeBorder(Color.white.opacity(0.10), lineWidth: 1))
+    }
+
+    // Meta row: timestamp + title + legend dots
+    @ViewBuilder
+    private var metaRow: some View {
+        HStack(spacing: 0) {
+            // Left group
+            HStack(spacing: 10) {
+                // Timestamp capsule
+                Text(timeText)
+                    .font(.appSans(size: 11, weight: .bold))
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 4)
+                    .background(Color.white.opacity(0.08))
+                    .clipShape(Capsule())
+
+                Text(situation.title)
+                    .font(.appSans(size: 14, weight: .black))
+                    .foregroundStyle(.white)
+                    .lineLimit(1)
+
+                Text("·")
+                    .font(.appSans(size: 14, weight: .bold))
+                    .foregroundStyle(Color.white.opacity(0.40))
+
+                Text("TH \(situation.id)")
+                    .font(.appSans(size: 12, weight: .semibold))
+                    .foregroundStyle(Color.white.opacity(0.70))
+            }
+
+            Spacer(minLength: 8)
+
+            // Right group: legend dots
+            HStack(spacing: 14) {
+                legendDot(color: Color(hex: 0x30D158), label: "Hoàn hảo")
+                legendDot(color: Color(hex: 0xFFD60A), label: "Hơi muộn")
+                legendDot(color: Color(hex: 0xFF3B30), label: "Bỏ lỡ")
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func legendDot(color: Color, label: String) -> some View {
+        HStack(spacing: 5) {
+            Circle()
+                .fill(color)
+                .frame(width: 6, height: 6)
+            Text(label)
+                .font(.appSans(size: 10, weight: .semibold))
+                .foregroundStyle(Color.white.opacity(0.70))
+        }
+    }
+
+    // Action row: ghost buttons flanking the big danger button
+    @ViewBuilder
+    private var actionRow: some View {
+        HStack(spacing: 10) {
+            // Xem lại
+            if isPractice {
+                Button(action: onRetry) {
+                    HazardGhostButton(icon: "arrow.counterclockwise", label: "Xem lại")
+                }
+            }
+
+            // Danger button (fills remaining space)
+            HazardDangerButton(
+                hasTapped: hasTapped,
+                compact: !isRegular,
+                countdown: currentTime < 3,
+                countdownSeconds: max(1, 3 - Int(currentTime)),
+                action: onTap
+            )
+
+            // Bỏ qua
+            Button(action: onSkip) {
+                HazardGhostButton(icon: "forward.fill", label: "Bỏ qua")
+            }
+
+            // Tiếp
+            Button(action: onAdvance) {
+                HazardGhostButton(
+                    icon: isLast ? "checkmark" : "chevron.right.2",
+                    label: isLast ? "Kết quả" : "Tiếp"
+                )
+            }
+        }
+        .animation(.spring(duration: 0.35, bounce: 0.15), value: hasTapped)
+    }
+}
+
+// MARK: - Ghost Action Button (icon above label, dark translucent)
+
+private struct HazardGhostButton: View {
+    let icon: String
+    let label: String
+    var width: CGFloat = 80
+
+    var body: some View {
+        VStack(spacing: 3) {
+            Image(systemName: icon)
+                .font(.appSans(size: 16, weight: .semibold))
+                .foregroundStyle(.white)
+            Text(label)
+                .font(.appSans(size: 10, weight: .bold))
+                .foregroundStyle(Color.white.opacity(0.80))
+        }
+        .frame(width: width)
+        .padding(.vertical, 10)
+        .background(Color.white.opacity(0.08))
+        .clipShape(RoundedRectangle(cornerRadius: 14))
+        .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(Color.white.opacity(0.10), lineWidth: 1))
+    }
+}
+
+// MARK: - Hazard Zones Bar (bottom panel timeline, landscape)
+
+private struct HazardZonesBar: View {
     let currentTime: Double
     let duration: Double
     let situation: HazardSituation
     let hasTapped: Bool
 
-    private var fraction: Double {
+    private var playedFraction: Double {
         duration > 0 ? min(currentTime / duration, 1.0) : 0
     }
-
-    private enum Zone { case early, perfect, late }
-
-    private var currentZone: Zone {
-        if currentTime < situation.perfectStart { return .early }
-        if currentTime <= situation.perfectEnd { return .perfect }
-        return .late
+    private var perfectStartFrac: Double {
+        duration > 0 ? situation.perfectStart / duration : 0
     }
-
-    private var progressColor: Color {
-        if !hasTapped { return .appPrimary }
-        switch currentZone {
-        case .early: return .appTextLight
-        case .perfect: return .appSuccess
-        case .late: return .appError
-        }
+    private var perfectEndFrac: Double {
+        duration > 0 ? min(situation.perfectEnd / duration, 1.0) : 0
     }
 
     var body: some View {
         GeometryReader { geo in
             let w = geo.size.width
+            let pastW = w * min(playedFraction, perfectStartFrac)
+            let perfectW = hasTapped ? w * (perfectEndFrac - perfectStartFrac) : 0
+            let lateW = hasTapped ? w * max(0, min(playedFraction, 1.0) - perfectEndFrac) : 0
+            let missW = hasTapped ? w * max(0, 1.0 - perfectEndFrac - max(0, min(playedFraction, 1.0) - perfectEndFrac)) : 0
 
             ZStack(alignment: .leading) {
-                // Track
+                // Track background
                 Capsule()
-                    .fill(Color.appDivider.opacity(0.4))
+                    .fill(Color.white.opacity(0.08))
 
-                // 3 zone backgrounds (only visible after tap)
-                if hasTapped && duration > 0 {
-                    let startFrac = situation.perfectStart / duration
-                    let endFrac = min(situation.perfectEnd / duration, 1.0)
+                // Played-past segment
+                Capsule()
+                    .fill(Color.white.opacity(0.40))
+                    .frame(width: max(pastW, 0))
 
-                    // Early zone
+                if hasTapped {
+                    // Perfect zone segment
+                    RoundedRectangle(cornerRadius: 100)
+                        .fill(Color(hex: 0x30D158))
+                        .frame(width: max(perfectW, 0))
+                        .offset(x: w * perfectStartFrac)
+
+                    // Late zone segment
+                    RoundedRectangle(cornerRadius: 100)
+                        .fill(Color(hex: 0xFFD60A))
+                        .frame(width: max(lateW, 0))
+                        .offset(x: w * perfectEndFrac)
+
+                    // Miss segment
+                    RoundedRectangle(cornerRadius: 100)
+                        .fill(Color(hex: 0xFF3B30))
+                        .frame(width: max(missW, 0))
+                        .offset(x: w * perfectEndFrac + lateW)
+                } else {
+                    // Live progress fill before tap
                     Capsule()
-                        .fill(Color.appTextLight.opacity(0.15))
-                        .frame(width: max(w * startFrac, 0))
-
-                    // Perfect zone
-                    RoundedRectangle(cornerRadius: 2)
-                        .fill(Color.appSuccess.opacity(0.2))
-                        .frame(width: max(w * (endFrac - startFrac), 0))
-                        .offset(x: w * startFrac)
-
-                    // Late zone
-                    RoundedRectangle(cornerRadius: 2)
-                        .fill(Color.appError.opacity(0.12))
-                        .frame(width: max(w * (1.0 - endFrac), 0))
-                        .offset(x: w * endFrac)
+                        .fill(Color.appPrimary.opacity(0.70))
+                        .frame(width: max(w * playedFraction, 0))
+                        .animation(.linear(duration: 0.1), value: playedFraction)
                 }
-
-                // Progress fill
-                Capsule()
-                    .fill(progressColor.opacity(0.6))
-                    .frame(width: max(w * fraction, 0))
-                    .animation(.linear(duration: 0.1), value: fraction)
             }
         }
-        .frame(height: hasTapped ? 8 : 4)
-        .animation(.easeOut(duration: 0.3), value: hasTapped)
-
-        // Zone labels (only after tap)
-        if hasTapped {
-            HStack(spacing: 0) {
-                HStack(spacing: 3) {
-                    Circle().fill(Color.appTextLight).frame(width: 5, height: 5)
-                    Text("Sớm")
-                }
-                .foregroundStyle(Color.appTextLight)
-                Spacer()
-                HStack(spacing: 3) {
-                    Circle().fill(Color.appSuccess).frame(width: 5, height: 5)
-                    Text("Đúng lúc")
-                }
-                .foregroundStyle(Color.appSuccess)
-                Spacer()
-                HStack(spacing: 3) {
-                    Circle().fill(Color.appError).frame(width: 5, height: 5)
-                    Text("Muộn")
-                }
-                .foregroundStyle(Color.appError)
-            }
-            .font(.appSans(size: 10))
-            .transition(.opacity)
-        }
+        .frame(height: 8)
+        .clipShape(Capsule())
     }
 }
 
@@ -804,14 +836,9 @@ private struct HazardProgressCapsule: View {
         .padding(.horizontal, 14)
         .padding(.vertical, 6)
 
-        if #available(iOS 26.0, *) {
-            content
-                .glassEffect(.regular.interactive(), in: .capsule)
-        } else {
-            content
-                .background(Color.appDivider.opacity(0.3))
-                .clipShape(Capsule())
-        }
+        content
+            .background(Color.appDivider.opacity(0.3))
+            .clipShape(Capsule())
     }
 }
 
@@ -824,43 +851,52 @@ private struct HazardDangerButton: View {
     var countdownSeconds: Int = 3
     let action: () -> Void
 
-    @State private var isPulsing = false
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
     private var isDisabled: Bool { hasTapped || countdown }
 
     private var buttonText: String {
         if hasTapped { return "Đã phát hiện!" }
         if countdown { return "Chuẩn bị... \(countdownSeconds)" }
-        return "Phát hiện nguy hiểm"
+        return "PHÁT HIỆN NGUY HIỂM"
+    }
+
+    private var buttonSubtitle: String {
+        if hasTapped { return "Đã ghi nhận phản ứng" }
+        if countdown { return "Sẵn sàng..." }
+        return "Nhấn ngay khi thấy tình huống"
     }
 
     var body: some View {
         Button(action: action) {
             let content = HStack(spacing: 10) {
                 Image(systemName: hasTapped ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
-                    .font(.appSans(size: compact ? 18 : 22, weight: .semibold))
+                    .font(.appSans(size: compact ? 18 : 20, weight: .semibold))
                     .contentTransition(.symbolEffect(.replace))
 
-                Text(buttonText)
-                    .font(.appSans(size: compact ? 15 : 17, weight: .bold))
-                    .contentTransition(.numericText())
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(buttonText)
+                        .font(.appSans(size: compact ? 13 : 14, weight: .black))
+                        .kerning(0.5)
+                        .contentTransition(.numericText())
+                    Text(buttonSubtitle)
+                        .font(.appSans(size: compact ? 9 : 10, weight: .semibold))
+                        .opacity(0.80)
+                }
             }
             .foregroundStyle(hasTapped ? Color.appSuccess : .white)
             .opacity(countdown ? 0.5 : 1.0)
             .frame(maxWidth: .infinity)
-            .frame(height: compact ? 48 : 64)
+            .frame(height: compact ? 48 : 56)
 
             if #available(iOS 26.0, *) {
                 content
                     .glassEffect(
                         .regular.interactive().tint(hasTapped ? Color.appSuccess.opacity(0.15) : Color.appError.opacity(countdown ? 0.4 : 0.85)),
-                        in: .rect(cornerRadius: 18)
+                        in: .rect(cornerRadius: 14)
                     )
             } else {
                 content
                     .background(hasTapped ? Color.appSuccess.opacity(0.15) : Color.appError.opacity(countdown ? 0.4 : 1.0))
-                    .clipShape(RoundedRectangle(cornerRadius: 18))
+                    .clipShape(RoundedRectangle(cornerRadius: 14))
             }
         }
         .buttonStyle(.plain)
@@ -870,128 +906,6 @@ private struct HazardDangerButton: View {
         .scaleEffect(hasTapped ? 0.97 : 1.0)
         .animation(.spring(duration: 0.35, bounce: 0.3), value: hasTapped)
         .animation(.easeOut(duration: 0.3), value: countdown)
-        .onChange(of: countdown) { _, inCountdown in
-            if !inCountdown && !hasTapped && !isPulsing && !reduceMotion {
-                withAnimation(
-                    .easeInOut(duration: 1.1)
-                    .repeatForever(autoreverses: true)
-                ) {
-                    isPulsing = true
-                }
-            }
-        }
-        .onChange(of: hasTapped) { _, tapped in
-            if tapped { isPulsing = false }
-        }
-    }
-}
-
-// MARK: - Hazard Score Card (combined score + timeline + tip)
-
-private struct HazardScoreCard: View {
-    let score: Int
-    let situation: HazardSituation
-    let tapTime: Double?
-    let duration: Double
-
-    var body: some View {
-        VStack(spacing: 14) {
-            HazardScoreReveal(score: score)
-
-            HazardTimeline(
-                situation: situation,
-                tapTime: tapTime,
-                duration: duration
-            )
-
-            HStack(alignment: .top, spacing: 8) {
-                Image(systemName: "lightbulb.fill")
-                    .font(.appSans(size: 13))
-                    .foregroundStyle(Color.appWarning)
-                    .padding(.top, 1)
-                Text(situation.tip)
-                    .font(.appSans(size: 13))
-                    .foregroundStyle(Color.appTextMedium)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-        }
-        .padding(16)
-        .glassCard(cornerRadius: 16, interactive: false)
-    }
-}
-
-// MARK: - Score Reveal
-
-private struct HazardScoreReveal: View {
-    @Environment(ThemeStore.self) private var themeStore
-    let score: Int
-
-    @State private var displayedScore = 0
-    @State private var animatedDots = 0
-
-    private var displayScoreColor: Color {
-        if displayedScore >= 4 { return .appSuccess }
-        if displayedScore >= 2 { return .appWarning }
-        return .appError
-    }
-
-    var body: some View {
-        VStack(spacing: 8) {
-            Text("\(displayedScore)")
-                .font(.appSans(size: 44, weight: .bold))
-                .foregroundStyle(displayScoreColor)
-                .contentTransition(.numericText())
-
-            HStack(spacing: 6) {
-                ForEach(0..<5, id: \.self) { i in
-                    Circle()
-                        .fill(i < animatedDots ? themeStore.primaryColor : Color.appDivider)
-                        .frame(width: 14, height: 14)
-                        .scaleEffect(i < animatedDots ? 1.0 : 0.6)
-                        .animation(
-                            .spring(duration: 0.35, bounce: 0.4).delay(Double(i) * 0.08),
-                            value: animatedDots
-                        )
-                }
-            }
-
-            Text(displayScoreLabel)
-                .font(.appSans(size: 13, weight: .medium))
-                .foregroundStyle(displayScoreColor)
-        }
-        .frame(maxWidth: .infinity)
-        .onAppear {
-            // Count up score from 0 with numericText transition
-            Task { @MainActor in
-                try? await Task.sleep(for: .milliseconds(150))
-                for i in 1...max(score, 1) {
-                    withAnimation(.spring(duration: 0.3, bounce: 0.15)) {
-                        displayedScore = min(i, score)
-                    }
-                    try? await Task.sleep(for: .milliseconds(120))
-                }
-                // Ensure final value if score is 0
-                if score == 0 {
-                    withAnimation(.spring(duration: 0.3, bounce: 0.15)) {
-                        displayedScore = 0
-                    }
-                }
-                withAnimation {
-                    animatedDots = score
-                }
-            }
-        }
-    }
-
-    private var displayScoreLabel: String {
-        switch displayedScore {
-        case 5: return "Hoàn hảo!"
-        case 4: return "Rất tốt"
-        case 3: return "Tốt"
-        case 2: return "Tạm được"
-        case 1: return "Muộn"
-        default: return "Không đạt"
-        }
     }
 }
 
@@ -1074,7 +988,7 @@ private struct HazardTimeline: View {
                 Label("Muộn", systemImage: "clock.badge.xmark")
                     .foregroundStyle(Color.appError)
             }
-            .font(.appSans(size: 11))
+            .font(.appSans(size: 12))
 
             // Tap time info
             if let tapTime {
@@ -1147,7 +1061,7 @@ struct HazardVideoPlayer: UIViewControllerRepresentable {
         Coordinator(parent: self)
     }
 
-    class Coordinator: NSObject {
+    @MainActor final class Coordinator: NSObject {
         let parent: HazardVideoPlayer
         weak var player: AVPlayer?
         var endObserver: NSObjectProtocol?
@@ -1155,21 +1069,52 @@ struct HazardVideoPlayer: UIViewControllerRepresentable {
         var timeObserver: Any?
         var statusObservation: NSKeyValueObservation?
         var bufferObservation: NSKeyValueObservation?
+        var bufferTimeoutTask: Task<Void, Never>?
+
+        /// How long the player may stall (no playable buffer) before we give up
+        /// and show the retry overlay instead of spinning indefinitely.
+        private let bufferTimeoutInterval: TimeInterval = 20
 
         init(parent: HazardVideoPlayer) {
             self.parent = parent
+        }
+
+        /// Arm a timer that flips to the error state if playback is still
+        /// stalled after `bufferTimeoutInterval`. Re-armed whenever buffering
+        /// resumes, cancelled once playback can keep up. Runs on the main actor.
+        func scheduleBufferTimeout() {
+            bufferTimeoutTask?.cancel()
+            let interval = bufferTimeoutInterval
+            bufferTimeoutTask = Task { @MainActor [weak self] in
+                try? await Task.sleep(for: .seconds(interval))
+                guard !Task.isCancelled, let self else { return }
+                if self.player?.currentItem?.isPlaybackLikelyToKeepUp != true {
+                    self.parent.state.hasError = true
+                }
+            }
+        }
+
+        func cancelBufferTimeout() {
+            bufferTimeoutTask?.cancel()
+            bufferTimeoutTask = nil
         }
 
         func setup(player: AVPlayer) {
             cleanup(player: self.player)
             self.player = player
 
+            // Notification + periodic observers are delivered on `.main`, so it
+            // is safe to assume main-actor isolation synchronously.
             endObserver = NotificationCenter.default.addObserver(
                 forName: .AVPlayerItemDidPlayToEndTime,
                 object: player.currentItem,
                 queue: .main
             ) { [weak self] _ in
-                self?.parent.state.isFinished = true
+                MainActor.assumeIsolated {
+                    guard let self else { return }
+                    self.parent.state.isFinished = true
+                    self.cancelBufferTimeout()
+                }
             }
 
             errorObserver = NotificationCenter.default.addObserver(
@@ -1177,34 +1122,56 @@ struct HazardVideoPlayer: UIViewControllerRepresentable {
                 object: player.currentItem,
                 queue: .main
             ) { [weak self] _ in
-                self?.parent.state.hasError = true
+                MainActor.assumeIsolated {
+                    guard let self else { return }
+                    self.parent.state.hasError = true
+                    self.cancelBufferTimeout()
+                }
             }
 
             let interval = CMTime(seconds: 0.1, preferredTimescale: 600)
             timeObserver = player.addPeriodicTimeObserver(forInterval: interval, queue: .main) { [weak self] time in
-                guard let self else { return }
-                self.parent.state.currentTime = time.seconds
-                if let duration = player.currentItem?.duration.seconds, duration.isFinite {
-                    self.parent.state.duration = duration
+                MainActor.assumeIsolated {
+                    guard let self else { return }
+                    self.parent.state.currentTime = time.seconds
+                    if let duration = self.player?.currentItem?.duration.seconds, duration.isFinite {
+                        self.parent.state.duration = duration
+                    }
                 }
             }
 
+            // KVO observations can fire on an arbitrary thread, so hop to the
+            // main actor explicitly. `self` is a main-actor type (Sendable), so
+            // no unsafe escape hatch is needed.
             bufferObservation = player.currentItem?.observe(\.isPlaybackLikelyToKeepUp, options: [.new]) { [weak self] item, _ in
+                let isKeepUp = item.isPlaybackLikelyToKeepUp
                 Task { @MainActor in
-                    self?.parent.state.isBuffering = !item.isPlaybackLikelyToKeepUp
+                    guard let self else { return }
+                    self.parent.state.isBuffering = !isKeepUp
+                    if isKeepUp {
+                        self.cancelBufferTimeout()
+                    } else {
+                        self.scheduleBufferTimeout()
+                    }
                 }
             }
 
             statusObservation = player.currentItem?.observe(\.status, options: [.new]) { [weak self] item, _ in
-                if item.status == .failed {
-                    Task { @MainActor in
-                        self?.parent.state.hasError = true
-                    }
+                guard item.status == .failed else { return }
+                Task { @MainActor in
+                    guard let self else { return }
+                    self.parent.state.hasError = true
+                    self.cancelBufferTimeout()
                 }
             }
+
+            // Cover the initial-load case: if the very first buffer never
+            // becomes ready (offline / dead URL), surface the retry overlay.
+            scheduleBufferTimeout()
         }
 
         func cleanup(player: AVPlayer?) {
+            cancelBufferTimeout()
             if let endObserver { NotificationCenter.default.removeObserver(endObserver) }
             if let errorObserver { NotificationCenter.default.removeObserver(errorObserver) }
             if let timeObserver, let player { player.removeTimeObserver(timeObserver) }
@@ -1217,7 +1184,10 @@ struct HazardVideoPlayer: UIViewControllerRepresentable {
             bufferObservation = nil
         }
 
-        deinit {
+        // Isolated to the main actor so the non-Sendable observer tokens can be
+        // torn down safely (the representable lifecycle also calls `cleanup`).
+        isolated deinit {
+            bufferTimeoutTask?.cancel()
             if let timeObserver, let player { player.removeTimeObserver(timeObserver) }
             if let endObserver { NotificationCenter.default.removeObserver(endObserver) }
             if let errorObserver { NotificationCenter.default.removeObserver(errorObserver) }
@@ -1232,4 +1202,3 @@ struct HazardVideoPlayer: UIViewControllerRepresentable {
         vc.player = nil
     }
 }
-

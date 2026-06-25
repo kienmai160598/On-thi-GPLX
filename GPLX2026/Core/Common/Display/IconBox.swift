@@ -7,11 +7,13 @@ struct IconBox: View {
     var cornerRadius: CGFloat = 8
     var iconFontSize: CGFloat = 18
     var iconWeight: Font.Weight = .regular
+    /// Explicit box background; defaults to a subtle tint of `color`.
+    var background: Color? = nil
 
     var body: some View {
         ZStack {
             RoundedRectangle(cornerRadius: cornerRadius)
-                .fill(color.opacity(0.12))
+                .fill(background ?? color.opacity(0.12))
                 .frame(width: size, height: size)
             Image(systemName: icon)
                 .font(.appSans(size: iconFontSize, weight: iconWeight))

@@ -1,0 +1,578 @@
+[
+  {
+    "dimension": "darkmode-tokens",
+    "file": "GPLX2026/Features/Home/HomeTab.swift",
+    "line": "258-260",
+    "severity": "high",
+    "issue": "HomeExamResultCard outer card uses `Color.white.opacity(0.8)` as its fill — the card becomes an opaque white box in dark mode instead of using the adaptive `cardBg` token.",
+    "fix": "Replace `.background(Color.white.opacity(0.8))` with `.background(Color.cardBg)` (or `.background(Color.cardBg.opacity(0.9))` to preserve the slight translucency intent)."
+  },
+  {
+    "dimension": "darkmode-tokens",
+    "file": "GPLX2026/Features/Home/HomeTab.swift",
+    "line": "446-448",
+    "severity": "high",
+    "issue": "HomeProgressCard outer card uses `Color.white.opacity(0.8)` as its fill — same problem as above; visually broken in dark mode.",
+    "fix": "Replace `.background(Color.white.opacity(0.8))` with `.background(Color.cardBg)`."
+  },
+  {
+    "dimension": "darkmode-tokens",
+    "file": "GPLX2026/Features/Home/HomeTab.swift",
+    "line": "614-617",
+    "severity": "high",
+    "issue": "HomeShortcutsGroup list container uses `Color.white.opacity(0.8)` as its fill — white card on a dark background.",
+    "fix": "Replace `.background(Color.white.opacity(0.8))` with `.background(Color.cardBg)`."
+  },
+  {
+    "dimension": "darkmode-tokens",
+    "file": "GPLX2026/Features/Home/HomeTab.swift",
+    "line": "290-291",
+    "severity": "high",
+    "issue": "HomeMiniStatTile uses the literal hex `Color(hex: 0xFAF9F7)` as its card fill — this is the light-mode value of `cardBg` hardcoded without dark-mode adaptation, making tiles appear light-cream in dark mode.",
+    "fix": "Replace `Color(hex: 0xFAF9F7)` with `Color.cardBg`."
+  },
+  {
+    "dimension": "darkmode-tokens",
+    "file": "GPLX2026/Features/Home/HomeTab.swift",
+    "line": "441-443",
+    "severity": "high",
+    "issue": "HomeProgressCard stat-list sub-tile uses `Color(hex: 0xFAF9F7)` as its background — again the hard-coded light-mode `cardBg` value.",
+    "fix": "Replace `Color(hex: 0xFAF9F7)` with `Color.cardBg`."
+  },
+  {
+    "dimension": "darkmode-tokens",
+    "file": "GPLX2026/Features/Home/PracticeTab.swift",
+    "line": "186-188",
+    "severity": "high",
+    "issue": "LightFeatureCard (hero card on Practice tab) uses `Color.white.opacity(0.8)` as its card fill — solid white in dark mode.",
+    "fix": "Replace `Color.white.opacity(0.8)` with `Color.cardBg`. The amber stroke border already provides the warm-light design accent without needing a white fill."
+  },
+  {
+    "dimension": "darkmode-tokens",
+    "file": "GPLX2026/Features/Home/PracticeTab.swift",
+    "line": "255-256",
+    "severity": "high",
+    "issue": "TopicRowCard uses `Color.white.opacity(0.8)` as its card background — white card in dark mode.",
+    "fix": "Replace `Color.white.opacity(0.8)` with `Color.cardBg`."
+  },
+  {
+    "dimension": "darkmode-tokens",
+    "file": "GPLX2026/Features/Home/ExamTab.swift",
+    "line": "214-219",
+    "severity": "high",
+    "issue": "examStatsCard outer container uses `Color.white.opacity(0.8)` as its fill — white in dark mode.",
+    "fix": "Replace `Color.white.opacity(0.8)` with `Color.cardBg`."
+  },
+  {
+    "dimension": "darkmode-tokens",
+    "file": "GPLX2026/Features/Home/ExamTab.swift",
+    "line": "312-314",
+    "severity": "high",
+    "issue": "examListSection rows container (exam list) uses `Color.white.opacity(0.8)` as its fill — white card in dark mode.",
+    "fix": "Replace `Color.white.opacity(0.8)` with `Color.cardBg`."
+  },
+  {
+    "dimension": "darkmode-tokens",
+    "file": "GPLX2026/Features/Hazard/HazardResultView.swift",
+    "line": "331-337",
+    "severity": "high",
+    "issue": "SessionProgressCard uses `Color.white` (bare, fully opaque) as its card background — glaring white card in dark mode.",
+    "fix": "Replace `Color.white` with `Color.cardBg`."
+  },
+  {
+    "dimension": "darkmode-tokens",
+    "file": "GPLX2026/Features/Hazard/HazardResultView.swift",
+    "line": "400-407",
+    "severity": "high",
+    "issue": "RecentSituationCard uses `Color.white` as its background — fully opaque white in dark mode.",
+    "fix": "Replace `Color.white` with `Color.cardBg`."
+  },
+  {
+    "dimension": "darkmode-tokens",
+    "file": "GPLX2026/Features/Hazard/HazardResultView.swift",
+    "line": "481-490",
+    "severity": "high",
+    "issue": "HazardTimelineCard uses `Color.white.opacity(0.8)` as its primary background — white in dark mode. The stacked `.background(.ultraThinMaterial)` underneath is adaptive but the opaque white layer on top overrides it.",
+    "fix": "Remove the `Color.white.opacity(0.8)` background layer; let `.background(.ultraThinMaterial)` alone provide the card fill, which is adaptive. Or replace with `.background(Color.cardBg)`."
+  },
+  {
+    "dimension": "darkmode-tokens",
+    "file": "GPLX2026/Features/Settings/OfflineDownloadView.swift",
+    "line": "43-48",
+    "severity": "high",
+    "issue": "storageCard outer ZStack fill uses `Color(hex: 0xFFFFFF, opacity: 0.8)` — a literal white fill that will appear as a white box in dark mode.",
+    "fix": "Replace `Color(hex: 0xFFFFFF, opacity: 0.8)` with `Color.cardBg` (the inner card already correctly uses `Color.cardBg`)."
+  },
+  {
+    "dimension": "darkmode-tokens",
+    "file": "GPLX2026/Features/Settings/OfflineDownloadView.swift",
+    "line": "197-202",
+    "severity": "high",
+    "issue": "chaptersCard outer ZStack fill uses `Color(hex: 0xFFFFFF, opacity: 0.8)` — same literal white fill problem.",
+    "fix": "Replace `Color(hex: 0xFFFFFF, opacity: 0.8)` with `Color.cardBg`."
+  },
+  {
+    "dimension": "darkmode-tokens",
+    "file": "GPLX2026/Features/Settings/OfflineDownloadView.swift",
+    "line": "373-380",
+    "severity": "high",
+    "issue": "wifiToggleRow uses `Color(hex: 0xFFFFFF, opacity: 0.8)` as its card background — another literal white fill.",
+    "fix": "Replace `Color(hex: 0xFFFFFF, opacity: 0.8)` with `Color.cardBg`."
+  },
+  {
+    "dimension": "darkmode-tokens",
+    "file": "GPLX2026/Features/Home/HomeTab.swift",
+    "line": "115-116",
+    "severity": "high",
+    "issue": "Date chip in HomeGreetingHeader uses `Color.white.opacity(0.8)` as background — white pill in dark mode instead of an adaptive chip color.",
+    "fix": "Replace `Color.white.opacity(0.8)` with `Color.cardBg.opacity(0.9)` or `Color.cardBg`."
+  },
+  {
+    "dimension": "darkmode-tokens",
+    "file": "GPLX2026/Core/Theme/AppTheme.swift",
+    "line": "38-39",
+    "severity": "high",
+    "issue": "AppTabBar uses `.strokeBorder(.white.opacity(0.35), lineWidth: 0.5)` as the tab-bar ring border — in dark mode a white border on a near-black material reads as intended, but in light mode (light material) a white border is invisible. However the reverse concern applies: the border is always white regardless of color scheme and may look out of place in light mode. The canonical fix is to use `Color.appDivider.opacity(0.5)` which is adaptive.",
+    "fix": "In AppTabBar.swift line 38, replace `.strokeBorder(.white.opacity(0.35), lineWidth: 0.5)` with `.strokeBorder(Color.appDivider.opacity(0.5), lineWidth: 0.5)`."
+  },
+  {
+    "dimension": "darkmode-tokens",
+    "file": "GPLX2026/Core/Common/Layout/AppTabBar.swift",
+    "line": "38-39",
+    "severity": "medium",
+    "issue": "Tab bar overlay uses `.white.opacity(0.35)` as border stroke — always white regardless of color scheme; in light mode this border is nearly invisible over the light `.ultraThinMaterial`, defeating the hairline design intent.",
+    "fix": "Replace `.strokeBorder(.white.opacity(0.35), lineWidth: 0.5)` with `.strokeBorder(Color.appDivider.opacity(0.6), lineWidth: 0.5)`."
+  },
+  {
+    "dimension": "darkmode-tokens",
+    "file": "GPLX2026/Features/Exam/ExamResultView.swift",
+    "line": "21-34",
+    "severity": "medium",
+    "issue": "backgroundGradient uses hardcoded light-mode hex values (0xDFF1E6, 0xEBECEF, 0xE6E4DF, 0xF8E6E6) — no dark-mode variant, so the result screen has a light-colored gradient background in dark mode.",
+    "fix": "Define adaptive colors using `Color.adaptive(light:dark:)` for each stop, e.g. `adaptive(light: 0xDFF1E6, dark: 0x0E1F13)` for the green tint and `adaptive(light: 0xF8E6E6, dark: 0x1F0E0E)` for the red tint, so the result screen respects the user's appearance setting."
+  },
+  {
+    "dimension": "darkmode-tokens",
+    "file": "GPLX2026/Features/Hazard/HazardResultView.swift",
+    "line": "86-95",
+    "severity": "medium",
+    "issue": "HazardResultView body uses hardcoded light-mode hex gradient (0xDFF1E6 → 0xEBECEF → 0xE6E4DF) as the screen background — the same non-adaptive pattern as ExamResultView.",
+    "fix": "Replace the hardcoded LinearGradient with `ScaffoldBackground()` (already adaptive) or define adaptive color stops using `Color.adaptive(light:dark:)`, the same approach as the scaffold gradient tokens."
+  },
+  {
+    "dimension": "darkmode-tokens",
+    "file": "GPLX2026/Features/Exam/ExamResultView.swift",
+    "line": "424-428",
+    "severity": "medium",
+    "issue": "ExamStatIconRow row-level background uses `Color.white.opacity(0.4)` — semi-transparent white that stacks on a light gradient background in light mode but will appear as a washed-out overlay in dark mode against the dark gradient.",
+    "fix": "Replace `Color.white.opacity(0.4)` with `Color.cardBg.opacity(0.5)` so the row highlight is adaptive."
+  },
+  {
+    "dimension": "darkmode-tokens",
+    "file": "GPLX2026/Features/Exam/ExamResultView.swift",
+    "line": "500-508",
+    "severity": "medium",
+    "issue": "ExamTopicStatRow uses `Color.white.opacity(0.4)` as row background — same issue as ExamStatIconRow. Text label at line 491 also uses `Color(hex: 0x0F0F12)` (near-black literal) instead of `Color.appTextDark`.",
+    "fix": "Replace `Color.white.opacity(0.4)` with `Color.cardBg.opacity(0.5)`. Replace `Color(hex: 0x0F0F12)` for the stat name with `Color.appTextDark`."
+  },
+  {
+    "dimension": "darkmode-tokens",
+    "file": "GPLX2026/Features/Exam/ExamResultView.swift",
+    "line": "297-304",
+    "severity": "medium",
+    "issue": "statsCard and topicsCard both use `.strokeBorder(Color.white.opacity(0.7), lineWidth: 1)` as border — white border over `.ultraThinMaterial`; in dark mode the material is already dark, so a white border at 70% opacity reads as a heavy bright ring rather than a subtle hairline.",
+    "fix": "Replace `Color.white.opacity(0.7)` with `Color.appDivider.opacity(0.5)` on both card overlays."
+  },
+  {
+    "dimension": "darkmode-tokens",
+    "file": "GPLX2026/Features/Onboarding/OnboardingSteps.swift",
+    "line": "74-77",
+    "severity": "medium",
+    "issue": "`onboardingCard` modifier uses `Color.black.opacity(0.06)` as its border stroke — in dark mode a black-opacity border is invisible over a dark card surface (the border provides zero contrast). Multiple call sites use this modifier.",
+    "fix": "Replace `Color.black.opacity(0.06)` with `Color.appDivider` so the hairline border is visible in both modes. The same literal appears in `ExperienceLevelCard` (line 215), `DailyGoalTile` (line 446), and `OnboardingReadyStep` summaryCard (line 515)."
+  },
+  {
+    "dimension": "darkmode-tokens",
+    "file": "GPLX2026/Features/Home/HomeTab.swift",
+    "line": "406-409",
+    "severity": "medium",
+    "issue": "HomeProgressCard stat-list rows use `Color.black.opacity(0.06)` as Divider fill — invisible hairline in dark mode.",
+    "fix": "Replace `Color.black.opacity(0.06)` with `Color.appDivider`."
+  },
+  {
+    "dimension": "darkmode-tokens",
+    "file": "GPLX2026/Features/Home/PracticeTab.swift",
+    "line": "43-56",
+    "severity": "medium",
+    "issue": "PracticeTypeFilterBar unselected pills use `Color.white.opacity(0.8)` as background — white pills in dark mode. The selected pill uses `Color(hex: 0x0F0F12)` which is dark-only. MasteryFilterBar (line 86) has the same issue with `Color.white.opacity(0.8)` for unselected state.",
+    "fix": "Replace `Color.white.opacity(0.8)` for unselected pill backgrounds with `Color.cardBg`. In both filter bars also use `Color.appTextDark` instead of the hardcoded `Color(hex: 0x0F0F12)` for the unselected foreground text to ensure it adapts."
+  },
+  {
+    "dimension": "darkmode-tokens",
+    "file": "GPLX2026/Features/Home/ExamTab.swift",
+    "line": "235-249",
+    "severity": "medium",
+    "issue": "ExamTab filterBar unselected chips use `Color.white.opacity(0.8)` as background — same white-pill-in-dark-mode pattern.",
+    "fix": "Replace `Color.white.opacity(0.8)` with `Color.cardBg`."
+  },
+  {
+    "dimension": "darkmode-tokens",
+    "file": "GPLX2026/Features/Home/HomeTab.swift",
+    "line": "614-616",
+    "severity": "low",
+    "issue": "HomeActionTile (quick action grid cells) uses `Color.white.opacity(0.8)` as background — white tile in dark mode.",
+    "fix": "Replace `Color.white.opacity(0.8)` with `Color.cardBg`."
+  },
+  {
+    "dimension": "darkmode-tokens",
+    "file": "GPLX2026/Features/Settings/OfflineDownloadView.swift",
+    "line": "363-364",
+    "severity": "low",
+    "issue": "wifiToggleRow text and icon use `Color(hex: 0x0F0F12)` — near-black literal that will not adapt; in dark mode the text renders near-black on a dark card, causing poor contrast.",
+    "fix": "Replace `Color(hex: 0x0F0F12)` for text/icon foreground with `Color.appTextDark`."
+  },
+  {
+    "dimension": "darkmode-tokens",
+    "file": "GPLX2026/Features/Home/PracticeTab.swift",
+    "line": "216",
+    "severity": "low",
+    "issue": "TopicRowCard title uses `Color(hex: 0x0F0F12)` instead of the adaptive `Color.appTextDark`. In dark mode this renders as near-black text on a dark card background.",
+    "fix": "Replace `Color(hex: 0x0F0F12)` on line 216 with `Color.appTextDark`."
+  },
+  {
+    "dimension": "darkmode-tokens",
+    "file": "GPLX2026/Features/Home/PracticeTab.swift",
+    "line": "300-303",
+    "severity": "low",
+    "issue": "PracticeTab pageHeader and questionSection section title use `Color(hex: 0x0F0F12)` for heading text — near-black literal instead of adaptive token.",
+    "fix": "Replace `Color(hex: 0x0F0F12)` with `Color.appTextDark` for all heading foreground colors in PracticeTab."
+  },
+  {
+    "dimension": "darkmode-tokens",
+    "file": "GPLX2026/Features/Onboarding/OnboardingSteps.swift",
+    "line": "474",
+    "severity": "low",
+    "issue": "OnboardingReadyStep badge background uses `Color(hex: 0xE7F5EC)` — a light green literal with no dark variant. The badge will appear washed-out/low-contrast in dark mode.",
+    "fix": "Define an adaptive color: `Color.adaptive(light: 0xE7F5EC, dark: 0x0E1F13)` and use it for the badge background, consistent with how `diemLietBg` is defined."
+  },
+  {
+    "dimension": "concurrency-safety",
+    "file": "GPLX2026/Features/Settings/SettingsView.swift",
+    "line": "451-458",
+    "severity": "high",
+    "issue": "`handleReminderChange` spawns a bare `Task { … }` (inheriting the caller's actor, which is the MainActor because `SettingsView` is a `View`). Inside that Task it writes `showPermissionDeniedAlert = true` (line 456) — a `@State` mutation — after an `await` suspension point. In Swift 6 strict concurrency a bare `Task` closure that crosses an `await` is not guaranteed to stay on the MainActor unless annotated `@MainActor`. The mutation is safe here only because `View` bodies implicitly run on the main actor, but the Task closure itself does not carry `@MainActor`, so under SWIFT_STRICT_CONCURRENCY=complete the compiler may emit a warning or the annotation contract is fragile. The `syncReminders()` call inside is also a non-isolated function that fires additional Tasks.",
+    "fix": "Annotate the Task closure: `Task { @MainActor in … }` (matching the `showToast` Task on line 492). Apply the same fix to the bare `Task` in `syncReminders()` (line 473) if it ever touches `@State`."
+  },
+  {
+    "dimension": "concurrency-safety",
+    "file": "GPLX2026/Features/Home/HomeView.swift",
+    "line": "70",
+    "severity": "high",
+    "issue": "`DispatchQueue.main.async { activeExam = next }` mutates the `@State` property `activeExam` via GCD instead of via the Swift Concurrency actor model. Under Swift 6 strict concurrency, `DispatchQueue.main.async` closures are not actor-isolated and the `@State` write is on an unknown context, which can produce a data-race warning.",
+    "fix": "Replace with `Task { @MainActor in self.activeExam = next }` (or just `await MainActor.run { activeExam = next }`) to keep the mutation actor-isolated and visible to the Swift 6 checker."
+  },
+  {
+    "dimension": "concurrency-safety",
+    "file": "GPLX2026/Core/Theme/AppTheme.swift",
+    "line": "215-219",
+    "severity": "high",
+    "issue": "`nonisolated(unsafe)` is used on two `EnvironmentKey.defaultValue` static properties (`OpenExamKey` and `PopToRootKey`). These default values are closures that capture and mutate `@State` (`activeExam`, `pendingExam`) of `HomeView`. Marking them `nonisolated(unsafe)` suppresses the Swift 6 data-race check. This is dangerous: if the closure is ever called from outside the MainActor, the state mutation is unprotected.",
+    "fix": "Use `@MainActor`-isolated default values instead of `nonisolated(unsafe)`. Declare: `@MainActor static let defaultValue: (ExamScreen) -> Void = { _ in }` (and similarly for `PopToRootKey`). Then remove `nonisolated(unsafe)`."
+  },
+  {
+    "dimension": "concurrency-safety",
+    "file": "GPLX2026/Features/Settings/SettingsView.swift",
+    "line": "203",
+    "severity": "high",
+    "issue": "Force-unwrap on a calendar computation in a `Binding.get` closure that runs on every render: `progressStore.examDate ?? Calendar.current.date(byAdding: .day, value: 30, to: Date())!`. `Calendar.current.date(byAdding:)` returns `Date?` and the force-unwrap will crash if the calendar arithmetic fails (unlikely but possible on unusual locales or calendar configurations).",
+    "fix": "Replace the force-unwrap with a safe fallback: `progressStore.examDate ?? Date().addingTimeInterval(30 * 86400)` (or use `?? Date()` and let the DatePicker clamp it)."
+  },
+  {
+    "dimension": "concurrency-safety",
+    "file": "GPLX2026/Features/Settings/SettingsView.swift",
+    "line": "915",
+    "severity": "high",
+    "issue": "Force-unwrap on `Calendar.current.date(byAdding: .day, value: 30, to: Date())!` in `ExamDateSheet.init` — same category as line 203. Crashes if calendar arithmetic returns nil.",
+    "fix": "Replace with `progressStore.examDate ?? Date().addingTimeInterval(30 * 86400)` to eliminate the force-unwrap."
+  },
+  {
+    "dimension": "concurrency-safety",
+    "file": "GPLX2026/Features/Exam/ExamResultView.swift",
+    "line": "136-146",
+    "severity": "medium",
+    "issue": "`metaDateString` (line 136) and `metaTimeString` (line 143) are computed properties that each allocate a new `DateFormatter()` on every call to `body`. They are called directly from `metaRow` which is called from `body`. `DateFormatter` is expensive to construct and is explicitly called out in the project conventions as a per-render anti-pattern.",
+    "fix": "Hoist both formatters to `private static let` constants (like `OnboardingStudyPlanStep.longDateFormatter` does on line 237 of OnboardingSteps.swift): `private static let metaDateFormatter: DateFormatter = { … }()` and `private static let metaTimeFormatter: DateFormatter = { … }()`."
+  },
+  {
+    "dimension": "concurrency-safety",
+    "file": "GPLX2026/Features/Settings/SettingsView.swift",
+    "line": "441-445",
+    "severity": "medium",
+    "issue": "`formatDate(_:)` allocates a new `DateFormatter()` every time it is called. It is called from `body` (line 59) on every render pass to format the exam date label.",
+    "fix": "Replace with a `private static let` cached formatter: `private static let examDateFormatter: DateFormatter = { let f = DateFormatter(); f.dateFormat = \"dd/MM/yyyy\"; return f }()` and call `Self.examDateFormatter.string(from: date)` instead."
+  },
+  {
+    "dimension": "concurrency-safety",
+    "file": "GPLX2026/Features/Home/HomeTab.swift",
+    "line": "11",
+    "severity": "medium",
+    "issue": "`greetingText` (computed property) calls `Calendar.current.component(.hour, from: Date())` on every `body` evaluation. `Calendar.current` is not expensive to access, but `Date()` is called and the component is extracted per render. The companion `dateString` property (line 26-29) also calls `Self.dayFormatter.string(from: Date())` on every render. Neither result is cached, so every SwiftUI invalidation (e.g. from `progressStore` observable changes) re-evaluates the date.",
+    "fix": "Cache both values as `@State` set once in `.onAppear` and refreshed at midnight via a timer or `.task`. Alternatively, move them into a dedicated observable model that vends pre-computed strings and invalidates only when the date changes."
+  },
+  {
+    "dimension": "concurrency-safety",
+    "file": "GPLX2026/Features/Onboarding/OnboardingSteps.swift",
+    "line": "244-248",
+    "severity": "medium",
+    "issue": "`daysUntilExam` is a computed property of `OnboardingStudyPlanStep` that calls `Calendar.current.startOfDay(for: Date())` and `Calendar.current.dateComponents` on every `body` render (it is referenced on line 296 in `examDateCard`). The computation runs on the main thread on every SwiftUI pass.",
+    "fix": "Cache as a `@State` variable initialized in `.onAppear` and updated in an `.onChange(of: examDate)` modifier, or compute once from the static formatter path already present in this struct."
+  },
+  {
+    "dimension": "concurrency-safety",
+    "file": "GPLX2026/Features/Exam/ExamResultView.swift",
+    "line": "39-53",
+    "severity": "medium",
+    "issue": "`topicStats` is a computed property that iterates all `questions` (up to 35 per exam), looks up `Topic.all` for each question's topic id, and allocates a dictionary on every `body` evaluation. It is also called from the `body` (line 331: `ForEach(topicStats)`). For a 35-question exam this runs O(35 × |Topic.all|) comparisons per render.",
+    "fix": "Promote to `@State private var topicStats: [ExamTopicStat]` computed once in `.onAppear` (or via a lazy initializer), since `questions` and `answers` are immutable `let` properties after the view is created."
+  },
+  {
+    "dimension": "concurrency-safety",
+    "file": "GPLX2026/Features/Home/PracticeTab.swift",
+    "line": "337-342",
+    "severity": "low",
+    "issue": "`questionSection` (a `@ViewBuilder` computed property called from `body`) calls `progressStore.weakTopics(topics:allQuestions:)` and then `.sorted { … }` on every render. Depending on the size of the question bank, this is a non-trivial O(n log n) sort inside the view body.",
+    "fix": "Cache the sorted result in a `@State` variable and update it in `.onChange(of: progressStore.someDerivedValue)`, or let `ProgressStore` expose a pre-sorted property."
+  },
+  {
+    "dimension": "deadcode-simplify",
+    "file": "/Users/maitrungkien/Desktop/project/GPLX2026/GPLX2026/Features/Settings/SettingsView.swift",
+    "line": "1053-1220",
+    "severity": "high",
+    "issue": "VideoOfflineCard is a dead struct. Its comment says 'retained for OfflineDownloadView', but grep confirms it has zero call sites anywhere in the codebase. OfflineDownloadView was rebuilt with its own inline chapter list and no longer uses this widget.",
+    "fix": "Delete the entire VideoOfflineCard struct (lines 1051-1220)."
+  },
+  {
+    "dimension": "deadcode-simplify",
+    "file": "/Users/maitrungkien/Desktop/project/GPLX2026/GPLX2026/Features/Settings/SettingsView.swift",
+    "line": "1222-1245",
+    "severity": "high",
+    "issue": "SettingsTile is a dead struct. Its comment says 'kept for external compatibility', but grep confirms it has zero call sites anywhere in the codebase.",
+    "fix": "Delete the entire SettingsTile struct (lines 1222-1245)."
+  },
+  {
+    "dimension": "deadcode-simplify",
+    "file": "/Users/maitrungkien/Desktop/project/GPLX2026/GPLX2026/Features/Settings/SettingsView.swift",
+    "line": "956-1005",
+    "severity": "high",
+    "issue": "FontSizeSlider is declared public but has zero external call sites. It is not used in SettingsView itself (which uses the inline SettingsFontSizeControl instead) and does not appear in any other file.",
+    "fix": "Delete FontSizeSlider (lines 956-1005) or, if a slider-style font picker is needed in the future, call it from within SettingsView and remove SettingsFontSizeControl to avoid two implementations."
+  },
+  {
+    "dimension": "deadcode-simplify",
+    "file": "/Users/maitrungkien/Desktop/project/GPLX2026/GPLX2026/Features/Settings/SettingsView.swift",
+    "line": "1007-1033",
+    "severity": "high",
+    "issue": "FontSizePreview is declared public but has zero external call sites anywhere in the codebase.",
+    "fix": "Delete FontSizePreview (lines 1007-1033)."
+  },
+  {
+    "dimension": "deadcode-simplify",
+    "file": "/Users/maitrungkien/Desktop/project/GPLX2026/GPLX2026/Features/Hazard/HazardResultView.swift",
+    "line": "19-21",
+    "severity": "high",
+    "issue": "passedCount computed property is defined (filters result.details for score >= 3) but is never referenced anywhere in the file or elsewhere. The same goodCount calculation is duplicated inline in hazardScoreDetails (line 62).",
+    "fix": "Delete the passedCount property. In hazardScoreDetails replace `let goodCount = result.details.filter { $0.score >= 3 }.count` with the same inline expression already present, or if sharing the value is desired, reference passedCount there — but the property itself is currently dead."
+  },
+  {
+    "dimension": "deadcode-simplify",
+    "file": "/Users/maitrungkien/Desktop/project/GPLX2026/GPLX2026/Features/Hazard/HazardResultView.swift",
+    "line": "36-40",
+    "severity": "high",
+    "issue": "sessionFraction computed property is defined but its value is never read anywhere in the file. SessionProgressCard computes its own fraction internally.",
+    "fix": "Delete the sessionFraction property."
+  },
+  {
+    "dimension": "deadcode-simplify",
+    "file": "/Users/maitrungkien/Desktop/project/GPLX2026/GPLX2026/Features/Home/PracticeTab.swift",
+    "line": "414-419",
+    "severity": "medium",
+    "issue": "topicRingColor(accuracy:attempted:) is a private helper that is never called. It was left over from an earlier iteration of the topic list that showed ring indicators.",
+    "fix": "Delete the topicRingColor function."
+  },
+  {
+    "dimension": "deadcode-simplify",
+    "file": "/Users/maitrungkien/Desktop/project/GPLX2026/GPLX2026/Core/Theme/AppTheme.swift",
+    "line": "64-65",
+    "severity": "medium",
+    "issue": "appScaffoldBg and appBgColor are both aliases of scaffoldBg (Color extension). Neither alias is referenced anywhere in the codebase — all callers use .scaffoldBg directly. These are dead identifiers polluting the public Color namespace.",
+    "fix": "Delete the two alias declarations: `static let appScaffoldBg = scaffoldBg` and `static let appBgColor = scaffoldBg`."
+  },
+  {
+    "dimension": "deadcode-simplify",
+    "file": "/Users/maitrungkien/Desktop/project/GPLX2026/GPLX2026/Core/Theme/AppTheme.swift",
+    "line": "105-106",
+    "severity": "medium",
+    "issue": "accentGreen and accentRose are declared in the public Color palette but have zero call sites anywhere in the codebase. Their hex values are also misleading: both map to greyscale, not green or rose tones.",
+    "fix": "Delete both declarations. If a green or rose semantic alias is ever needed, add it then with an appropriate name and value."
+  },
+  {
+    "dimension": "deadcode-simplify",
+    "file": "/Users/maitrungkien/Desktop/project/GPLX2026/GPLX2026/Features/Home/ExamTab.swift",
+    "line": "742",
+    "severity": "medium",
+    "issue": "ExamStatTileRow declares an optional `onTap: (() -> Void)? = nil` parameter, but none of its three call sites (lines 181, 190, 199) ever pass an action. The body wires `.onTapGesture { onTap?() }` which silently does nothing. The chevron icon also implies tappability that is never delivered.",
+    "fix": "Remove the onTap parameter and the .onTapGesture modifier from ExamStatTileRow, or replace the chevron with a non-interactive indicator until real navigation is wired."
+  },
+  {
+    "dimension": "deadcode-simplify",
+    "file": "/Users/maitrungkien/Desktop/project/GPLX2026/GPLX2026/Features/Settings/OfflineDownloadView.swift",
+    "line": "444-460",
+    "severity": "medium",
+    "issue": "ChapterIconBox is a private struct that duplicates the behaviour of the shared Core/Common/Display/IconBox.swift. The only difference is that IconBox auto-applies color.opacity(0.12) as the background while ChapterIconBox takes an explicit bgColor. Since all call sites in OfflineDownloadView already compute fully opaque bg colors, the two are functionally the same for the existing usage.",
+    "fix": "Replace the single call site (line 232-236) with IconBox using the same bgColor and iconColor values, passing iconFontSize: 18. Delete the ChapterIconBox struct."
+  },
+  {
+    "dimension": "deadcode-simplify",
+    "file": "/Users/maitrungkien/Desktop/project/GPLX2026/GPLX2026/Features/Settings/SettingsView.swift",
+    "line": "592-604",
+    "severity": "medium",
+    "issue": "settingsIconBox is a private @ViewBuilder helper that reimplements an icon box (32×32 rounded rect + centered SF symbol) already covered by the shared IconBox widget in Core/Common/Display/IconBox.swift. The only difference is the hard-coded 32 pt size vs IconBox's default of 40 pt.",
+    "fix": "Replace the two call sites (lines 540, 572) with `IconBox(icon: icon, color: iconColor, size: 32, cornerRadius: 8, iconFontSize: 18)` and delete settingsIconBox. Note: IconBox uses color.opacity(0.12) as fill; pass the explicit bg color as a separate overlay if the solid fill is required — otherwise factor the opacity in when specifying the bg Color at the call site."
+  },
+  {
+    "dimension": "deadcode-simplify",
+    "file": "/Users/maitrungkien/Desktop/project/GPLX2026/GPLX2026/Features/Home/PracticeTab.swift",
+    "line": "133-193",
+    "severity": "low",
+    "issue": "LightFeatureCard is a private 60-line struct that is a light-background variant of the shared FeatureCard in Core/Common/Cards/FeatureCard.swift. It duplicates the same eyebrow/title/tags/play-button layout. The single call site is in the heroCard computed property of PracticeTab.",
+    "fix": "Extend FeatureCard with a `style: .light / .dark` parameter (or a `darkBackground: Bool = true` flag) to handle both appearances, then delete LightFeatureCard."
+  },
+  {
+    "dimension": "deadcode-simplify",
+    "file": "/Users/maitrungkien/Desktop/project/GPLX2026/GPLX2026/Features/Home/PracticeTab.swift",
+    "line": "105-130",
+    "severity": "low",
+    "issue": "GoldCTAButton is a private 26-line struct used at exactly one call site. Its visual (full-width capsule, amber fill, dark ink, icon + label) is essentially AppButton with a specific color that bypasses ThemeStore. This adds a second button primitive to the file.",
+    "fix": "Replace the single call site with `AppButton(icon: ..., label: ..., height: 52)` once AppButton supports a custom fill color parameter, or inline the button content directly at the one call site and delete GoldCTAButton."
+  },
+  {
+    "dimension": "deadcode-simplify",
+    "file": "/Users/maitrungkien/Desktop/project/GPLX2026/GPLX2026/Features/Exam/ExamResultView.swift",
+    "line": "135-147",
+    "severity": "low",
+    "issue": "metaDateString and metaTimeString are computed properties that each create a new DateFormatter instance on every access. This is called during body rendering.",
+    "fix": "Promote both formatters to `private static let` properties (as done correctly in OnboardingSteps.swift lines 237-241). Example: `private static let metaDateFormatter: DateFormatter = { let f = DateFormatter(); f.locale = ...; f.dateFormat = ...; return f }()`"
+  },
+  {
+    "dimension": "deadcode-simplify",
+    "file": "/Users/maitrungkien/Desktop/project/GPLX2026/GPLX2026/Features/Settings/SettingsView.swift",
+    "line": "441-445",
+    "severity": "low",
+    "issue": "formatDate allocates a new DateFormatter on every call. It is invoked during view body rendering (line 59) to display the exam date.",
+    "fix": "Change to `private static let dateFormatter: DateFormatter = { let f = DateFormatter(); f.dateFormat = \"dd/MM/yyyy\"; return f }()` and reference `Self.dateFormatter.string(from: date)`."
+  },
+  {
+    "dimension": "fidelity-a11y",
+    "file": "GPLX2026/Features/Exam/ExamResultView.swift",
+    "line": "123-126",
+    "severity": "high",
+    "issue": "Icon-only toolbar 'checkmark' button (Đóng / Hoàn thành) has no accessibilityLabel. VoiceOver announces it as 'checkmark button', which gives no context about the action (return to home screen after exam).",
+    "fix": "Add `.accessibilityLabel(\"Hoàn thành\")` to the Button at line 124. Same pattern applies to SimulationResultView.swift (line 159) and DailyChallengeResultView.swift (line 128)."
+  },
+  {
+    "dimension": "fidelity-a11y",
+    "file": "GPLX2026/Features/Simulation/SimulationResultView.swift",
+    "line": "158-161",
+    "severity": "high",
+    "issue": "Icon-only toolbar 'checkmark' button has no accessibilityLabel. VoiceOver will read 'checkmark button' with no semantic meaning.",
+    "fix": "Add `.accessibilityLabel(\"Hoàn thành\")` to the Button wrapping `Image(systemName: \"checkmark\")` at line 160."
+  },
+  {
+    "dimension": "fidelity-a11y",
+    "file": "GPLX2026/Features/Engagement/DailyChallengeResultView.swift",
+    "line": "127-131",
+    "severity": "high",
+    "issue": "Icon-only toolbar 'checkmark' button has no accessibilityLabel.",
+    "fix": "Add `.accessibilityLabel(\"Hoàn thành\")` to the Button at line 129."
+  },
+  {
+    "dimension": "fidelity-a11y",
+    "file": "GPLX2026/Features/Home/HomeTab.swift",
+    "line": "86-93",
+    "severity": "high",
+    "issue": "Two icon-only NavigationLinks in the greeting header (magnifying glass → search, gear → settings) have no accessibilityLabel. VoiceOver says 'link' or the symbol name with no destination context.",
+    "fix": "Add `.accessibilityLabel(\"Tìm kiếm câu hỏi\")` to the magnifying-glass NavigationLink and `.accessibilityLabel(\"Cài đặt\")` to the gear NavigationLink."
+  },
+  {
+    "dimension": "fidelity-a11y",
+    "file": "GPLX2026/Core/Common/Cards/FeatureCard.swift",
+    "line": "51-59",
+    "severity": "high",
+    "issue": "The gold play-circle Button inside FeatureCard is icon-only with no accessibilityLabel. VoiceOver announces 'play button' but the card title (e.g. 'Đề thi mẫu', 'Thi thử 10 tình huống') is not surfaced through it.",
+    "fix": "The Button does not take a label parameter from the caller. Add an `accessibilityLabel` parameter to `FeatureCard` (defaulting to the `title`) and apply it to the Button, e.g. `.accessibilityLabel(title)`."
+  },
+  {
+    "dimension": "fidelity-a11y",
+    "file": "GPLX2026/Features/Settings/OfflineDownloadView.swift",
+    "line": "307-351",
+    "severity": "high",
+    "issue": "The per-chapter download/pause circle buttons (36 × 36 pt) in `chapterStateButton` have no accessibilityLabel. VoiceOver cannot tell the user which chapter the action applies to, or what the button does.",
+    "fix": "Add `.accessibilityLabel(\"Tải chương \\(chapter.id)\")` (or 'Tạm dừng chương ...') to each Button. Also add `.accessibilityLabel(\"Đã tải xong — chương \\(chapter.id)\")` with `.accessibilityAddTraits(.isStaticText)` to the non-interactive checkmark ZStack."
+  },
+  {
+    "dimension": "fidelity-a11y",
+    "file": "GPLX2026/Features/Settings/SettingsView.swift",
+    "line": "814-832",
+    "severity": "high",
+    "issue": "AccentColorSwatches: four 24 × 24 pt colour circle buttons have no accessibilityLabel. VoiceOver cannot announce colour name or selected state. The 24 pt frame also falls below the 44 pt touch-target minimum with no `contentShape` expansion.",
+    "fix": "Add `.accessibilityLabel(Self.swatches[idx].1)` (the name string already in the tuple, e.g. 'terracotta', 'amber') and `.accessibilityValue(isSelected ? \"Đã chọn\" : \"\")` to each Button. Also add `.contentShape(Circle().scale(2))` or add a transparent padding of at least 10 pt to reach 44 pt."
+  },
+  {
+    "dimension": "fidelity-a11y",
+    "file": "GPLX2026/Features/Settings/SettingsView.swift",
+    "line": "775-796",
+    "severity": "medium",
+    "issue": "SettingsFontSizeControl: three 'A' buttons for font size (small/medium/large) have no accessibilityLabel. VoiceOver reads the letter 'A' three times with no indication of what each one does or which is selected.",
+    "fix": "Add `.accessibilityLabel` and `.accessibilityValue` to each Button, e.g. for the 'small' step: `.accessibilityLabel(\"Cỡ chữ nhỏ\").accessibilityValue(isSelected ? \"Đã chọn\" : \"\")`."
+  },
+  {
+    "dimension": "fidelity-a11y",
+    "file": "GPLX2026/Features/Settings/OfflineDownloadView.swift",
+    "line": "356-387",
+    "severity": "medium",
+    "issue": "The Wi-Fi-only toggle row uses a custom capsule drawn with `ZStack` + `Circle` and toggled via `.onTapGesture`. VoiceOver cannot identify it as a switch or read its current state; it has no accessibilityLabel, accessibilityValue, or accessibilityAddTraits(.isButton).",
+    "fix": "Replace with a native SwiftUI `Toggle(\"\", isOn: $wifiOnlyDownload).labelsHidden()` (identical visual result, full VoiceOver support) or add `.accessibilityLabel(\"Chỉ tải qua Wi-Fi\").accessibilityValue(wifiOnlyDownload ? \"Bật\" : \"Tắt\").accessibilityAddTraits(.isButton)` to the wifiToggleRow view."
+  },
+  {
+    "dimension": "fidelity-a11y",
+    "file": "GPLX2026/Features/Settings/SettingsView.swift",
+    "line": "1163",
+    "severity": "medium",
+    "issue": "English abbreviation 'Ch.' used in the collapsed video-download chapter list inside SettingsView (VideoOfflineCard inline): `Text(\"Ch. \\(chapter.id): \\(chapter.name)\")`. 'Ch.' is not a standard Vietnamese abbreviation for 'chương'.",
+    "fix": "Change to `Text(\"Chương \\(chapter.id): \\(chapter.name)\")`."
+  },
+  {
+    "dimension": "fidelity-a11y",
+    "file": "GPLX2026/Features/Settings/OfflineDownloadView.swift",
+    "line": "61-73",
+    "severity": "medium",
+    "issue": "The 'Xóa tất cả' (clear cache) button in the storage card header has an icon frame of 13 × 13 pt and the surrounding HStack provides only a few extra points of padding — the total interactive height is well below 44 pt. No `contentShape` expansion is applied.",
+    "fix": "Add `.contentShape(Rectangle())` on the Button label, or add `.padding(.vertical, 14).padding(.horizontal, 8)` to the label HStack so the tappable region reaches ≥ 44 pt. The icon `.frame(width: 13, height: 13)` constrains only the image, so padding the label HStack is the minimal fix."
+  },
+  {
+    "dimension": "fidelity-a11y",
+    "file": "GPLX2026/Features/Hazard/HazardResultView.swift",
+    "line": "184",
+    "severity": "low",
+    "issue": "The primary retry CTA in the hazard result is labeled 'Xem lại' but its action re-launches the hazard exam (not a review of answers). The equivalent button in SimulationResultView uses 'Thi lại'. The inconsistency is confusing — 'Xem lại' implies reviewing existing results rather than retrying.",
+    "fix": "Change the label from `\"Xem lại\"` to `\"Thi lại\"` to match the other result screens. The 'Xem lại' label at line 358 (inside RecentSituationCard) refers to a different action and is correctly named."
+  },
+  {
+    "dimension": "fidelity-a11y",
+    "file": "GPLX2026/Features/Home/ExamTab.swift",
+    "line": "386",
+    "severity": "low",
+    "issue": "StatItem label `\"TB đúng\"` uses the Vietnamese abbreviation 'TB' (trung bình) without expansion in an extremely tight space. In isolation it may read as unclear jargon for new learners.",
+    "fix": "Use `\"Đúng TB\"` or, if space allows, `\"Trung bình đúng\"`. The value is already a percentage so the label can also be shortened to `\"Trung bình\"` since the '%' sign in the value provides the ratio context."
+  }
+]

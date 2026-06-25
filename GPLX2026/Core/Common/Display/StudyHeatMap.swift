@@ -6,18 +6,21 @@ struct StudyHeatMap: View {
     private let weeks = 16
     private let dayLabels = ["T2", "", "T4", "", "T6", "", "CN"]
 
-    var body: some View {
-        let days = generateDays()
-        let maxCount = max(days.map(\.count).max() ?? 1, 1)
+    // Cached grid + total. Building the grid does ~112 Calendar/DateFormatter
+    // calls, so we only rebuild it when the activity data actually changes
+    // rather than on every render.
+    @State private var days: [DayData] = []
+    @State private var totalCount = 0
+    @State private var maxCount = 1
 
+    var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Text("Hoạt động học tập")
                     .font(.appSans(size: 20, weight: .bold))
                     .foregroundStyle(Color.appTextDark)
                 Spacer()
-                let total = progressStore.totalActivity(lastDays: weeks * 7)
-                Text("\(total) câu · \(weeks) tuần")
+                Text("\(totalCount) câu · \(weeks) tuần")
                     .font(.appSans(size: 13, weight: .medium))
                     .foregroundStyle(Color.appTextMedium)
             }
@@ -26,9 +29,9 @@ struct StudyHeatMap: View {
                 VStack(spacing: 3) {
                     ForEach(0..<7, id: \.self) { i in
                         Text(dayLabels[i])
-                            .font(.appSans(size: 10))
+                            .font(.appSans(size: 12))
                             .foregroundStyle(Color.appTextLight)
-                            .frame(width: 16, height: 14)
+                            .frame(width: 20, height: 16)
                     }
                 }
 
@@ -40,10 +43,12 @@ struct StudyHeatMap: View {
                     }
                 }
             }
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("Lịch học: \(totalCount) câu trong \(weeks) tuần qua")
 
             HStack(spacing: 4) {
                 Text("Ít")
-                    .font(.appSans(size: 11))
+                    .font(.appSans(size: 12))
                     .foregroundStyle(Color.appTextLight)
                 ForEach([0.0, 0.25, 0.5, 0.75, 1.0], id: \.self) { intensity in
                     RoundedRectangle(cornerRadius: 2)
@@ -51,12 +56,21 @@ struct StudyHeatMap: View {
                         .frame(width: 10, height: 10)
                 }
                 Text("Nhiều")
-                    .font(.appSans(size: 11))
+                    .font(.appSans(size: 12))
                     .foregroundStyle(Color.appTextLight)
             }
+            .accessibilityHidden(true)
         }
         .padding(12)
         .glassCard()
+        .onAppear { rebuild() }
+        .onChange(of: progressStore.studyActivity) { rebuild() }
+    }
+
+    private func rebuild() {
+        days = generateDays()
+        totalCount = days.reduce(0) { $0 + $1.count }
+        maxCount = max(days.map(\.count).max() ?? 1, 1)
     }
 
     private struct DayData {

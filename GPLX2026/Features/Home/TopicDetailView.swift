@@ -76,7 +76,7 @@ struct TopicDetailView: View {
                             .foregroundStyle(Color.appTextDark)
                         Spacer()
                         Text("\(item.correct)/\(item.total) câu đúng")
-                            .font(.system(size: 13).monospacedDigit())
+                            .font(.appMono(size: 13))
                             .foregroundStyle(Color.appTextMedium)
                             .contentTransition(.numericText())
                     }
@@ -96,7 +96,7 @@ struct TopicDetailView: View {
                     Button {
                         let progress = progressStore.topicProgress(for: item.topic.key)
                         let topicQs = questionStore.questionsForTopic(key: item.topic.key)
-                        let idx = topicQs.firstIndex(where: { progress[$0.no] == nil }) ?? 0
+                        let idx = topicQs.firstIndex(where: { progress[$0.no] != true }) ?? 0
                         openExam(.questionView(topicKey: item.topic.key, startIndex: idx))
                     } label: {
                         AppButton(icon: "play.fill", label: "Ôn tập chủ đề này")
@@ -107,8 +107,7 @@ struct TopicDetailView: View {
             .padding(.horizontal, metrics.contentPadding)
             .padding(.bottom, 32)
         }
-        .navigationTitle(item.topic.shortName)
-        .navigationBarTitleDisplayMode(.inline)
+        .screenHeader(item.topic.shortName, titleDisplayMode: .inline, hideBackButton: true)
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
                 Button { dismiss() } label: {
@@ -118,6 +117,5 @@ struct TopicDetailView: View {
                 }
             }
         }
-        .navigationBarBackButtonHidden(true)
     }
 }

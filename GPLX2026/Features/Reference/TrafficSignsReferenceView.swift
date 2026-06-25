@@ -13,30 +13,41 @@ struct TrafficSignsReferenceView: View {
     }
 
     var body: some View {
-        ScrollView {
-            AdaptiveGrid(spacing: 16) {
-                ForEach(Array(displayCategories.enumerated()), id: \.element.id) { _, category in
-                    let signs = filteredSigns(category.signs)
-                    if !signs.isEmpty {
-                        VStack(alignment: .leading, spacing: 0) {
-                            SectionTitle(title: category.name)
-                                .padding(.bottom, 10)
+        // Compute the filtered signs once per render rather than twice
+        // (previously: once for hasResults and again inside the grid loop).
+        let filtered = displayCategories.map { (category: $0, signs: filteredSigns($0.signs)) }
+        let hasResults = filtered.contains { !$0.signs.isEmpty }
 
-                            VStack(spacing: 0) {
-                                ForEach(Array(signs.enumerated()), id: \.element.id) { j, sign in
-                                    if j > 0 {
-                                        Divider().padding(.horizontal, 16)
+        Group {
+        if !searchText.isEmpty && !hasResults {
+            ContentUnavailableView.search(text: searchText)
+        } else {
+            ScrollView {
+                AdaptiveGrid(spacing: 16) {
+                    ForEach(filtered, id: \.category.id) { entry in
+                        let signs = entry.signs
+                        if !signs.isEmpty {
+                            VStack(alignment: .leading, spacing: 0) {
+                                SectionTitle(title: entry.category.name)
+                                    .padding(.bottom, 10)
+
+                                VStack(spacing: 0) {
+                                    ForEach(Array(signs.enumerated()), id: \.element.id) { j, sign in
+                                        if j > 0 {
+                                            Divider().padding(.horizontal, 16)
+                                        }
+                                        SignRow(sign: sign)
                                     }
-                                    SignRow(sign: sign)
                                 }
+                                .glassCard()
                             }
-                            .glassCard()
                         }
                     }
                 }
+                .padding(.horizontal, metrics.contentPadding)
+                .padding(.bottom, 20)
             }
-            .padding(.horizontal, metrics.contentPadding)
-            .padding(.bottom, 20)
+        }
         }
         .searchable(text: $searchText, prompt: "Tìm biển báo...")
         .screenHeader("Biển báo giao thông")
@@ -82,10 +93,23 @@ struct TrafficSignsReferenceView: View {
 private struct SignRow: View {
     let sign: TrafficSign
 
+    private static var imageCache: [String: UIImage] = [:]
+
+    private func cachedImage(for imageName: String) -> UIImage? {
+        if let cached = SignRow.imageCache[imageName] {
+            return cached
+        }
+        guard let path = Bundle.main.path(forResource: imageName, ofType: "png"),
+              let loaded = UIImage(contentsOfFile: path) else {
+            return nil
+        }
+        SignRow.imageCache[imageName] = loaded
+        return loaded
+    }
+
     var body: some View {
         HStack(spacing: 14) {
-            if let path = Bundle.main.path(forResource: sign.imageName, ofType: "png"),
-               let uiImage = UIImage(contentsOfFile: path) {
+            if let uiImage = cachedImage(for: sign.imageName) {
                 Image(uiImage: uiImage)
                     .resizable()
                     .aspectRatio(contentMode: .fit)
@@ -104,7 +128,7 @@ private struct SignRow: View {
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 6) {
                     Text(sign.code)
-                        .font(.appSans(size: 11))
+                        .font(.appSans(size: 12))
                         .foregroundStyle(sign.codeColor)
                         .padding(.horizontal, 6)
                         .padding(.vertical, 2)

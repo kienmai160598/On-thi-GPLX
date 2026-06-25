@@ -6,6 +6,7 @@ struct QuestionGridButton: View {
     let current: Int
     let total: Int
     let answeredIndices: Set<Int>
+    var bookmarkedIndices: Set<Int> = []
     let onSelect: (Int) -> Void
 
     @State private var showGrid = false
@@ -16,10 +17,12 @@ struct QuestionGridButton: View {
         } label: {
             ProgressRing(current: current, total: total)
         }
+        .accessibilityLabel("Câu \(current) / \(total). Mở danh sách câu hỏi")
         .sheet(isPresented: $showGrid) {
             ExamQuestionGridSheet(
                 totalQuestions: total,
                 answeredIndices: answeredIndices,
+                bookmarkedIndices: bookmarkedIndices,
                 currentIndex: current - 1
             ) { index in
                 onSelect(index)

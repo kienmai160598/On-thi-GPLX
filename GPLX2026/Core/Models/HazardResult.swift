@@ -1,4 +1,7 @@
 import Foundation
+import os
+
+private let logger = Logger(subsystem: "com.gplx2026", category: "HazardResult")
 
 // MARK: - HazardResult
 
@@ -12,7 +15,8 @@ struct HazardResult: Codable, Identifiable {
     let details: [SituationDetail]
 
     var passed: Bool {
-        totalScore >= AppConstants.Hazard.passScore
+        guard maxScore > 0 else { return false }
+        return Double(totalScore) / Double(maxScore) >= 0.7
     }
 
     var scorePercentage: Double {
@@ -53,7 +57,9 @@ struct HazardResult: Codable, Identifiable {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         id = (try? c.decode(UUID.self, forKey: .id)) ?? UUID()
         let dateString = try c.decode(String.self, forKey: .date)
-        date = DateFormatters.iso8601.date(from: dateString) ?? Date()
+        let parsedDate = DateFormatters.iso8601.date(from: dateString)
+        if parsedDate == nil { logger.warning("HazardResult: unparseable date '\(dateString)', using current date") }
+        date = parsedDate ?? Date()
         totalScore = try c.decode(Int.self, forKey: .totalScore)
         maxScore = try c.decode(Int.self, forKey: .maxScore)
         situationCount = try c.decode(Int.self, forKey: .situationCount)

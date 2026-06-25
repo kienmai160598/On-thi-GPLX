@@ -1,4 +1,7 @@
 import Foundation
+import os
+
+private let logger = Logger(subsystem: "com.gplx2026", category: "SpacedRepetition")
 
 extension ProgressStore {
 
@@ -54,7 +57,8 @@ extension ProgressStore {
             if dateA == nil && dateB == nil { return a < b }
 
             // Both reviewed → oldest first
-            return dateA! < dateB!
+            guard let dA = dateA, let dB = dateB else { return false }
+            return dA < dB
         }
     }
 
@@ -74,8 +78,11 @@ extension ProgressStore {
         let raw = dates.reduce(into: [String: TimeInterval]()) { result, entry in
             result[String(entry.key)] = entry.value.timeIntervalSince1970
         }
-        if let data = try? JSONEncoder().encode(raw) {
-            defaults.set(data, forKey: Self.reviewDatesKey)
+        do {
+            let data = try JSONEncoder().encode(raw)
+            safeWrite { $0.set(data, forKey: Self.reviewDatesKey) }
+        } catch {
+            logger.error("Failed to encode review dates: \(error.localizedDescription)")
         }
         _reviewDatesCache = dates
     }

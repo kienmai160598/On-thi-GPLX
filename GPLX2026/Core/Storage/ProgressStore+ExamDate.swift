@@ -6,23 +6,26 @@ extension ProgressStore {
     private static let dailyGoalKey = "daily_goal"
 
     var examDate: Date? {
-        if let cached = _examDateCache { return cached }
+        if _examDateCacheLoaded { return _examDateCache }
         guard let interval = defaults.object(forKey: Self.examDateKey) as? TimeInterval else {
-            _examDateCache = .some(nil)
+            _examDateCache = nil
+            _examDateCacheLoaded = true
             return nil
         }
         let value = Date(timeIntervalSince1970: interval)
-        _examDateCache = .some(value)
+        _examDateCache = value
+        _examDateCacheLoaded = true
         return value
     }
 
     func setExamDate(_ date: Date?) {
         if let date {
-            defaults.set(date.timeIntervalSince1970, forKey: Self.examDateKey)
+            safeWrite { $0.set(date.timeIntervalSince1970, forKey: Self.examDateKey) }
         } else {
-            defaults.removeObject(forKey: Self.examDateKey)
+            safeWrite { $0.removeObject(forKey: Self.examDateKey) }
         }
-        _examDateCache = .some(date)
+        _examDateCache = date
+        _examDateCacheLoaded = true
     }
 
     var dailyGoal: Int {
@@ -34,13 +37,19 @@ extension ProgressStore {
     }
 
     func setDailyGoal(_ goal: Int) {
-        defaults.set(goal, forKey: Self.dailyGoalKey)
+        safeWrite { $0.set(goal, forKey: Self.dailyGoalKey) }
         _dailyGoalCache = goal
     }
 
     var daysUntilExam: Int? {
         guard let examDate else { return nil }
-        return max(0, Calendar.current.dateComponents([.day], from: Date(), to: examDate).day ?? 0)
+        let cal = Calendar.current
+        let from = cal.startOfDay(for: Date())
+        let to   = cal.startOfDay(for: examDate)
+        guard let days = cal.dateComponents([.day], from: from, to: to).day else { return nil }
+        // Once the exam day has passed, treat it as unset so the countdown UI
+        // hides instead of pinning to "Hôm nay thi!" indefinitely.
+        return days >= 0 ? days : nil
     }
 
     var todayProgress: (done: Int, goal: Int) {

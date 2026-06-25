@@ -8,7 +8,7 @@ struct ContentView: View {
         Group {
             if questionStore.isLoading {
                 ZStack {
-                    Color.scaffoldBg.ignoresSafeArea()
+                    ScaffoldBackground()
                     VStack(spacing: 16) {
                         ProgressView()
                             .tint(themeStore.primaryColor)

@@ -15,7 +15,7 @@ struct StatusBadge: View {
             .foregroundStyle(color)
             .padding(.horizontal, hPadding)
             .padding(.vertical, vPadding)
-            .background(color.opacity(0.12))
+            .background(color.opacity(0.15))
             .clipShape(useRoundedRect ? AnyShape(RoundedRectangle(cornerRadius: cornerRadius)) : AnyShape(Capsule()))
     }
 }

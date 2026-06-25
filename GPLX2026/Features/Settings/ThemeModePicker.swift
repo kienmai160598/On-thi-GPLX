@@ -4,6 +4,7 @@ import SwiftUI
 
 struct ThemeModePicker: View {
     @Binding var selected: String
+    @Environment(ThemeStore.self) private var themeStore
 
     private static let modes: [(key: String, label: String, icon: String)] = [
         ("system", "Hệ thống", "circle.lefthalf.filled"),
@@ -11,7 +12,7 @@ struct ThemeModePicker: View {
         ("dark", "Tối", "moon.fill"),
     ]
 
-    private var accentColor: Color { .appPrimary }
+    private var accentColor: Color { themeStore.primaryColor }
 
     var body: some View {
         HStack(spacing: 10) {

@@ -1,470 +1,328 @@
 import SwiftUI
 
+// MARK: - SettingsView
+
 struct SettingsView: View {
     @Environment(QuestionStore.self) private var questionStore
     @Environment(ProgressStore.self) private var progressStore
     @Environment(ThemeStore.self) private var themeStore
+    @Environment(HazardVideoCache.self) private var videoCache
+    @Environment(\.dismiss) private var dismiss
+
+    // MARK: - @AppStorage (preserved exactly)
     @AppStorage(AppConstants.StorageKey.themeMode) private var themeMode: String = "system"
     @AppStorage(AppConstants.StorageKey.fontSize) private var fontSize: String = "medium"
     @AppStorage(AppConstants.StorageKey.hapticsEnabled) private var hapticsEnabled: Bool = true
     @AppStorage(AppConstants.StorageKey.licenseType) private var licenseType: String = "b2"
     @AppStorage(AppConstants.StorageKey.dailyReminderEnabled) private var dailyReminderEnabled: Bool = false
     @AppStorage(AppConstants.StorageKey.dailyReminderHour) private var dailyReminderHour: Int = 20
+    @AppStorage(AppConstants.StorageKey.examCountdownEnabled) private var examCountdownEnabled: Bool = false
+    @AppStorage(AppConstants.StorageKey.dailyGoalNudgeEnabled) private var dailyGoalNudgeEnabled: Bool = false
 
-    @State private var showResetSheet = false
-    @State private var resetToast: String?
-    @State private var resetConfirmation: ResetAction?
+    // MARK: - State
+    @State private var showPermissionDeniedAlert = false
+    @State private var showLicensePicker = false
+    @State private var showDatePicker = false
+
+    // MARK: - Body
+
     var body: some View {
+        @Bindable var themeStore = themeStore
+
         ScrollView {
-            VStack(alignment: .leading, spacing: 28) {
-                // ──────────────────────────────────────────────
-                // MARK: - Hạng bằng lái (License Type)
-                // ──────────────────────────────────────────────
+            VStack(alignment: .leading, spacing: 14) {
 
-                settingsSection("Hạng bằng lái") {
-                    VStack(spacing: 0) {
-                        HStack {
-                            Image(systemName: "person.text.rectangle")
-                                .font(.appSans(size: 16))
-                                .foregroundStyle(themeStore.primaryColor)
-                                .frame(width: 28)
-                            Text("Hạng bằng")
-                                .font(.appSans(size: 15))
-                            Spacer()
-                            Picker("", selection: $licenseType) {
-                                ForEach(LicenseType.allCases, id: \.self) { type in
-                                    Text(type.displayName).tag(type.rawValue)
-                                }
-                            }
-                            .pickerStyle(.segmented)
-                            .frame(width: 120)
-                        }
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 12)
-                    }
-                    .glassCard()
-
-                    if let current = LicenseType(rawValue: licenseType) {
-                        Text("\(current.questionsPerExam) câu · \(current.totalTimeSeconds / 60) phút · Đạt \(current.passThreshold)")
-                            .font(.appSans(size: 12))
-                            .foregroundStyle(Color.appTextLight)
-                            .lineSpacing(3)
-                    }
-                }
-
-                // ──────────────────────────────────────────────
-                // MARK: - Giao diện (Appearance)
-                // ──────────────────────────────────────────────
-
-                settingsSection("Giao diện", subtitle: "Tuỳ chỉnh giao diện ứng dụng") {
-                    ThemeModePicker(selected: $themeMode)
-
-                    // Font Size
-                    settingsLabel("Cỡ chữ câu hỏi")
-                    FontSizeSlider(selected: $fontSize)
-                    FontSizePreview(fontSize: fontSize)
-
-                    // Haptics toggle
-                    settingsToggle(
-                        iconOn: "iphone.radiowaves.left.and.right",
-                        iconOff: "iphone.slash",
-                        title: "Rung phản hồi",
-                        subtitle: "Rung nhẹ khi chọn đáp án",
-                        isOn: $hapticsEnabled
-                    )
-                }
-
-                // ──────────────────────────────────────────────
-                // MARK: - Kế hoạch ôn thi (Study Plan)
-                // ──────────────────────────────────────────────
-
-                settingsSection("Nhắc nhở & Mục tiêu", subtitle: "Đặt lịch ôn tập và theo dõi tiến độ") {
-                    VStack(spacing: 12) {
-                        // Reminder toggle
-                        settingsToggle(
-                            iconOn: "bell.badge.fill",
-                            iconOff: "bell.slash",
-                            title: "Nhắc luyện tập",
-                            subtitle: "Thông báo nhắc ôn bài mỗi ngày",
-                            isOn: $dailyReminderEnabled
-                        )
-                        .onChange(of: dailyReminderEnabled) {
-                            if dailyReminderEnabled {
-                                Task {
-                                    let granted = await NotificationManager.requestPermission()
-                                    if granted {
-                                        NotificationManager.scheduleDailyReminder(hour: dailyReminderHour, progressStore: progressStore, questionStore: questionStore)
-                                    } else {
-                                        dailyReminderEnabled = false
-                                    }
-                                }
-                            } else {
-                                NotificationManager.cancelDailyReminder()
-                            }
-                        }
-
-                        if dailyReminderEnabled {
-                            HStack(spacing: 14) {
-                                Image(systemName: "clock")
-                                    .font(.appSans(size: 18))
-                                    .foregroundStyle(themeStore.primaryColor)
-                                    .frame(width: 22)
-
-                                Text("Giờ nhắc")
-                                    .font(.appSans(size: 15, weight: .semibold))
-                                    .foregroundStyle(Color.appTextDark)
-
-                                Spacer()
-
-                                Picker("", selection: $dailyReminderHour) {
-                                    ForEach(6..<24, id: \.self) { hour in
-                                        Text("\(hour):00").tag(hour)
-                                    }
-                                }
-                                .pickerStyle(.menu)
-                                .tint(themeStore.primaryColor)
-                            }
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 14)
-                            .glassCard()
-                            .onChange(of: dailyReminderHour) {
-                                NotificationManager.scheduleDailyReminder(hour: dailyReminderHour, progressStore: progressStore, questionStore: questionStore)
-                            }
-                        }
-
-                        // Exam date
-                        VStack(alignment: .leading, spacing: 8) {
-                            DatePicker(
-                                "Ngày thi dự kiến",
-                                selection: Binding(
-                                    get: { progressStore.examDate ?? Calendar.current.date(byAdding: .day, value: 30, to: Date())! },
-                                    set: { progressStore.setExamDate($0) }
-                                ),
-                                in: Date()...,
-                                displayedComponents: .date
-                            )
-                            .font(.appSans(size: 15, weight: .semibold))
-                            .foregroundStyle(Color.appTextDark)
-
-                            Text("Hiển thị đếm ngược trên trang chủ")
-                                .font(.appSans(size: 12))
-                                .foregroundStyle(Color.appTextMedium)
-                        }
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 14)
-                        .glassCard()
-
-                        if progressStore.examDate != nil {
-                            Button {
-                                progressStore.setExamDate(nil)
-                                Haptics.notification(.success)
-                                showToast("Đã xoá ngày thi")
-                            } label: {
-                                HStack(spacing: 12) {
-                                    Image(systemName: "calendar.badge.minus")
-                                        .font(.appSans(size: 16))
-                                        .foregroundStyle(Color.appError)
-                                        .frame(width: 22)
-                                    Text("Xoá ngày thi")
-                                        .font(.appSans(size: 15, weight: .semibold))
-                                        .foregroundStyle(Color.appError)
-                                    Spacer()
-                                }
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 14)
-                                .glassCard()
-                            }
-                            .buttonStyle(.plain)
-                        }
-
-                        // Daily goal
-                        VStack(alignment: .leading, spacing: 8) {
-                            Stepper(
-                                "Mục tiêu: \(progressStore.dailyGoal) câu/ngày",
-                                value: Binding(
-                                    get: { progressStore.dailyGoal },
-                                    set: { progressStore.setDailyGoal($0) }
-                                ),
-                                in: 10...100,
-                                step: 10
-                            )
-                            .font(.appSans(size: 15, weight: .semibold))
-                            .foregroundStyle(Color.appTextDark)
-
-                            Text("Theo dõi tiến độ ôn tập hằng ngày")
-                                .font(.appSans(size: 12))
-                                .foregroundStyle(Color.appTextMedium)
-                        }
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 14)
-                        .glassCard()
-                    }
-                    .animation(.easeOut(duration: 0.2), value: dailyReminderEnabled)
-                }
-
-                // ──────────────────────────────────────────────
-                // MARK: - Dữ liệu (Data)
-                // ──────────────────────────────────────────────
-
-                settingsSection("Quản lý dữ liệu", subtitle: "Xoá dữ liệu đã lưu trên máy") {
-                    VStack(spacing: 0) {
-                        resetRow(icon: "book.closed", title: "Tiến độ học", subtitle: "Xoá tiến độ tất cả chủ đề", action: .topicProgress)
-                        Divider().padding(.horizontal, 16)
-                        resetRow(icon: "doc.text", title: "Lịch sử thi thử", subtitle: "Xoá kết quả thi thử", action: .examHistory)
-                        Divider().padding(.horizontal, 16)
-                        resetRow(icon: "photo.on.rectangle", title: "Lịch sử mô phỏng", subtitle: "Xoá kết quả mô phỏng", action: .simulationHistory)
-                        Divider().padding(.horizontal, 16)
-                        resetRow(icon: "play.rectangle", title: "Lịch sử tình huống", subtitle: "Xoá kết quả tình huống", action: .hazardHistory)
-                        Divider().padding(.horizontal, 16)
-                        resetRow(icon: "bookmark", title: "Đánh dấu", subtitle: "Xoá tất cả đánh dấu", action: .bookmarks)
-                        Divider().padding(.horizontal, 16)
-                        resetRow(icon: "xmark.circle", title: "Câu sai", subtitle: "Xoá danh sách câu sai", action: .wrongAnswers)
-                    }
-                    .glassCard()
-
-                    // Nuclear reset
-                    Button { showResetSheet = true } label: {
-                        HStack(spacing: 14) {
-                            Image(systemName: "trash")
-                                .font(.appSans(size: 16))
-                                .foregroundStyle(Color.appError)
-                                .frame(width: 22)
-                            Text("Xoá tất cả dữ liệu")
-                                .font(.appSans(size: 15, weight: .semibold))
-                                .foregroundStyle(Color.appError)
-                            Spacer()
-                        }
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 14)
-                        .glassCard()
+                // ── TÀI KHOẢN ──────────────────────────────────────────
+                settingsSection("TÀI KHOẢN") {
+                    Button { showLicensePicker = true } label: {
+                        settingsNavRow(label: "Hạng giấy phép", value: licenseType.uppercased())
                     }
                     .buttonStyle(.plain)
-                    .accessibilityLabel("Xoá tất cả dữ liệu")
-                    .accessibilityHint("Xoá toàn bộ tiến độ học, lịch sử thi và đánh dấu")
+
+                    settingsDivider()
+
+                    Button { showDatePicker = true } label: {
+                        settingsNavRow(label: "Ngày thi", value: progressStore.examDate.map { formatDate($0) } ?? "Chưa đặt")
+                    }
+                    .buttonStyle(.plain)
                 }
 
-                // ──────────────────────────────────────────────
-                // MARK: - Thông tin (About)
-                // ──────────────────────────────────────────────
-
-                settingsSection("Giới thiệu") {
-                    VStack(spacing: 0) {
-                        aboutRow(icon: "doc.text.fill", label: "Ngân hàng đề thi", value: "Bộ GTVT")
-                        Divider().padding(.horizontal, 16)
-                        aboutRow(icon: "video.fill", label: "Video mô phỏng", value: "gmec.vn")
-                        Divider().padding(.horizontal, 16)
-                        aboutRow(icon: "person.fill", label: "Tác giả", value: "Kien Mai")
-                        Divider().padding(.horizontal, 16)
-                        aboutRow(icon: "phone.fill", label: "Liên hệ", value: "0913451267")
-                        Divider().padding(.horizontal, 16)
-                        aboutRow(icon: "info.circle.fill", label: "Phiên bản", value: appVersion)
-                        Divider().padding(.horizontal, 16)
-                        aboutRow(icon: "shield.fill", label: "Quyền riêng tư", value: "Dữ liệu lưu trên máy")
-                        Divider().padding(.horizontal, 16)
-                        aboutRow(icon: "exclamationmark.circle.fill", label: "Miễn trừ", value: "Không phải tài liệu chính thức")
+                // ── GIAO DIỆN ──────────────────────────────────────────
+                // Design SVK1N: flat inline rows (label left, control right), no icon boxes.
+                settingsSection("GIAO DIỆN") {
+                    inlineControlRow(label: "Giao diện") {
+                        SettingsSegmentedControl(
+                            segments: [
+                                .init(key: "light", label: "Sáng", a11yLabel: "Giao diện sáng"),
+                                .init(key: "dark", label: "Tối", a11yLabel: "Giao diện tối"),
+                                .init(key: "system", label: "Tự động", a11yLabel: "Giao diện tự động"),
+                            ],
+                            selected: $themeMode
+                        )
+                        .onChange(of: themeMode) { Haptics.selection() }
                     }
-                    .glassCard()
 
-                    Text("Ứng dụng chỉ mang tính chất tham khảo và luyện tập. Đề thi chính thức do Bộ GTVT ban hành.")
-                        .font(.appSans(size: 12))
-                        .foregroundStyle(Color.appTextLight)
-                        .lineSpacing(3)
+                    settingsDivider()
+
+                    inlineControlRow(label: "Cỡ chữ") {
+                        SettingsSegmentedControl(
+                            segments: [
+                                .init(key: "small", label: "A", fontSize: 12, a11yLabel: "Cỡ chữ nhỏ"),
+                                .init(key: "medium", label: "A", fontSize: 15, a11yLabel: "Cỡ chữ vừa"),
+                                .init(key: "large", label: "A", fontSize: 18, a11yLabel: "Cỡ chữ lớn"),
+                            ],
+                            selected: $fontSize
+                        )
+                        .onChange(of: fontSize) { Haptics.selection() }
+                    }
+
+                    settingsDivider()
+
+                    inlineControlRow(label: "Màu nhấn") {
+                        PrimaryColorPicker(selected: $themeStore.accentKey)
+                    }
+                }
+
+                // ── ỨNG DỤNG ───────────────────────────────────────────
+                settingsSection("ỨNG DỤNG") {
+                    settingsToggleRow(label: "Rung phản hồi", isOn: $hapticsEnabled)
+                        .onChange(of: hapticsEnabled) { _, on in
+                            if on { Haptics.impact(.light) }
+                        }
+
+                    settingsDivider()
+
+                    settingsToggleRow(label: "Nhắc nhở học tập", isOn: $dailyReminderEnabled)
+                        .onChange(of: dailyReminderEnabled) { _, newValue in
+                            handleReminderChange(turnedOn: newValue) { dailyReminderEnabled = false }
+                        }
+
+                    settingsDivider()
+
+                    NavigationLink(destination: OfflineDownloadView()) {
+                        settingsNavRow(label: "Quản lý tải offline", value: offlineSizeText)
+                    }
+                    .buttonStyle(.plain)
+                }
+
+                // ── VỀ ỨNG DỤNG ────────────────────────────────────────
+                settingsSection("VỀ ỨNG DỤNG") {
+                    aboutRow(label: "Nhà phát triển", value: "Mai Trung Kiên")
+                    settingsDivider()
+                    aboutRow(label: "Phiên bản", value: appVersionShort)
                 }
             }
             .padding(.horizontal, 20)
             .padding(.top, 8)
             .padding(.bottom, 32)
         }
-        .screenHeader("Cài đặt")
-        .alert("Xoá tất cả dữ liệu?", isPresented: $showResetSheet) {
-            Button("Huỷ", role: .cancel) {}
-            Button("Xoá tất cả", role: .destructive) {
-                progressStore.clearAllProgress()
-                Haptics.notification(.success)
-                showToast("Đã xoá tất cả dữ liệu")
+        .screenHeader("Cài đặt", titleDisplayMode: .inline, hideBackButton: true)
+        // Presented full-screen (same as a question), so it provides its own
+        // leading close button instead of a system back button.
+        .toolbar {
+            ToolbarItem(placement: .navigationBarLeading) {
+                Button { dismiss() } label: {
+                    Image(systemName: "chevron.left")
+                        .font(.appSans(size: 16, weight: .semibold))
+                        .foregroundStyle(Color.appTextDark)
+                }
+                .accessibilityLabel("Đóng")
             }
-        } message: {
-            Text("Toàn bộ tiến độ học, lịch sử thi, đánh dấu và câu sai sẽ bị xoá vĩnh viễn.")
         }
-        .alert(
-            resetConfirmation?.title ?? "",
-            isPresented: Binding(
-                get: { resetConfirmation != nil },
-                set: { if !$0 { resetConfirmation = nil } }
+        .onAppear { videoCache.ensureStatsLoaded() }
+        // ── Alerts ──────────────────────────────────────────────────────
+        .alert("Cần quyền thông báo", isPresented: $showPermissionDeniedAlert) {
+            Button("Mở Cài đặt") { openAppSettings() }
+            Button("Để sau", role: .cancel) {}
+        } message: {
+            Text("Bật thông báo trong Cài đặt để nhận nhắc nhở ôn tập.")
+        }
+        // ── License picker sheet ─────────────────────────────────────────
+        .sheet(isPresented: $showLicensePicker) {
+            LicensePickerSheet(licenseType: $licenseType)
+                .presentationDetents([.fraction(0.4)])
+        }
+        // ── Exam date sheet ──────────────────────────────────────────────
+        .sheet(isPresented: $showDatePicker) {
+            ExamDateSheet(progressStore: progressStore, onConfirm: { syncReminders() })
+                .presentationDetents([.medium, .large])
+        }
+    }
+
+    // MARK: - Computed
+
+    private var appVersionShort: String {
+        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
+    }
+
+    /// Cache size shown on the "Quản lý tải offline" row (blank when nothing cached).
+    private var offlineSizeText: String {
+        let mb = videoCache.cacheSizeMB
+        guard mb > 0 else { return "" }
+        return mb >= 1024 ? String(format: "%.1f GB", mb / 1024) : String(format: "%.0f MB", mb)
+    }
+
+    private static let examDateFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "dd/MM/yyyy"
+        return f
+    }()
+
+    private func formatDate(_ date: Date) -> String {
+        Self.examDateFormatter.string(from: date)
+    }
+
+    // MARK: - Reminder helpers (preserved exactly)
+
+    private func handleReminderChange(turnedOn: Bool, resetOnDenied: @escaping () -> Void) {
+        guard turnedOn else { syncReminders(); return }
+        Task { @MainActor in
+            if await ensureNotificationPermission() {
+                syncReminders()
+            } else {
+                resetOnDenied()
+                showPermissionDeniedAlert = true
+            }
+        }
+    }
+
+    private func ensureNotificationPermission() async -> Bool {
+        switch await NotificationManager.authorizationStatus() {
+        case .authorized, .provisional:
+            return true
+        case .notDetermined:
+            return await NotificationManager.requestAuthorization()
+        default:
+            return false
+        }
+    }
+
+    private func syncReminders() {
+        Task { @MainActor in
+            await NotificationManager.syncReminders(
+                dailyEnabled: dailyReminderEnabled,
+                hour: dailyReminderHour,
+                examCountdownEnabled: examCountdownEnabled,
+                dailyGoalNudgeEnabled: dailyGoalNudgeEnabled,
+                progressStore: progressStore,
+                questionStore: questionStore
             )
-        ) {
-            Button("Huỷ", role: .cancel) { resetConfirmation = nil }
-            Button("Xoá", role: .destructive) {
-                if let action = resetConfirmation {
-                    performReset(action)
-                }
-                resetConfirmation = nil
-            }
-        } message: {
-            Text(resetConfirmation?.message ?? "")
-        }
-        .overlay(alignment: .bottom) {
-            if let toast = resetToast {
-                Text(toast)
-                    .font(.appSans(size: 14, weight: .semibold))
-                    .foregroundStyle(.white)
-                    .padding(.horizontal, 20)
-                    .padding(.vertical, 12)
-                    .background(Color.appSuccess, in: Capsule())
-                    .padding(.bottom, 20)
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
-            }
         }
     }
 
-    // MARK: - Helpers
-
-    private var appVersion: String {
-        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
-        let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "1"
-        return "\(version) (\(build))"
+    private func openAppSettings() {
+        guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
+        UIApplication.shared.open(url)
     }
 
-    private func showToast(_ message: String) {
-        withAnimation(.spring(duration: 0.3)) {
-            resetToast = message
-        }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-            withAnimation(.easeOut(duration: 0.3)) {
-                resetToast = nil
-            }
+    // MARK: - Section scaffolding
+
+    /// Section group: an eyebrow label above a translucent card (design spacing
+    /// 14 between sections, 6 between eyebrow and card; card adds 2pt breathing room).
+    @ViewBuilder
+    private func settingsSection<Content: View>(
+        _ title: String,
+        @ViewBuilder _ content: () -> Content
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            settingsEyebrow(title)
+            // Card padding [2,12] (design): the horizontal inset lives on the card,
+            // so rows AND the hairline dividers align and the dividers stay inset
+            // from the card edge (never edge-to-edge).
+            VStack(spacing: 0) { content() }
+                .padding(.vertical, 2)
+                .padding(.horizontal, 12)
+                .glassCard(cornerRadius: 20)
         }
     }
 
-    private func performReset(_ action: ResetAction) {
-        switch action {
-        case .topicProgress:
-            progressStore.clearTopicProgress()
-            showToast("Đã xoá tiến độ học")
-        case .examHistory:
-            progressStore.clearExamHistory()
-            showToast("Đã xoá lịch sử thi thử")
-        case .simulationHistory:
-            progressStore.clearSimulationHistory()
-            showToast("Đã xoá lịch sử mô phỏng")
-        case .hazardHistory:
-            progressStore.clearHazardHistory()
-            showToast("Đã xoá lịch sử tình huống")
-        case .bookmarks:
-            progressStore.clearBookmarks()
-            showToast("Đã xoá đánh dấu")
-        case .wrongAnswers:
-            progressStore.clearWrongAnswers()
-            showToast("Đã xoá câu sai")
+    /// A flat row with a label on the left and an inline control on the right
+    /// (no icon box) — used by the GIAO DIỆN rows.
+    @ViewBuilder
+    private func inlineControlRow<Control: View>(
+        label: String,
+        @ViewBuilder _ control: () -> Control
+    ) -> some View {
+        HStack(spacing: 12) {
+            Text(label)
+                .font(.appSans(size: 14, weight: .semibold))
+                .foregroundStyle(Color.appTextDark)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            control()
         }
-        Haptics.notification(.success)
+        .padding(.vertical, 10)
     }
 
-    // MARK: - Section Builder
+    // MARK: - Section components
 
     @ViewBuilder
-    private func settingsSection(_ title: String, subtitle: String? = nil, @ViewBuilder content: () -> some View) -> some View {
-        VStack(alignment: .leading, spacing: 14) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(title)
-                    .font(.appSans(size: 20, weight: .bold))
-                    .foregroundStyle(Color.appTextDark)
-
-                if let subtitle {
-                    Text(subtitle)
-                        .font(.appSans(size: 13))
-                        .foregroundStyle(Color.appTextMedium)
-                }
-            }
-
-            content()
-        }
-    }
-
-    @ViewBuilder
-    private func settingsLabel(_ text: String) -> some View {
+    private func settingsEyebrow(_ text: String) -> some View {
         Text(text)
-            .font(.appSans(size: 13, weight: .medium))
-            .foregroundStyle(Color.appTextMedium)
-            .textCase(.uppercase)
-            .tracking(0.5)
+            .font(.appSans(size: 10, weight: .heavy))
+            .foregroundStyle(Color(hex: 0x7A7166))
+            .kerning(1.2)
+            .padding(.horizontal, 4)
     }
 
-    // MARK: - Settings Toggle
-
     @ViewBuilder
-    private func settingsToggle(iconOn: String, iconOff: String, title: String, subtitle: String, isOn: Binding<Bool>) -> some View {
-        HStack(spacing: 14) {
-            Image(systemName: isOn.wrappedValue ? iconOn : iconOff)
-                .font(.appSans(size: 18))
-                .foregroundStyle(isOn.wrappedValue ? themeStore.primaryColor : Color.appTextLight)
-                .frame(width: 22)
-                .contentTransition(.symbolEffect(.replace))
+    private func settingsDivider() -> some View {
+        Rectangle()
+            .fill(Color(hex: 0x000000, opacity: 0.06))
+            .frame(height: 1)
+            .frame(maxWidth: .infinity)
+    }
 
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title)
-                    .font(.appSans(size: 15, weight: .semibold))
-                    .foregroundStyle(Color.appTextDark)
-                Text(subtitle)
-                    .font(.appSans(size: 12))
-                    .foregroundStyle(Color.appTextMedium)
+    /// Plain row (design SVK1N: no icon box) — label + value + chevron.
+    @ViewBuilder
+    private func settingsNavRow(label: String, value: String) -> some View {
+        HStack(spacing: 12) {
+            Text(label)
+                .font(.appSans(size: 14, weight: .semibold))
+                .foregroundStyle(Color.appTextDark)
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+            if !value.isEmpty {
+                Text(value)
+                    .font(.appSans(size: 13, weight: .bold))
+                    .foregroundStyle(Color(hex: 0x7A7166))
             }
 
-            Spacer()
+            Image(systemName: "chevron.right")
+                .font(.appSans(size: 12, weight: .medium))
+                .foregroundStyle(Color(hex: 0x7A7166))
+        }
+        // Match the toggle rows' height (the iOS switch is ~31pt) so a nav row
+        // sitting next to toggles (e.g. "Quản lý tải offline") is the same height.
+        .frame(minHeight: 31)
+        .padding(.vertical, 10)
+        .contentShape(Rectangle())
+    }
+
+    /// Plain row with a Toggle on the right (design SVK1N: no icon box).
+    @ViewBuilder
+    private func settingsToggleRow(label: String, isOn: Binding<Bool>) -> some View {
+        HStack(spacing: 12) {
+            Text(label)
+                .font(.appSans(size: 14, weight: .semibold))
+                .foregroundStyle(Color.appTextDark)
+                .frame(maxWidth: .infinity, alignment: .leading)
 
             Toggle("", isOn: isOn)
                 .labelsHidden()
                 .tint(themeStore.primaryColor)
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 14)
-        .glassCard()
-        .accessibilityLabel(title)
+        .padding(.vertical, 10)
+        .contentShape(Rectangle())
+        .accessibilityLabel(label)
         .accessibilityValue(isOn.wrappedValue ? "Bật" : "Tắt")
         .animation(.easeOut(duration: 0.2), value: isOn.wrappedValue)
-    }
-
-    // MARK: - Reset Row
-
-    @ViewBuilder
-    private func resetRow(icon: String, title: String, subtitle: String, action: ResetAction) -> some View {
-        Button {
-            resetConfirmation = action
-        } label: {
-            HStack(spacing: 12) {
-                Image(systemName: icon)
-                    .font(.appSans(size: 14))
-                    .foregroundStyle(Color.appError.opacity(0.7))
-                    .frame(width: 20)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(title)
-                        .font(.appSans(size: 14, weight: .medium))
-                        .foregroundStyle(Color.appTextDark)
-                    Text(subtitle)
-                        .font(.appSans(size: 11))
-                        .foregroundStyle(Color.appTextLight)
-                }
-                Spacer()
-                Image(systemName: "trash")
-                    .font(.appSans(size: 12))
-                    .foregroundStyle(Color.appError.opacity(0.6))
-            }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
     }
 
     // MARK: - About Row
 
     @ViewBuilder
-    private func aboutRow(icon: String, label: String, value: String) -> some View {
+    private func aboutRow(label: String, value: String) -> some View {
         HStack(spacing: 12) {
-            Image(systemName: icon)
-                .font(.appSans(size: 14))
-                .foregroundStyle(Color.appTextLight)
-                .frame(width: 20)
             Text(label)
                 .font(.appSans(size: 14))
                 .foregroundStyle(Color.appTextMedium)
@@ -473,134 +331,187 @@ struct SettingsView: View {
                 .font(.appSans(size: 14, weight: .medium))
                 .foregroundStyle(Color.appTextDark)
         }
-        .padding(.horizontal, 16)
         .padding(.vertical, 12)
     }
-
 }
 
-// MARK: - Reset Action
+// MARK: - SettingsSegmentedControl (compact inline pill, design SVK1N)
 
-private enum ResetAction: Identifiable {
-    case topicProgress
-    case examHistory
-    case simulationHistory
-    case hazardHistory
-    case bookmarks
-    case wrongAnswers
-
-    var id: String {
-        switch self {
-        case .topicProgress: return "topicProgress"
-        case .examHistory: return "examHistory"
-        case .simulationHistory: return "simulationHistory"
-        case .hazardHistory: return "hazardHistory"
-        case .bookmarks: return "bookmarks"
-        case .wrongAnswers: return "wrongAnswers"
-        }
+private struct SettingsSegmentedControl: View {
+    struct Segment {
+        let key: String
+        let label: String
+        var fontSize: CGFloat = 12
+        var a11yLabel: String? = nil
     }
 
-    var title: String {
-        switch self {
-        case .topicProgress: return "Xoá tiến độ học?"
-        case .examHistory: return "Xoá lịch sử thi thử?"
-        case .simulationHistory: return "Xoá lịch sử mô phỏng?"
-        case .hazardHistory: return "Xoá lịch sử tình huống?"
-        case .bookmarks: return "Xoá tất cả đánh dấu?"
-        case .wrongAnswers: return "Xoá danh sách câu sai?"
-        }
-    }
-
-    var message: String {
-        switch self {
-        case .topicProgress: return "Tiến độ tất cả chủ đề sẽ bị xoá vĩnh viễn."
-        case .examHistory: return "Toàn bộ kết quả thi thử sẽ bị xoá vĩnh viễn."
-        case .simulationHistory: return "Toàn bộ kết quả mô phỏng sẽ bị xoá vĩnh viễn."
-        case .hazardHistory: return "Toàn bộ kết quả tình huống sẽ bị xoá vĩnh viễn."
-        case .bookmarks: return "Tất cả câu hỏi đã đánh dấu sẽ bị xoá."
-        case .wrongAnswers: return "Danh sách câu sai sẽ bị xoá."
-        }
-    }
-}
-
-// MARK: - Font Size Slider
-
-struct FontSizeSlider: View {
-    @Environment(ThemeStore.self) private var themeStore
+    let segments: [Segment]
     @Binding var selected: String
 
-    private static let steps = ["small", "medium", "large"]
-
-    private var currentIndex: Double {
-        Double(Self.steps.firstIndex(of: selected) ?? 1)
+    var body: some View {
+        HStack(spacing: 6) {
+            ForEach(segments, id: \.key) { seg in
+                let isSelected = selected == seg.key
+                Button {
+                    withAnimation(.easeOut(duration: 0.2)) { selected = seg.key }
+                } label: {
+                    Text(seg.label)
+                        .font(.appSans(size: seg.fontSize, weight: .bold))
+                        .foregroundStyle(isSelected ? Color.white : Color(hex: 0x7A7166))
+                        .padding(.horizontal, 12)
+                        .frame(height: 30)
+                        .background {
+                            if isSelected {
+                                Capsule().fill(Color(hex: 0x0F0F12))
+                            }
+                        }
+                        .contentShape(Capsule())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(seg.a11yLabel ?? seg.label)
+                .accessibilityValue(isSelected ? "Đã chọn" : "")
+                .accessibilityAddTraits(isSelected ? .isSelected : [])
+            }
+        }
+        .padding(3)
+        .background(Color(hex: 0x0F0F12, opacity: 0.06), in: Capsule())
+        // Keep the pills at their natural width so the greedy leading label can't
+        // squeeze them into truncation ("Sá…", "Tự…").
+        .fixedSize(horizontal: true, vertical: false)
     }
+}
+
+// MARK: - LicensePickerSheet
+
+private struct LicensePickerSheet: View {
+    @Binding var licenseType: String
+    @Environment(\.dismiss) private var dismiss
+    @Environment(ThemeStore.self) private var themeStore
 
     var body: some View {
-        HStack(spacing: 8) {
-            Text("A")
-                .font(.appSans(size: 13, weight: .medium))
-                .foregroundStyle(Color.appTextMedium)
-                .accessibilityLabel("Nhỏ")
+        NavigationStack {
+            VStack(spacing: 16) {
+                ForEach(LicenseType.allCases, id: \.self) { type in
+                    let isSelected = licenseType == type.rawValue
+                    Button {
+                        licenseType = type.rawValue
+                        dismiss()
+                    } label: {
+                        HStack(spacing: 14) {
+                            Text(type.displayName)
+                                .font(.appSans(size: 17, weight: .bold))
+                                .foregroundStyle(isSelected ? themeStore.primaryColor : Color.appTextDark)
 
-            Slider(
-                value: Binding(
-                    get: { currentIndex },
-                    set: { selected = Self.steps[Int($0.rounded())] }
-                ),
-                in: 0...2,
-                step: 1
-            )
-            .tint(themeStore.primaryColor)
-            .accessibilityLabel("Cỡ chữ câu hỏi")
-            .accessibilityValue(sizeLabel)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(type.description)
+                                    .font(.appSans(size: 13))
+                                    .foregroundStyle(Color.appTextMedium)
+                                Text("\(type.questionsPerExam) câu · \(type.totalTimeSeconds / 60) phút · Đạt \(type.passThreshold)")
+                                    .font(.appSans(size: 12))
+                                    .foregroundStyle(Color.appTextLight)
+                            }
 
-            Text("A")
-                .font(.appSerif(size: 18, weight: .bold))
-                .foregroundStyle(Color.appTextMedium)
-                .accessibilityLabel("Lớn")
-        }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 14)
-        .glassCard()
-        .onChange(of: selected) {
-            Haptics.selection()
-        }
-    }
+                            Spacer()
 
-    private var sizeLabel: String {
-        switch selected {
-        case "small": return "Nhỏ"
-        case "large": return "Lớn"
-        default: return "Vừa"
+                            if isSelected {
+                                Image(systemName: "checkmark")
+                                    .font(.appSans(size: 14, weight: .bold))
+                                    .foregroundStyle(themeStore.primaryColor)
+                            }
+                        }
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 14)
+                        .glassCard(cornerRadius: 16)
+                    }
+                    .buttonStyle(.plain)
+                }
+                Spacer()
+            }
+            .padding(.horizontal, 20)
+            .padding(.top, 16)
+            .navigationTitle("Hạng giấy phép")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Đóng") { dismiss() }
+                        .font(.appSans(size: 15, weight: .medium))
+                        .foregroundStyle(themeStore.primaryColor)
+                }
+            }
         }
     }
 }
 
-// MARK: - Font Size Preview
+// MARK: - ExamDateSheet
 
-private struct FontSizePreview: View {
-    let fontSize: String
+private struct ExamDateSheet: View {
+    let progressStore: ProgressStore
+    let onConfirm: () -> Void
+    @Environment(\.dismiss) private var dismiss
+    @Environment(ThemeStore.self) private var themeStore
 
-    private var scale: CGFloat { AppFontScale.scale(for: fontSize) }
+    @State private var selectedDate: Date
+
+    init(progressStore: ProgressStore, onConfirm: @escaping () -> Void) {
+        self.progressStore = progressStore
+        self.onConfirm = onConfirm
+        _selectedDate = State(initialValue: progressStore.examDate ?? Date().addingTimeInterval(30 * 86400))
+    }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack(spacing: 6) {
-                Image(systemName: "eye")
-                    .font(.appSans(size: 14))
-                    .foregroundStyle(Color.appTextLight)
-                Text("Xem trước")
-                    .font(.appSans(size: 12, weight: .medium))
-                    .foregroundStyle(Color.appTextLight)
-            }
+        NavigationStack {
+            VStack(spacing: 20) {
+                DatePicker(
+                    "Ngày thi dự kiến",
+                    selection: $selectedDate,
+                    in: Date()...,
+                    displayedComponents: .date
+                )
+                .datePickerStyle(.graphical)
+                .tint(themeStore.primaryColor)
+                .padding(.horizontal, 20)
 
-            Text("Khi điều khiển xe trên đường mà tầm nhìn bị hạn chế, người lái xe cần giảm tốc độ và chú ý quan sát.")
-                .font(.appSans(size: 15 * scale))
-                .foregroundStyle(Color.appTextDark)
-                .lineSpacing(4)
+                if progressStore.examDate != nil {
+                    Button {
+                        progressStore.setExamDate(nil)
+                        onConfirm()
+                        dismiss()
+                    } label: {
+                        HStack(spacing: 8) {
+                            Image(systemName: "calendar.badge.minus")
+                                .font(.appSans(size: 15))
+                            Text("Xoá ngày thi")
+                                .font(.appSans(size: 15, weight: .semibold))
+                        }
+                        .foregroundStyle(Color.appError)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 10)
+                    }
+                    .buttonStyle(.plain)
+                }
+
+                Spacer()
+            }
+            .padding(.top, 8)
+            .navigationTitle("Ngày thi")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Huỷ") { dismiss() }
+                        .font(.appSans(size: 15, weight: .medium))
+                        .foregroundStyle(Color.appTextMedium)
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Xong") {
+                        progressStore.setExamDate(selectedDate)
+                        onConfirm()
+                        dismiss()
+                    }
+                    .font(.appSans(size: 15, weight: .bold))
+                    .foregroundStyle(themeStore.primaryColor)
+                }
+            }
         }
-        .padding(12)
-        .glassCard()
     }
 }
 
@@ -611,200 +522,11 @@ enum AppFontScale {
         switch key {
         case "small": return 0.85
         case "large": return 1.15
-        default: return 1.0
+        default:      return 1.0
         }
     }
 
     static var current: CGFloat {
         scale(for: UserDefaults.standard.string(forKey: AppConstants.StorageKey.fontSize) ?? "medium")
-    }
-}
-
-// MARK: - Settings Tile (kept for external use)
-
-// MARK: - Video Offline Card
-
-struct VideoOfflineCard: View {
-    @Environment(ThemeStore.self) private var themeStore
-    let videoCache: HazardVideoCache
-    @Binding var showClearAlert: Bool
-    @State private var showChapters = false
-
-    var body: some View {
-        let cached = videoCache.cachedCount
-        let total = videoCache.totalCount
-        let fraction = total > 0 ? Double(cached) / Double(total) : 0
-        let allComplete = cached == total
-
-        VStack(alignment: .leading, spacing: 0) {
-            VStack(alignment: .leading, spacing: 12) {
-                HStack(spacing: 8) {
-                    Image(systemName: allComplete ? "checkmark.icloud.fill" : "icloud.and.arrow.down")
-                        .font(.appSans(size: 16))
-                        .foregroundStyle(themeStore.primaryColor)
-                        .symbolRenderingMode(.hierarchical)
-                    Text("Video ngoại tuyến")
-                        .font(.appSans(size: 15, weight: .bold))
-                        .foregroundStyle(Color.appTextDark)
-                    Spacer()
-                    Text(String(format: "%.0f MB", videoCache.cacheSizeMB))
-                        .font(.appSans(size: 12, weight: .medium))
-                        .foregroundStyle(Color.appTextLight)
-                }
-
-                VStack(alignment: .leading, spacing: 4) {
-                    ProgressBarView(fraction: fraction, color: themeStore.primaryColor, height: 6)
-                    Text("\(cached)/\(total) video đã tải")
-                        .font(.appSans(size: 13, weight: .medium))
-                        .foregroundStyle(Color.appTextMedium)
-                }
-
-                HStack(spacing: 10) {
-                    if videoCache.isDownloadingAll {
-                        Button {
-                            videoCache.cancelAll()
-                            Haptics.impact(.medium)
-                        } label: {
-                            HStack(spacing: 6) {
-                                ProgressView().scaleEffect(0.7).tint(themeStore.primaryColor)
-                                Text(videoCache.downloadSpeedMBps > 0
-                                     ? String(format: "%.1f MB/s (Huỷ)", videoCache.downloadSpeedMBps)
-                                     : "Đang tải... (Huỷ)")
-                                    .font(.appSans(size: 13, weight: .medium))
-                                    .foregroundStyle(themeStore.primaryColor)
-                            }
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 36)
-                            .glassCard(cornerRadius: 18)
-                        }
-                    } else if !allComplete {
-                        Button {
-                            Haptics.impact(.medium)
-                            Task { await videoCache.downloadAll() }
-                        } label: {
-                            AppButton(icon: "icloud.and.arrow.down", label: "Tải tất cả", height: 36)
-                        }
-                    }
-
-                    if cached > 0 && !videoCache.isDownloading {
-                        Button { showClearAlert = true } label: {
-                            AppButton(label: "Xoá", style: .secondary, height: 36)
-                        }
-                        .frame(width: 80)
-                    }
-                }
-
-                if !allComplete {
-                    Button {
-                        withAnimation(.easeOut(duration: 0.2)) {
-                            showChapters.toggle()
-                        }
-                    } label: {
-                        HStack(spacing: 6) {
-                            Text(showChapters ? "Ẩn chi tiết" : "Tải theo chương")
-                                .font(.appSans(size: 13, weight: .medium))
-                                .foregroundStyle(themeStore.primaryColor)
-                            Image(systemName: showChapters ? "chevron.up" : "chevron.down")
-                                .font(.appSans(size: 11))
-                                .foregroundStyle(themeStore.primaryColor)
-                        }
-                    }
-                }
-            }
-            .padding(16)
-
-            if showChapters && !allComplete {
-                Divider().padding(.horizontal, 16)
-
-                VStack(spacing: 0) {
-                    ForEach(HazardSituation.chapters, id: \.id) { chapter in
-                        let chCached = videoCache.cachedCount(forChapter: chapter.id)
-                        let chTotal = videoCache.totalCount(forChapter: chapter.id)
-                        let chComplete = chCached == chTotal
-                        let isDownloading = videoCache.downloadingChapters.contains(chapter.id)
-
-                        HStack(spacing: 10) {
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text("Ch. \(chapter.id): \(chapter.name)")
-                                    .font(.appSans(size: 13, weight: .medium))
-                                    .foregroundStyle(Color.appTextDark)
-                                    .lineLimit(1)
-                                HStack(spacing: 4) {
-                                    Text("\(chCached)/\(chTotal) video")
-                                        .font(.appSans(size: 11))
-                                        .foregroundStyle(chComplete ? themeStore.primaryColor : Color.appTextLight)
-                                    if isDownloading && videoCache.downloadSpeedMBps > 0 {
-                                        Text(String(format: "· %.1f MB/s", videoCache.downloadSpeedMBps))
-                                            .font(.appSans(size: 11))
-                                            .foregroundStyle(themeStore.primaryColor)
-                                    }
-                                }
-                            }
-
-                            Spacer(minLength: 4)
-
-                            Button {
-                                Haptics.impact(.light)
-                                if isDownloading {
-                                    videoCache.cancelChapter(chapter.id)
-                                } else {
-                                    Task { await videoCache.downloadChapter(chapter.id) }
-                                }
-                            } label: {
-                                Group {
-                                    if isDownloading {
-                                        ProgressView().scaleEffect(0.65).tint(themeStore.primaryColor)
-                                    } else if chComplete {
-                                        Image(systemName: "checkmark.circle.fill")
-                                            .font(.appSans(size: 16))
-                                            .foregroundStyle(themeStore.primaryColor)
-                                    } else {
-                                        Image(systemName: "icloud.and.arrow.down")
-                                            .font(.appSans(size: 14, weight: .medium))
-                                            .foregroundStyle(themeStore.primaryColor)
-                                    }
-                                }
-                                .frame(width: 32, height: 32)
-                                .contentShape(Rectangle())
-                            }
-                            .disabled(chComplete && !isDownloading)
-                        }
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 8)
-
-                        if chapter.id < HazardSituation.chapters.last?.id ?? 0 {
-                            Divider().padding(.horizontal, 16)
-                        }
-                    }
-                }
-            }
-        }
-        .glassCard()
-        .onAppear {
-            videoCache.ensureStatsLoaded()
-        }
-    }
-}
-
-struct SettingsTile: View {
-    let icon: String
-    let title: String
-    var iconColor: Color = Color.appTextMedium
-
-    var body: some View {
-        HStack(spacing: 14) {
-            Image(systemName: icon)
-                .font(.appSans(size: 18))
-                .foregroundStyle(iconColor)
-                .frame(width: 22)
-
-            Text(title)
-                .font(.appSans(size: 15, weight: .semibold))
-                .foregroundStyle(Color.appTextDark)
-
-            Spacer()
-        }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 14)
     }
 }

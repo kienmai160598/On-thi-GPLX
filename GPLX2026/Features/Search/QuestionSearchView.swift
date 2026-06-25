@@ -6,9 +6,14 @@ struct QuestionSearchView: View {
     @Environment(ThemeStore.self) private var themeStore
     @Environment(LayoutMetrics.self) private var metrics
     @Environment(\.openExam) private var openExam
+    @Environment(\.dismiss) private var dismiss
 
     @State private var searchText = ""
     @State private var selectedFilter: FilterOption = .all
+    // Cached results — recomputed on a debounce as the user types instead of
+    // re-filtering the full question bank twice on every keystroke/render.
+    @State private var filteredQuestions: [Question] = []
+    @State private var debounceTask: Task<Void, Never>?
 
     private enum FilterOption: String, CaseIterable {
         case all = "Tất cả"
@@ -17,7 +22,7 @@ struct QuestionSearchView: View {
         case unanswered = "Chưa làm"
     }
 
-    private var filteredQuestions: [Question] {
+    private func computeFiltered() -> [Question] {
         var questions: [Question]
 
         // Text search
@@ -48,6 +53,21 @@ struct QuestionSearchView: View {
         }
 
         return questions
+    }
+
+    private func applyFilter() {
+        debounceTask?.cancel()
+        filteredQuestions = computeFiltered()
+    }
+
+    /// Debounced recompute for text input — coalesces rapid keystrokes.
+    private func scheduleFilter() {
+        debounceTask?.cancel()
+        debounceTask = Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 200_000_000)
+            guard !Task.isCancelled else { return }
+            filteredQuestions = computeFiltered()
+        }
     }
 
     var body: some View {
@@ -95,8 +115,19 @@ struct QuestionSearchView: View {
             .padding(.bottom, 24)
         }
         .searchable(text: $searchText, prompt: "Tìm câu hỏi...")
+        .onAppear { applyFilter() }
+        .onChange(of: searchText) { scheduleFilter() }
+        .onChange(of: selectedFilter) { applyFilter() }
         .screenHeader("Tìm kiếm")
         .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                Button { dismiss() } label: {
+                    Image(systemName: "chevron.left")
+                        .font(.appSans(size: 16, weight: .semibold))
+                        .foregroundStyle(Color.appTextDark)
+                }
+                .accessibilityLabel("Đóng")
+            }
             ToolbarItem(placement: .topBarTrailing) {
                 Menu {
                     Picker(selection: $selectedFilter) {

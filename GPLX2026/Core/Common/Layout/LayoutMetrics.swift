@@ -11,11 +11,11 @@ final class LayoutMetrics {
     /// iPhone and narrow iPad split-screen (width < 744)
     var isCompact: Bool { windowWidth < 744 }
 
-    /// iPad portrait or medium split-screen (744 ≤ width < 1024)
-    var isMedium: Bool { windowWidth >= 744 && windowWidth < 1024 }
+    /// iPad portrait or medium split-screen (744 ≤ width ≤ 1024)
+    var isMedium: Bool { windowWidth >= 744 && windowWidth <= 1024 }
 
-    /// iPad landscape full-screen (sizeClass == .regular && width ≥ 1024)
-    var isWide: Bool { horizontalSizeClass == .regular && windowWidth >= 1024 }
+    /// iPad landscape full-screen (sizeClass == .regular && width > 1024)
+    var isWide: Bool { horizontalSizeClass == .regular && windowWidth > 1024 }
 
     /// Convenience: true for any iPad-class layout (medium or wide)
     var isIPadLayout: Bool { isMedium || isWide }
@@ -35,21 +35,28 @@ final class LayoutMetrics {
     }
 
     var cardPadding: CGFloat {
-        if isWide { return 20 }
-        if isMedium { return 16 }
-        return 12
+        if isWide { return 24 }
+        if isMedium { return 20 }
+        return 16
     }
 
     var gridSpacing: CGFloat {
-        if isWide { return 18 }
+        if isWide { return 16 }
         if isMedium { return 14 }
         return 12
     }
 
     var rowSpacing: CGFloat {
-        if isWide { return 14 }
-        if isMedium { return 12 }
+        if isWide { return 12 }
+        if isMedium { return 10 }
         return 8
+    }
+
+    /// Vertical gap between stacked top-level cards/sections on a screen.
+    var sectionSpacing: CGFloat {
+        if isWide { return 20 }
+        if isMedium { return 18 }
+        return 14
     }
 
     var buttonHeight: CGFloat {

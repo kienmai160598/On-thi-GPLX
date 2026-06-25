@@ -1,0 +1,347 @@
+[
+  {
+    "file": "/Users/maitrungkien/Desktop/project/GPLX2026/GPLX2026/Core/Models/HazardResult.swift",
+    "line": "17-18",
+    "severity": "high",
+    "kind": "logic",
+    "title": "HazardResult.passed uses a fixed constant instead of a score percentage",
+    "description": "HazardResult.passed compares totalScore against the hardcoded constant AppConstants.Hazard.passScore (35), which was calibrated for a 10-situation exam (max 50 pts, 70% = 35). In .practice mode the view passes all 120 situations, making maxScore = 600; the threshold of 35 becomes 5.8%, trivially achievable with 7 correct taps out of 120. In .chapter mode (e.g. chapter 3 = 20 situations, maxScore = 100) the effective threshold drops to 35%, far below the intended 70%. HazardResultView calls result.passed unconditionally for every mode, so practice and chapter sessions display an incorrect pass/fail result.",
+    "fix": "Replace the fixed constant with a percentage-based check that uses the session's own maxScore: `var passed: Bool { guard maxScore > 0 else { return false }; return Double(totalScore) / Double(maxScore) >= 0.7 }`. This keeps the 70% rule consistent across all modes and matches how SimulationResult.passed works.",
+    "area": "Data models",
+    "verdict": {
+      "isReal": true,
+      "confidence": "high",
+      "reasoning": "The bug is real and unguarded. HazardResult.passed at line 17-18 of /GPLX2026/Core/Models/HazardResult.swift compares totalScore >= AppConstants.Hazard.passScore (35), a fixed absolute constant calibrated only for the standard 10-situation exam (maxScore=50, 35/50=70%). The model already stores maxScore and exposes scorePercentage (which correctly normalises), but passed ignores both.\n\nThree paths in HazardTestView.startTest() produce sessions where the threshold is wrong:\n- .practice → situations = HazardSituation.all (all ~120 situations, maxScore up to 600). Threshold 35/600 = 5.8% — trivially passed with 7 correct taps.\n- .chapter(chapterId) → situations filtered per chapter (variable count, e.g. 20 situations → maxScore=100). Threshold 35/100 = 35%, well below the intended 70%.\n- .examSet(setId) → 10 situations (same as .exam), so this path is actually correct.\n\nHazardResultView consumes result.passed unconditionally for the hero pass/fail badge, the background colour, the heroLabel string, and ReviewHelper.requestIfFirstPass. There is no mode-aware guard, no override, and no conditional skip of the passed display. The fix is straightforward: replace the absolute comparison with a percentage-based one, e.g. scorePercentage >= 0.70, using the already-present scorePercentage property."
+    }
+  },
+  {
+    "file": "/Users/maitrungkien/Desktop/project/GPLX2026/GPLX2026/Core/Models/LicenseType.swift",
+    "line": "51",
+    "severity": "medium",
+    "kind": "logic",
+    "title": "B2 totalExamSets uses floor division, leaving 5 questions permanently unreachable via fixed exam sets",
+    "description": "LicenseType.b2.totalExamSets returns 17 (floor of 600 / 35). QuestionStore.examSetQuestions(setId:) slices the pool by index: set 1 covers indices 0–34, set 17 covers indices 560–594. Questions at indices 595–599 (5 questions) are never included in any fixed exam set. The comment '600 / 35 ≈ 17' acknowledges the approximation but the consequence is a silent coverage gap: those 5 questions are only reachable through randomExamQuestions(), not through the named fixed-set flow that users typically exhaust. examSetQuestions already handles a short trailing slice correctly via min(startIndex + perSet, pool.count).",
+    "fix": "Use ceiling division: `case .b2: return (600 + 35 - 1) / 35  // = 18`. The 18th set will contain the remaining 5 questions (indices 595–599); examSetQuestions already clamps endIndex to pool.count, so no other code needs to change.",
+    "area": "Data models",
+    "verdict": {
+      "isReal": true,
+      "confidence": "high",
+      "reasoning": "The gap is confirmed by reading the source. LicenseType.b2.totalExamSets returns 17 (hardcoded, with comment \"600 / 35 ≈ 17\"). examSetQuestions(setId:) at QuestionStore.swift:173 computes startIndex = (setId-1)*35 and endIndex = min(startIndex+35, pool.count). Set 17 covers indices 560–594; indices 595–599 (5 questions) are never a startIndex for any set the UI exposes. The UI in ExamTab.swift iterates ForEach(1...totalSets) — exactly 1 to 17 — so setId=18 is never generated. No guard or supplemental path includes the tail in the fixed-set flow. The slice function itself handles short trailing slices correctly (the min guard), meaning the fix is purely in totalExamSets: using ceiling division ((600 + 34) / 35 = 18) would expose all 600 questions. randomExamQuestions() does reach the full pool, but that is the only escape hatch. The gap is not by design — the comment acknowledges approximation but shows no intent to exclude the tail, and no product note records this as a deliberate trade-off."
+    }
+  },
+  {
+    "file": "/Users/maitrungkien/Desktop/project/GPLX2026/GPLX2026/Core/Common/Display/TopicProgressRing.swift",
+    "line": "23",
+    "severity": "medium",
+    "kind": "logic",
+    "title": "Unclamped fraction produces wrong percentage label and fatal crash on NaN",
+    "description": "TopicProgressRing accepts fraction: Double with no validation. Line 23 computes Int(fraction * 100) for the label text. If fraction > 1.0 the label shows e.g. '103%'; if fraction < 0 it shows a negative string. Critically, Int(NaN) is a Swift fatal trap ('Double value cannot be converted to Int because it is either infinite or NaN') — confirmed by running the expression in the Swift REPL. The .trim(from: 0, to: fraction) on line 18 is silently clamped by Core Graphics, so the ring itself is safe, but the label is not. Current call sites guard their denominators so NaN cannot currently occur, but the widget imposes no contract on its caller — a future site that passes an unguarded division (e.g. from an empty array) will crash at this label.",
+    "fix": "Add a private computed property that clamps and sanitizes the input before use:\n\nprivate var safeFraction: Double {\n    guard fraction.isFinite else { return 0 }\n    return min(max(fraction, 0), 1)\n}\n\nThen replace both uses of `fraction` on lines 18 and 23 with `safeFraction`.",
+    "area": "Un-audited shared widgets",
+    "verdict": {
+      "isReal": true,
+      "confidence": "high",
+      "reasoning": "The code at /Users/maitrungkien/Desktop/project/GPLX2026/GPLX2026/Core/Common/Display/TopicProgressRing.swift:23 is exactly `Text(\"\\(Int(fraction * 100))%\")` with no guard on `fraction`. In Swift, `Int(Double.nan)` is a documented fatal trap (\"Double value cannot be converted to Int because it is either infinite or NaN\") — this is not a compile-time error and the project builds green because the trap only fires at runtime. The `.trim(from: 0, to: fraction)` on line 18 is silently clamped by Core Graphics and is safe, but the label is not.\n\nEvery current call site uses a denominator guard of the form `total > 0 ? Double(correct) / Double(total) : 0`, producing a value in [0.0, 1.0], so the crash cannot be triggered today. The single indirect consumer, MiniMetricCard, has zero call sites in the codebase (grep found only its own definition). The widget imposes no @precondition, assert, or documented parameter contract.\n\nThe claim's characterisation of the mechanics is accurate: the ring arc is safe (Core Graphics clamps), the label is unsafe (no clamp, no NaN guard). The vulnerability is latent — it requires a future call site passing an unguarded division — but it is genuinely unguarded and a one-line `max(0, min(1, fraction))` (or `.isNaN` check) would eliminate it. Classifying as real because the code defect exists and is not defended against; the only reason it has not crashed in production is the coincidental safety of existing callers, not any defensive measure in the widget itself."
+    }
+  },
+  {
+    "file": "/Users/maitrungkien/Desktop/project/GPLX2026/GPLX2026/Core/Common/Lists/QuestionReviewRow.swift",
+    "line": "77",
+    "severity": "medium",
+    "kind": "ui",
+    "title": "Collapsed wrong-answer hint hard-truncated to one line for 136 of 600 answers",
+    "description": "Lines 73-78 show a quick-scan hint ('Đáp án: ...') when the row is collapsed and status == .wrong. The Text view has .lineLimit(1) with no minimumScaleFactor or explicit ellipsis strategy. Of the 600 questions in questions.json, 136 have correct answer texts longer than 80 characters (up to 509 characters). For these questions the hint silently truncates to a trailing ellipsis mid-sentence — e.g. 'Đáp án: Xe ưu tiên gồm xe chữa cháy của...' — giving the user a fragmentary and potentially misleading partial answer. The row can be expanded by tapping to see the full answer list, but the hint's purpose is a quick review aid and it conveys wrong information in its truncated state.",
+    "fix": "Change .lineLimit(1) to .lineLimit(2) to accommodate most answers while keeping the row compact. For very long answers, two lines still truncate but show materially more context. If a single-line constraint must be kept for layout reasons, add .truncationMode(.tail) explicitly and accompany it with a visible 'tap to expand' cue (e.g. a chevron affordance already exists) so users know the hint is incomplete.",
+    "area": "Un-audited shared widgets",
+    "verdict": {
+      "isReal": true,
+      "confidence": "high",
+      "reasoning": "The code at /Users/maitrungkien/Desktop/project/GPLX2026/GPLX2026/Core/Common/Lists/QuestionReviewRow.swift line 77 applies .lineLimit(1) to the collapsed wrong-answer hint with no minimumScaleFactor, truncationMode override, or length-conditional guard. The questions.json data confirms exactly 136 questions have correct answer text longer than 80 characters (152 when the \"Đáp án: \" prefix is included), with lengths up to 509 characters. Git history shows the .lineLimit(1) has been present since the file's initial commit (971adec) with no intentional design rationale for long-answer truncation — it is a layout default that was never revisited. The hint's stated purpose is a quick-review aid for wrong answers; silently cutting 22-25% of answers to a single trailing-ellipsis line undermines that purpose and is not guarded, not by-design, and not negligible."
+    }
+  },
+  {
+    "file": "/Users/maitrungkien/Desktop/project/GPLX2026/GPLX2026/Features/Home/HomeTab.swift",
+    "line": "548",
+    "severity": "high",
+    "kind": "logic",
+    "title": "\"25 câu\" subtitle does not match actual behaviour of the Ngẫu nhiên tile",
+    "description": "The HomeActionTile for 'Ngẫu nhiên' shows subtitle: \"25 câu\". The action opens .questionView(topicKey: allQuestions, startIndex: randomStart) with no question-count cap. QuestionView.loadQuestions() sets sessionQuestions = liveQuestions, which for the allQuestions key returns all questions for the current licence: ~300 for B1, ~600 for B2. There is no 25-question limit anywhere in the code path. The label is factually wrong for every licence type.",
+    "fix": "Replace the hardcoded subtitle with a dynamic value: subtitle: \"\\(questionStore.questionsForCurrentLicense.count) câu\". Alternatively remove the count from the subtitle entirely, e.g. \"Bộ câu hỏi\", since the intent is to browse the full bank from a random position.",
+    "area": "Vietnamese copy + hardcoded numbers",
+    "verdict": {
+      "isReal": true,
+      "confidence": "high",
+      "reasoning": "The code at HomeTab.swift:548 shows the Ngẫu nhiên tile has subtitle \"25 câu\". The action (lines 550–552) picks a random startIndex within questionStore.allQuestions and calls .questionView(topicKey: AppConstants.TopicKey.allQuestions, startIndex: randomStart). In QuestionView.loadQuestions() (line 71–75), sessionQuestions = liveQuestions, and liveQuestions calls questionStore.questions(forTopicKey: topicKey, filterIds: filterIds). In QuestionStore.questions(forTopicKey:) at line 141–142, the allQuestions case simply returns the full allQuestions array — no cap, no slice, no limit. The allQuestions property (line 14) is the raw decoded JSON, which per the comment in loadQuestions is ~460KB total. There is no 25-question limit anywhere in the code path: not in HomeTab, not in QuestionView, not in QuestionStore. The subtitle \"25 câu\" is stale/wrong copy — the user will actually see hundreds of questions (all B1 or all B2 questions depending on license type), not 25. No guard or by-design behavior explains the discrepancy. The bug is real and worth fixing."
+    }
+  },
+  {
+    "file": "/Users/maitrungkien/Desktop/project/GPLX2026/GPLX2026/Features/Home/ExamTab.swift",
+    "line": "366",
+    "severity": "high",
+    "kind": "logic",
+    "title": "All three values in \"20 câu · 60s/câu · ≥ 70%\" are orphaned literals with no backing constant",
+    "description": "The simulationCard subtitle is hardcoded as \"20 câu · 60s/câu · ≥ 70%\". AppConstants.Simulation has scenarioTimeSeconds = 60 and passRate = 0.7, but no questionsPerExam constant. BaseExamView.swift:464 separately passes count: 20 as a raw literal to randomSimulationQuestions. None of the three values in this label reference AppConstants — so changing any constant in AppConstants.Simulation would leave this label stale. The 20 in the label must also equal the 20 in QuestionStore.randomSimulationQuestions(count: 20) and in QuestionStore.simulationSetQuestions perSet = 20.",
+    "fix": "Add static let questionsPerExam = 20 to AppConstants.Simulation. Replace the string with: \"\\(AppConstants.Simulation.questionsPerExam) câu · \\(AppConstants.Simulation.scenarioTimeSeconds)s/câu · ≥ \\(Int(AppConstants.Simulation.passRate * 100))%\". Also replace the literal 20 in BaseExamView:464 with AppConstants.Simulation.questionsPerExam and the two literals 20 in QuestionStore.swift:208,223,229 with the same constant.",
+    "area": "Vietnamese copy + hardcoded numbers",
+    "verdict": {
+      "isReal": true,
+      "confidence": "high",
+      "reasoning": "All three values in the label at ExamTab.swift:366 are orphaned string literals. AppConstants.Simulation has scenarioTimeSeconds = 60 and passRate = 0.7, but neither is referenced in the label — the label just contains \"60s/câu\" and \"≥ 70%\" as raw text. There is no questionsPerExam constant anywhere in AppConstants.Simulation, so the \"20 câu\" has zero backing constant. The raw literal 20 is additionally repeated in three separate places: BaseExamView.swift:464 (count: 20), QuestionStore.swift:208 (default count: Int = 20), QuestionStore.swift:223 (pool.count / 20), and QuestionStore.swift:229 (let perSet = 20). If any of these values were changed — say the exam grew to 25 questions — the subtitle label would stay stale while the actual exam logic changed, creating a silent user-facing discrepancy. The issue is real and non-trivial: it is not guarded, not by-design (the surrounding code clearly uses AppConstants for the timer and pass threshold elsewhere), and not a compile-time artifact — the project builds green precisely because these are string literals that Swift does not type-check against the constants."
+    }
+  },
+  {
+    "file": "/Users/maitrungkien/Desktop/project/GPLX2026/GPLX2026/Features/Simulation/SimulationResultView.swift",
+    "line": "47",
+    "severity": "medium",
+    "kind": "logic",
+    "title": "Hardcoded 0.7 in pass-threshold display instead of AppConstants.Simulation.passRate",
+    "description": "The 'Yêu cầu đạt' row computes the required number of correct answers as Int(Double(questions.count) * 0.7). SimulationResult.passed already uses AppConstants.Simulation.passRate (= 0.7) correctly, so the pass/fail verdict is correct. But the displayed count in the label is computed from a separate hardcoded 0.7 literal. If AppConstants.Simulation.passRate is ever changed, the label will show the wrong target while the actual pass logic uses the updated value.",
+    "fix": "Replace 0.7 with AppConstants.Simulation.passRate: value: \"\\u{2265} \\(Int(AppConstants.Simulation.passRate * 100))% (\\(Int(Double(questions.count) * AppConstants.Simulation.passRate))/\\(questions.count))\"",
+    "area": "Vietnamese copy + hardcoded numbers",
+    "verdict": {
+      "isReal": true,
+      "confidence": "high",
+      "reasoning": "The hardcoded 0.7 literal at SimulationResultView.swift:47 is confirmed present and unguarded. The \"Yêu cầu đạt\" row computes Int(Double(questions.count) * 0.7) and also hardcodes the display string \"70%\", while SimulationResult.passed correctly delegates to AppConstants.Simulation.passRate (= 0.7, defined at AppConstants.swift:23). There is no guard, assertion, or derived reference tying the label computation to the constant. If AppConstants.Simulation.passRate changes, the pass/fail verdict would update correctly but the displayed target count and the \"70%\" text in the label would silently show stale values — a real latent consistency bug. This is not by design, not a false compile claim, and not defended by any existing mechanism."
+    }
+  },
+  {
+    "file": "/Users/maitrungkien/Desktop/project/GPLX2026/GPLX2026/Features/Exam/BaseExamView.swift",
+    "line": "85",
+    "severity": "medium",
+    "kind": "copy",
+    "title": "navTitle for .simulation mode shows \"Phỏng vấn\" (interview) — wrong term",
+    "description": "BaseExamView.navTitle returns \"Phỏng vấn\" for the .simulation case. \"Phỏng vấn\" means job interview in Vietnamese. The feature is the sa-hình (driving simulation) exam, consistently called \"Thi sa hình\" in ExamTab.swift:363, \"Đề sa hình cố định\" at :472, \"Lịch sử sa hình\" at :632, and \"Kết quả mô phỏng\" / \"Chi tiết mô phỏng\" in SimulationResultView.swift:151. This navigation bar title is the only place using \"Phỏng vấn\".",
+    "fix": "Change the return value to \"Thi sa hình\" to match the rest of the feature's terminology.",
+    "area": "Vietnamese copy + hardcoded numbers",
+    "verdict": {
+      "isReal": true,
+      "confidence": "high",
+      "reasoning": "The bug is confirmed real with no guard or override. BaseExamView.swift:85 returns \"Phỏng vấn\" (job interview) for the .simulation case and it feeds directly into .navigationTitle(navTitle) at line 98 with nothing intercepting it. \"Phỏng vấn\" appears exactly once in the entire codebase — only at this incorrect location. All peer strings for the same feature use \"sa hình\" or \"mô phỏng\": ExamTab.swift lines 363/472/632 use \"Thi sa hình\", \"Đề sa hình cố định\", \"Lịch sử sa hình\"; SimulationResultView.swift:151 uses \"Kết quả mô phỏng\" / \"Chi tiết mô phỏng\". The correct fix is to change the .simulation case to return \"Thi sa hình\" to match the dominant naming convention in ExamTab.swift."
+    }
+  },
+  {
+    "file": "/Users/maitrungkien/Desktop/project/GPLX2026/GPLX2026/Features/Hazard/HazardResultView.swift",
+    "line": "53-54",
+    "severity": "medium",
+    "kind": "logic",
+    "title": "Hardcoded score >= 3 'good' threshold has no backing constant",
+    "description": "HazardResultView computes goodCount = result.details.filter { $0.score >= 3 }.count and displays it as 'Đạt điểm tốt (≥ 3)'. The value 3 is a domain threshold (60% of maxScorePerSituation = 5) but it is not declared in AppConstants.Hazard. HazardTestView.swift:1377 and :1381 separately hardcode the denominator /5 in the strings \"\\(score)/5 điểm\" and \"0/5 điểm\". AppConstants.Hazard.maxScorePerSituation = 5 exists but is not used in any of these three places.",
+    "fix": "Add static let goodScoreThreshold = 3 to AppConstants.Hazard. In HazardResultView:53 use $0.score >= AppConstants.Hazard.goodScoreThreshold and update the label to reference the constant. In HazardTestView:1377 replace /5 with /\\(AppConstants.Hazard.maxScorePerSituation) in both strings.",
+    "area": "Vietnamese copy + hardcoded numbers",
+    "verdict": {
+      "isReal": true,
+      "confidence": "high",
+      "reasoning": "All three cited locations are real and unguarded:\n\n1. HazardResultView.swift:53 — `result.details.filter { $0.score >= 3 }.count` uses a bare literal `3`. AppConstants.Hazard defines `maxScorePerSituation = 5`, `passScore = 35`, and `maxTotalScore`, but there is no `goodScoreThreshold` or any named constant for 3. The constant IS used at line 99 of the same file and at HazardResult.swift:101, proving the author knows it exists — the omission at line 53 is inconsistent, not intentional.\n\n2. HazardTestView.swift:1377 — `\"\\(score)/5 điểm\"` hardcodes `5`.\n\n3. HazardTestView.swift:1381 — `\"0/5 điểm\"` hardcodes `5`.\n\nBoth HazardTestView lines bypass `AppConstants.Hazard.maxScorePerSituation = 5`, which is the canonical source of truth for that denominator and is used elsewhere (HazardResultView.swift:99, HazardResult.swift:101, ProgressStore+ExamHistory.swift:59).\n\nThere is no guard, no by-design comment, and no alternative constant that covers these cases. If `maxScorePerSituation` ever changed, these three strings would silently show wrong values. The claim is accurate and the issue is worth fixing: add `static let goodScoreThreshold = 3` to `AppConstants.Hazard` and replace the three literals with the appropriate constants."
+    }
+  },
+  {
+    "file": "/Users/maitrungkien/Desktop/project/GPLX2026/GPLX2026/Features/Settings/OfflineDownloadView.swift",
+    "line": "69, 79, 83",
+    "severity": "low",
+    "kind": "copy",
+    "title": "xóa (modern) mixed with xoá (traditional) used throughout the rest of the app",
+    "description": "OfflineDownloadView uses \"Xóa tất cả\" (line 69), \"Xác nhận xóa tất cả video đã tải?\" (line 79), and \"Xóa\" (line 83). Every other delete-related string in the app uses the traditional diacritic form xoá: SettingsView.swift lines 237, 244, 296–316, 367–385, 505–507. The two forms are both valid Vietnamese but mixing them within one app is inconsistent.",
+    "fix": "Replace all three occurrences of xóa / Xóa in OfflineDownloadView.swift with xoá / Xoá to match the rest of the codebase.",
+    "area": "Vietnamese copy + hardcoded numbers",
+    "verdict": {
+      "isReal": true,
+      "confidence": "high",
+      "reasoning": "Verified by direct grep across the full Swift source tree. OfflineDownloadView.swift lines 69, 79, and 83 use the modern-standard form \"Xóa\" / \"xóa\" (acute diacritic on the 'o'). Every other delete-related string in the codebase — 27+ occurrences, all in SettingsView.swift — uses the traditional Southern form \"Xoá\" / \"xoá\" (acute diacritic on the 'a'). No other Swift file in the project uses either form, so the inconsistency is entirely contained within the Settings feature area. There is no localization file, no guard, and no design decision that makes the split intentional. The project compiles green because both are valid string literals; the issue is purely a copy consistency problem. OfflineDownloadView.swift is the outlier: its 3 occurrences should be changed to match the overwhelming 27-occurrence majority form used in SettingsView.swift (\"Xoá tất cả\", \"Xác nhận xoá tất cả video đã tải?\", \"Xoá\")."
+    }
+  },
+  {
+    "file": "/Users/maitrungkien/Desktop/project/GPLX2026/GPLX2026/Core/Common/Exam/ExamToolbar.swift",
+    "line": "18-23",
+    "severity": "high",
+    "kind": "accessibility",
+    "title": "Exit button (xmark) has no Vietnamese accessibilityLabel",
+    "description": "The leading ToolbarItem button uses `Image(systemName: \"xmark\")` as its only label. SwiftUI derives the VoiceOver announcement from the SF Symbol name, which yields the system locale string (\"Close\" in English) rather than a Vietnamese label. Because the app's UI language is entirely Vietnamese, VoiceOver users hear an English word here while every visible string on screen is Vietnamese.",
+    "fix": "Replace `Image(systemName: \"xmark\")` in the button label with `Label(\"Thoát bài thi\", systemImage: \"xmark\")`, or add `.accessibilityLabel(\"Thoát bài thi\")` to the Button.",
+    "area": "Accessibility",
+    "verdict": {
+      "isReal": true,
+      "confidence": "high",
+      "reasoning": "The code at ExamToolbar.swift lines 18-23 is exactly as described: a ToolbarItem Button with Image(systemName: \"xmark\") and no .accessibilityLabel() modifier. No guard, wrapper, or workaround exists. The app has zero .lproj bundles and no .strings localization infrastructure, so VoiceOver falls back to the iOS system SF Symbol name (\"Close\" on English devices, \"Đóng\" on Vietnamese-locale devices) rather than an app-controlled Vietnamese string. The rest of the codebase consistently applies explicit Vietnamese accessibilityLabel values (e.g. \"Xoá tất cả dữ liệu\", \"Tìm kiếm câu hỏi\", \"Cài đặt\", \"Tải chương X\") making this button an inconsistency, not by design. The identical gap also exists in HazardTestView.swift line 56 (another bare xmark toolbar button) and CloseButton.swift. The fix is a one-line .accessibilityLabel(\"Thoát\") addition. It is real and worth fixing."
+    }
+  },
+  {
+    "file": "/Users/maitrungkien/Desktop/project/GPLX2026/GPLX2026/Core/Common/Exam/ExamToolbar.swift",
+    "line": "29-36",
+    "severity": "high",
+    "kind": "accessibility",
+    "title": "Bookmark toggle button missing accessibilityLabel and accessibilityValue for bookmark state",
+    "description": "The trailing ToolbarItem button switches between `Image(systemName: isBookmarked ? \"bookmark.fill\" : \"bookmark\")` with no explicit label. SwiftUI resolves the icon name to an English string (\"Add Bookmark\" / \"Remove Bookmark\") from the system. The current bookmark state is never announced as a value, and the label is English-only. VoiceOver users cannot tell whether the question is currently bookmarked without sighted assistance.",
+    "fix": "Add `.accessibilityLabel(isBookmarked ? \"Bỏ đánh dấu\" : \"Đánh dấu câu hỏi\")` and `.accessibilityValue(isBookmarked ? \"Đã đánh dấu\" : \"\")` to the Button, or use `Label(isBookmarked ? \"Bỏ đánh dấu\" : \"Đánh dấu câu hỏi\", systemImage: isBookmarked ? \"bookmark.fill\" : \"bookmark\")`.",
+    "area": "Accessibility",
+    "verdict": {
+      "isReal": true,
+      "confidence": "high",
+      "reasoning": "The code at ExamToolbar.swift lines 29-36 is exactly as described. The Button wraps an Image(systemName:) with no .accessibilityLabel, .accessibilityValue, or .accessibilityHint modifier applied anywhere — not at the definition site, not at the call site in BaseExamView.swift:99-106, and not via any intermediate wrapper. SwiftUI does resolve SF Symbol names to VoiceOver strings, but those strings are English (\"Add Bookmark\" / \"Remove Bookmark\") — iOS provides no automatic Vietnamese localization for them. The current bookmark state (filled vs outline) is also never announced as a value, so a VoiceOver user gets an English label with no state information. This is a real gap, not a guard, not by design. The project applies Vietnamese accessibilityLabel and accessibilityValue consistently on comparable stateful interactive controls (SettingsView.swift toggle buttons at lines 592-593 and 626-627, AnswerOptionCard.swift at lines 38-39, OfflineDownloadView.swift throughout), making the bookmark button an inconsistency against the project's own established pattern."
+    }
+  },
+  {
+    "file": "/Users/maitrungkien/Desktop/project/GPLX2026/GPLX2026/Core/Common/Layout/QuestionGridButton.swift",
+    "line": "14-18",
+    "severity": "high",
+    "kind": "accessibility",
+    "title": "QuestionGridButton has no accessibilityLabel — VoiceOver announces only the question number",
+    "description": "The button wraps `ProgressRing` which renders a `Text(\"\\(current)\")` number inside a ring. No `accessibilityLabel` is set on the Button, so VoiceOver announces only the current question number (e.g., \"1\") with no indication that this button opens a question navigation grid, or what the total question count is.",
+    "fix": "Add `.accessibilityLabel(\"Câu \\(current) / \\(total). Mở danh sách câu hỏi\")` to the Button in `QuestionGridButton.body`.",
+    "area": "Accessibility",
+    "verdict": {
+      "isReal": true,
+      "confidence": "high",
+      "reasoning": "The code confirms the issue with no ambiguity. QuestionGridButton (/GPLX2026/Core/Common/Layout/QuestionGridButton.swift:14-18) wraps a ProgressRing in a Button with zero accessibility modifiers. ProgressRing (/GPLX2026/Core/Common/Display/ProgressRing.swift:30) contains exactly one Text view — Text(\"\\(current)\") — which is the only thing SwiftUI's accessibility engine can harvest as a label. The total parameter is used only to compute a CGFloat fraction for the ring stroke; it is never surfaced in any Text or accessibility attribute. Neither the call site in ExamBottomBar nor any parent view adds an .accessibilityLabel override. There is no guard, no by-design exemption, and no existing workaround. VoiceOver will announce only the bare number (e.g. \"1, button\"), giving no indication this button opens a question-navigation grid or what the total question count is. The fix would be to add .accessibilityLabel(\"Câu \\(current)/\\(total) — xem danh sách câu hỏi\") (or equivalent Vietnamese wording) on the Button in QuestionGridButton.body."
+    }
+  },
+  {
+    "file": "/Users/maitrungkien/Desktop/project/GPLX2026/GPLX2026/Core/Common/Exam/ExamQuestionGridSheet.swift",
+    "line": "39-44",
+    "severity": "high",
+    "kind": "accessibility",
+    "title": "Question grid cells announce only a number — state (current, answered, unanswered) is not communicated",
+    "description": "Each `Button` in the `LazyVGrid` uses `gridCell(index:)` as its label, which is a `Text(\"\\(index + 1)\")` only. The visual state (current question highlighted in accent, answered in green, unanswered in grey) is purely color-coded. VoiceOver users hear \"1\", \"2\", \"3\" with no indication of which question is current or which have been answered.",
+    "fix": "Add a computed accessibility label to each grid button. Example: `.accessibilityLabel(gridCellLabel(for: index))` where `gridCellLabel` returns `\"Câu \\(index + 1), \\(index == currentIndex ? \"đang làm\" : answeredIndices.contains(index) ? \"đã trả lời\" : \"chưa trả lời\")\"`.",
+    "area": "Accessibility",
+    "verdict": {
+      "isReal": true,
+      "confidence": "high",
+      "reasoning": "The claim is verified as real. In /GPLX2026/Core/Common/Exam/ExamQuestionGridSheet.swift, `gridCell(index:)` (lines 69–76) returns `Text(\"\\(index + 1)\")` with only visual styling modifiers. The wrapping `Button` (lines 39–44) carries no `.accessibilityLabel`, `.accessibilityValue`, `.accessibilityHint`, or `.accessibilityAddTraits` modifiers. State (current, answered, unanswered) is communicated solely through color — `.foregroundStyle` and `.background` — which VoiceOver cannot convey. No parent view (`QuestionGridButton.swift`) applies any compensating accessibility modifier to the sheet. There is no guard at all. The omission is inconsistent with the project's own pattern: `AnswerOptionCard` and multiple Settings pickers in the same codebase correctly use `.accessibilityValue` and `.accessibilityAddTraits(.isSelected)` to communicate selection state. A VoiceOver user navigating this grid hears only \"1, Button\", \"2, Button\", etc., with no indication of which question is current or which have been answered."
+    }
+  },
+  {
+    "file": "/Users/maitrungkien/Desktop/project/GPLX2026/GPLX2026/Features/Exam/ExamResultView.swift",
+    "line": "255-270, 324-337",
+    "severity": "medium",
+    "kind": "accessibility",
+    "title": "Collapsible section buttons (Tổng quan, Theo chủ đề) do not announce expanded/collapsed state",
+    "description": "Both `statsCard` and `topicsCard` have a `Button` that toggles `statsExpanded` / `topicsExpanded`. The chevron icon changes direction visually, but no `accessibilityValue` (e.g., \"Đang mở\" / \"Đã đóng\") or `.accessibilityAddTraits(.isButton)` combined with a state announcement is provided. VoiceOver announces \"Tổng quan, button\" with no indication of the current open/closed state.",
+    "fix": "Add `.accessibilityValue(statsExpanded ? \"Đang mở\" : \"Đã đóng\")` to the statsCard Button, and `.accessibilityValue(topicsExpanded ? \"Đang mở\" : \"Đã đóng\")` to the topicsCard Button.",
+    "area": "Accessibility",
+    "verdict": {
+      "isReal": true,
+      "confidence": "high",
+      "reasoning": "The code at ExamResultView.swift lines 255-271 (statsCard) and 324-341 (topicsCard) confirms the issue exactly as described. Both buttons use a plain SwiftUI Button with a Text label and a directional chevron Image(systemName:) — no .accessibilityValue, no .accessibilityLabel on the button, no .accessibilityHint, and no DisclosureGroup (which would handle semantics automatically). A grep across the entire Exam feature folder finds only one accessibility modifier in the whole file (line 133, unrelated). SwiftUI will synthesize the button's accessible label from its child views, so VoiceOver announces roughly \"Tổng quan, chevron down, button\" — the chevron SF Symbol name leaks through, but this is not the standard expanded/collapsed semantic (iOS convention is .accessibilityValue for toggle state). There is no guard, wrapper, or environment modifier that compensates. The fix is straightforward: add .accessibilityValue(statsExpanded ? \"Đang mở\" : \"Đã đóng\") (and the equivalent for topicsExpanded) to each button, or replace the custom collapsible pattern with DisclosureGroup."
+    }
+  },
+  {
+    "file": "/Users/maitrungkien/Desktop/project/GPLX2026/GPLX2026/Features/Onboarding/OnboardingSteps.swift",
+    "line": "344-362",
+    "severity": "high",
+    "kind": "accessibility",
+    "title": "Notification toggle in onboarding has no accessible label — VoiceOver announces nothing",
+    "description": "The `notificationCard` contains `Toggle(\"\", isOn: $notificationsEnabled).labelsHidden()`. The label string is empty and `.labelsHidden()` suppresses it. The surrounding `HStack` has no `.accessibilityLabel` or `.accessibilityElement(children: .combine)`. VoiceOver will find the Toggle as an element but announce an empty label, giving users no indication of what this toggle controls.",
+    "fix": "Add `.accessibilityLabel(\"Nhắc nhở ôn tập\")` and `.accessibilityValue(notificationsEnabled ? \"Bật\" : \"Tắt\")` to the Toggle (or to the HStack with `.accessibilityElement(children: .combine)`).",
+    "area": "Accessibility",
+    "verdict": {
+      "isReal": true,
+      "confidence": "high",
+      "reasoning": "The claim is real and unguarded. At lines 343-362 of OnboardingSteps.swift, the notificationCard HStack contains Toggle(\"\", isOn: $notificationsEnabled).labelsHidden() with no accessibility modifiers on the surrounding HStack or anywhere in the onboardingCard() ViewModifier (which is purely visual). VoiceOver will reach the Toggle as an isolated element and announce an empty label with no context about what it controls.\n\nThis is not by-design: the project has an explicit, consistent pattern for exactly this situation. In SettingsView.swift at lines 585-593 and 619-627, the same Toggle(\"\", ...).labelsHidden() inside an HStack pattern is always paired with .accessibilityLabel(title) and .accessibilityValue(isOn.wrappedValue ? \"Bật\" : \"Tắt\") on the containing HStack. The notificationCard is the sole deviation from that pattern — it is a genuine omission, not an intentional exception.\n\nThe fix is straightforward: add .accessibilityElement(children: .combine).accessibilityLabel(\"Nhắc nhở ôn tập\").accessibilityValue(notificationsEnabled ? \"Bật\" : \"Tắt\") to the HStack in notificationCard, matching the SettingsView convention."
+    }
+  },
+  {
+    "file": "/Users/maitrungkien/Desktop/project/GPLX2026/GPLX2026/Features/Onboarding/OnboardingSteps.swift",
+    "line": "188-222, 382-419, 422-456",
+    "severity": "medium",
+    "kind": "accessibility",
+    "title": "Selection tiles (ExperienceLevelCard, LicenceOptionTile, DailyGoalTile) missing .isSelected trait and accessibilityValue",
+    "description": "These three custom radio-button-style tiles change visual appearance when selected but none add `.accessibilityAddTraits(.isSelected)` or `.accessibilityValue(isSelected ? \"Đã chọn\" : \"\")`. VoiceOver users can activate each tile but cannot tell which option is currently selected without relying on visual cues. This is inconsistent with `AnswerOptionCard` in the same codebase which correctly uses `.accessibilityAddTraits(isSelected ? .isSelected : [])`.",
+    "fix": "Add `.accessibilityAddTraits(isSelected ? .isSelected : [])` and `.accessibilityValue(isSelected ? \"Đã chọn\" : \"\")` to the Button in each of `ExperienceLevelCard`, `LicenceOptionTile`, and `DailyGoalTile`.",
+    "area": "Accessibility",
+    "verdict": {
+      "isReal": true,
+      "confidence": "high",
+      "reasoning": "All three tiles (ExperienceLevelCard lines 188-222, LicenceOptionTile lines 382-419, DailyGoalTile lines 422-456) are confirmed to have no .accessibilityAddTraits(.isSelected) and no .accessibilityValue. The call sites add no compensating modifiers either. The codebase has a consistent established pattern: AnswerOptionCard, BackgroundAnimationPicker, ThemeModePicker, and PrimaryColorPicker all apply .accessibilityAddTraits(isSelected ? .isSelected : []) and/or .accessibilityValue. The three onboarding tiles are real outliers with no guard, no workaround, and no by-design justification for the omission."
+    }
+  },
+  {
+    "file": "/Users/maitrungkien/Desktop/project/GPLX2026/GPLX2026/Features/Settings/SettingsView.swift",
+    "line": "729-751",
+    "severity": "medium",
+    "kind": "accessibility",
+    "title": "SettingsSegmentedControl buttons missing .isSelected trait — inconsistent with sibling controls",
+    "description": "`SettingsSegmentedControl` renders one `Button` per option with `.buttonStyle(.plain)` but adds neither `.accessibilityAddTraits(.isSelected)` nor `.accessibilityValue(isSelected ? \"Đã chọn\" : \"\")`. The sibling controls `SettingsFontSizeControl` (lines 769–784) and `AccentColorSwatches` (lines 828–829) both correctly add `.accessibilityLabel` and `.accessibilityValue`. VoiceOver users of the theme-mode control cannot tell which mode is active.",
+    "fix": "Add `.accessibilityLabel(option.label)` and `.accessibilityValue(isSelected ? \"Đã chọn\" : \"\")` (and optionally `.accessibilityAddTraits(isSelected ? .isSelected : [])`) to each Button inside `SettingsSegmentedControl`.",
+    "area": "Accessibility",
+    "verdict": {
+      "isReal": true,
+      "confidence": "high",
+      "reasoning": "The code at lines 729–751 confirms the gap. `SettingsSegmentedControl` computes `isSelected` but applies it only to visual styling — no `.accessibilityValue`, no `.accessibilityAddTraits(.isSelected)`, and no `.accessibilityLabel` is attached to the `Button` elements. No wrapping modifier at the call site (lines 77–85) compensates for this. By direct contrast, the two structurally identical sibling controls `SettingsFontSizeControl` (lines 783–784) and `AccentColorSwatches` (lines 828–829) each attach `.accessibilityLabel` and `.accessibilityValue(isSelected ? \"Đã chọn\" : \"\")` to their buttons. The omission is not guarded anywhere and is inconsistent with established practice in the same file. VoiceOver users of the theme-mode segment control (\"Sáng / Tối / Tự động\") receive no signal about which mode is active. The fix is straightforward: add `.accessibilityLabel(option.label)` and `.accessibilityValue(isSelected ? \"Đã chọn\" : \"\")` inside the `ForEach` on the `Button`, mirroring the sibling pattern."
+    }
+  },
+  {
+    "file": "/Users/maitrungkien/Desktop/project/GPLX2026/GPLX2026/Core/Common/Exam/ExamTimerCapsule.swift",
+    "line": "10-20",
+    "severity": "medium",
+    "kind": "accessibility",
+    "title": "ExamTimerCapsule icon is not hidden from accessibility and the capsule lacks a combined label",
+    "description": "The `HStack` contains `Image(systemName: \"timer\")` followed by a `Text(text)` (e.g., \"19:00\"). No `.accessibilityElement(children: .combine)` or `.accessibilityLabel` is applied. VoiceOver traverses two separate elements: the decorative timer icon (announced as \"timer\") and then the time text. When `isUrgent` becomes true the color changes but there is no accessibility announcement of the urgency state.",
+    "fix": "Apply `.accessibilityElement(children: .ignore).accessibilityLabel(isUrgent ? \"Thời gian còn lại \\(text), cảnh báo\" : \"Thời gian còn lại \\(text)\")` to the capsule `HStack`. The icon itself is decorative and should not be read separately.",
+    "area": "Accessibility",
+    "verdict": {
+      "isReal": true,
+      "confidence": "high",
+      "reasoning": "The code at /Users/maitrungkien/Desktop/project/GPLX2026/GPLX2026/Core/Common/Exam/ExamTimerCapsule.swift confirms all three sub-claims. (1) Image(systemName: \"timer\") has no .accessibilityHidden(true) modifier, so VoiceOver announces it as a separate \"timer\" element. (2) The HStack has no .accessibilityElement(children: .combine) or .accessibilityLabel, so VoiceOver visits the icon and the time text as two independent elements instead of one combined \"19:00\" label. (3) isUrgent only toggles foreground/background color; no .accessibilityValue, .accessibilityLabel change, or AccessibilityNotification.announcement is posted, so screen-reader users receive no signal when the urgency state activates. No guard exists at the call site in ExamToolbar.swift either — the view is placed directly in a ToolbarItem with no wrapping accessibility modifier. The project building green is irrelevant because these are runtime/VoiceOver traversal defects, not compile errors. The issue is real and worth fixing."
+    }
+  },
+  {
+    "file": "/Users/maitrungkien/Desktop/project/GPLX2026/GPLX2026/Core/Common/Media/QuestionImage.swift",
+    "line": "8-12",
+    "severity": "medium",
+    "kind": "accessibility",
+    "title": "Question illustration image has no accessibilityLabel and is not hidden — VoiceOver provides no description",
+    "description": "`QuestionImage` renders `Image(uiImage: uiImage)` with no `.accessibilityLabel` and no `.accessibilityHidden(true)`. The image filename (e.g., \"q123.png\") is not human-readable. VoiceOver will announce \"image\" with no description. For questions where the image is integral to understanding the question (traffic signs, road diagrams), this is a significant barrier.",
+    "fix": "Accept an optional `altText: String?` parameter in `QuestionImage`. If `altText` is provided and non-empty, apply `.accessibilityLabel(altText)`; otherwise apply `.accessibilityHidden(true)` to mark purely decorative images as hidden. Wire the alt text from `Question.text` context or a dedicated field in the data model.",
+    "area": "Accessibility",
+    "verdict": {
+      "isReal": true,
+      "confidence": "high",
+      "reasoning": "Verified directly from the source. `QuestionImage.swift` renders `Image(uiImage: uiImage)` with no `.accessibilityLabel`, no `.accessibilityHidden(true)`, and no `.accessibilityElement` modifier. The call site in `QuestionCard.swift:29` also adds nothing. The `Question` model and `questions.json` have no alt-text or image-description field — only a raw filename like \"q82.png\". SwiftUI's `Image(uiImage:)` cannot derive a human-readable label from a `UIImage` loaded via file path, so VoiceOver announces \"image\" with no description. This is unguarded: the codebase does apply `.accessibilityLabel` to answers, buttons, and controls, but `QuestionImage` was not addressed. 318 of 600 questions carry images, and many question texts reference \"như hình dưới đây\" (as shown in the image), making the image semantically load-bearing for a correct answer. The gap is real, unguarded, and meaningful for VoiceOver users."
+    }
+  },
+  {
+    "file": "/Users/maitrungkien/Desktop/project/GPLX2026/GPLX2026/Features/Learn/QuestionView.swift",
+    "line": "262-274, 276-285",
+    "severity": "high",
+    "kind": "accessibility",
+    "title": "QuestionView toolbar buttons (back and bookmark) have no Vietnamese accessibilityLabel",
+    "description": "The leading toolbar button uses `Image(systemName: \"chevron.left\")` with no label (VoiceOver: English \"Back\"). The trailing bookmark button uses `Image(systemName: isBookmarked ? \"bookmark.fill\" : \"bookmark\")` with no label and no `.accessibilityValue` for the bookmarked state (VoiceOver: English \"Add Bookmark\" / \"Remove Bookmark\"). All other text in this view is Vietnamese.",
+    "fix": "For the back button add `.accessibilityLabel(\"Quay lại\")` to the Button. For the bookmark button add `.accessibilityLabel(isBookmarked ? \"Bỏ đánh dấu\" : \"Đánh dấu câu hỏi\")` and `.accessibilityValue(isBookmarked ? \"Đã đánh dấu\" : \"\")`.",
+    "area": "Accessibility",
+    "verdict": {
+      "isReal": true,
+      "confidence": "high",
+      "reasoning": "The cited code at lines 262-285 of QuestionView.swift was read directly. Both toolbar buttons render only a bare `Image(systemName:)` with no `.accessibilityLabel`, `.accessibilityValue`, or `.accessibilityHint` modifier. A project-wide grep for `accessibilityLabel` across the whole `GPLX2026/` tree confirms zero hits in QuestionView.swift, and no shared wrapper or modifier chain provides a fallback. There is no guard handling this. The project demonstrably does add Vietnamese accessibility labels to icon-only buttons in comparable toolbar contexts — HomeTab.swift applies `.accessibilityLabel(\"Tìm kiếm câu hỏi\")` and `.accessibilityLabel(\"Cài đặt\")` to its icon buttons — so the omission in QuestionView is inconsistent, not by design. iOS/VoiceOver will fall back to synthesised English strings (\"Back\", \"Add Bookmark\", \"Remove Bookmark\") for these system SF Symbols, breaking the Vietnamese-language accessibility contract the rest of the view upholds. The issue is real, not negligible, and not guarded."
+    }
+  },
+  {
+    "file": "/Users/maitrungkien/Desktop/project/GPLX2026/GPLX2026/Features/Learn/QuestionView.swift",
+    "line": "253-257",
+    "severity": "medium",
+    "kind": "accessibility",
+    "title": "AppIconButton (lightbulb) used as NavigationLink label has no accessibilityLabel",
+    "description": "`AppIconButton(icon: \"lightbulb\")` is the label of a `NavigationLink` to `MemoryTipsView`. `AppIconButton` contains only `Image(systemName: icon)` with no accessibilityLabel property. The NavigationLink itself has no label. VoiceOver announces \"lightbulb\" (English SF Symbol name) instead of a meaningful description of the destination.",
+    "fix": "Add `.accessibilityLabel(\"Xem gợi ý ghi nhớ\")` to the `NavigationLink` wrapping the `AppIconButton`, or add a `label: String` parameter to `AppIconButton` and apply `.accessibilityLabel(label)` inside it.",
+    "area": "Accessibility",
+    "verdict": {
+      "isReal": true,
+      "confidence": "high",
+      "reasoning": "Code inspection confirms the claim exactly. AppIconButton (/Users/maitrungkien/Desktop/project/GPLX2026/GPLX2026/Core/Common/Buttons/AppIconButton.swift) renders only Image(systemName: icon) with no .accessibilityLabel at any level — not in the struct itself, not in the iconContent computed property, and not at the call site in QuestionView.swift:253-257. The NavigationLink wrapping it also carries no .accessibilityLabel or .accessibilityHint. ExamBottomBar.swift simply renders the leadingWidget as-is with no injected accessibility context. No guard exists anywhere in the chain. iOS VoiceOver announces Image(systemName: \"lightbulb\") as \"lightbulb\" (the raw symbol name) followed by \"link\" from the NavigationLink role — the Vietnamese destination meaning (\"Mẹo ghi nhớ\" / memory tips) is entirely absent. This is a real, unguarded gap: not by-design, not negligible for VoiceOver users, and trivially fixable with .accessibilityLabel(\"Xem mẹo ghi nhớ\") on the NavigationLink at QuestionView.swift:254."
+    }
+  },
+  {
+    "file": "/Users/maitrungkien/Desktop/project/GPLX2026/GPLX2026/Features/Hazard/HazardTestView.swift",
+    "line": "1168-1179",
+    "severity": "high",
+    "kind": "logic",
+    "title": "HazardDangerButton: repeatForever animation drives no view modifier — pulsing effect is dead and the animation context leaks",
+    "description": "`isPulsing` is toggled inside a `withAnimation(.easeInOut(duration: 1.1).repeatForever(autoreverses: true))` block (line 1170-1175), but `isPulsing` is never referenced by any view modifier — there is no `.scaleEffect`, `.opacity`, `.brightness`, or any other animatable parameter that reads `isPulsing`. SwiftUI commits a repeat-forever transaction that targets zero animatable properties; the animation descriptor remains active in the render tree with no outlet. When `hasTapped` becomes true the counter-assignment `isPulsing = false` (line 1179) is bare (no `withAnimation`), so SwiftUI tries to end the repeat-forever with an instant non-animated flip rather than a cancellation. The intended pulsing visual is entirely absent from the UI, and the guard `!isPulsing` on line 1169 prevents the animation from ever being re-armed if the button is reused with `countdown` toggling again.",
+    "fix": "Wire `isPulsing` to an actual animatable modifier, for example `.scaleEffect(isPulsing ? 1.06 : 1.0)` or `.opacity(isPulsing ? 1.0 : 0.75)` on the button's content. Also wrap the stop-pulsing assignment in `withAnimation(.easeOut(duration: 0.2)) { isPulsing = false }` so SwiftUI can cleanly end the repeat-forever rather than snapping. Example:\n\n```swift\n.scaleEffect(isPulsing ? 1.06 : 1.0)          // add this modifier\n// and in onChange(of: hasTapped):\nif tapped { withAnimation(.easeOut(duration: 0.2)) { isPulsing = false } }\n```",
+    "area": "Animation + lifecycle + memory",
+    "verdict": {
+      "isReal": true,
+      "confidence": "high",
+      "reasoning": "All four references to `isPulsing` in HazardTestView.swift (lines 1110, 1169, 1174, 1179) are: the @State declaration, a guard condition, an assignment inside withAnimation(.repeatForever), and a bare assignment on tap. No view modifier anywhere in the struct reads `isPulsing` — there is no .scaleEffect, .opacity, .brightness, or any other animatable parameter that consumes it. The `withAnimation(.easeInOut(duration:1.1).repeatForever(autoreverses:true))` block on lines 1170-1175 therefore targets zero animatable properties, making it a silent no-op. The only `.scaleEffect` present (line 1165) is driven by `hasTapped`, not `isPulsing`. The bare `isPulsing = false` on line 1179 cannot gracefully cancel the repeat-forever context because it is not wrapped in `withAnimation`. The guard `!isPulsing` on line 1169 also prevents re-arming if `countdown` cycles again. The intended pulsing visual is entirely absent. This is a real, unguarded bug — not by design and not a false compile claim."
+    }
+  }
+]

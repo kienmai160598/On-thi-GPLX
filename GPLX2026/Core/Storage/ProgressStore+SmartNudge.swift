@@ -80,7 +80,17 @@ extension ProgressStore {
 
     // MARK: - Smart nudge logic
 
+    /// Cached entry point. The result only changes when progress data changes
+    /// (handled by cache invalidation in the record/save paths), so the heavy
+    /// analytics below don't re-run on every Home-screen render.
     func smartNudge(topics: [Topic], allQuestions: [Question]) -> SmartNudge {
+        if let cached = _smartNudgeCache { return cached }
+        let result = computeSmartNudge(topics: topics, allQuestions: allQuestions)
+        _smartNudgeCache = result
+        return result
+    }
+
+    private func computeSmartNudge(topics: [Topic], allQuestions: [Question]) -> SmartNudge {
 
         // Helpers
         let theoryTopics = topics.filter { !$0.topicIds.contains(6) }
@@ -160,7 +170,7 @@ extension ProgressStore {
         let allAbove90 = partScores.allSatisfy { $0.score >= 0.9 }
 
         if allAbove70 && !allAbove90 {
-            let weakest = partScores.min { $0.score < $1.score }!
+            guard let weakest = partScores.min(by: { $0.score < $1.score }) else { return .examReady }
             return .testWeakestPart(partName: weakest.name)
         }
 

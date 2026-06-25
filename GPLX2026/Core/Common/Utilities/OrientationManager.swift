@@ -13,15 +13,14 @@ final class OrientationManager {
         allowedOrientations = .allButUpsideDown
     }
 
+    /// Lock to landscape and rotate there. Stays locked until `lock()`/`unlock()`
+    /// is called (e.g. on leaving the hazard player).
     func forceToLandscape() {
         guard !Self.isIPad else { return }
         allowedOrientations = .landscape
         if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
             let prefs = UIWindowScene.GeometryPreferences.iOS(interfaceOrientations: .landscapeRight)
             windowScene.requestGeometryUpdate(prefs) { _ in }
-        }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            self.allowedOrientations = .allButUpsideDown
         }
     }
 
@@ -32,7 +31,8 @@ final class OrientationManager {
             let prefs = UIWindowScene.GeometryPreferences.iOS(interfaceOrientations: .portrait)
             windowScene.requestGeometryUpdate(prefs) { _ in }
         }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(500))
             self.allowedOrientations = .allButUpsideDown
         }
     }
@@ -43,7 +43,9 @@ final class OrientationManager {
         allowedOrientations = .portrait
         if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
             let prefs = UIWindowScene.GeometryPreferences.iOS(interfaceOrientations: .portrait)
-            windowScene.requestGeometryUpdate(prefs)
+            // Use the iOS 16+ closure overload (matching forceToLandscape/Portrait);
+            // the bare overload is a no-op for interface-orientation requests.
+            windowScene.requestGeometryUpdate(prefs) { _ in }
         }
     }
 }

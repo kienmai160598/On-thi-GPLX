@@ -10,14 +10,16 @@ struct HazardSituation: Codable, Identifiable {
     let perfectEnd: Double
     let tip: String
 
+    // Files are hosted unpadded (th1.mp4 … th120.mp4).
     var videoFileName: String {
-        String(format: "th%03d", id)
+        "th\(id)"
     }
 
-    private static let fallbackURL = URL(string: "https://gmec.vn")!
+    private static let videoBaseURL = "https://raw.githubusercontent.com/quanvn1206/atgt1/main/video"
+    private static let fallbackURL = URL(string: videoBaseURL) ?? URL(fileURLWithPath: "")
 
     var videoURL: URL {
-        URL(string: "https://gmec.vn/videos/\(videoFileName).mp4") ?? Self.fallbackURL
+        URL(string: "\(Self.videoBaseURL)/\(videoFileName).mp4") ?? Self.fallbackURL
     }
 
     /// Score based on tap time. Linear interpolation: perfectStart = 5, perfectEnd = 0.

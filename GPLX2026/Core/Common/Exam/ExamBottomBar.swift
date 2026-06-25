@@ -10,6 +10,7 @@ struct ExamBottomBar: View {
     let currentIndex: Int
     let totalCount: Int
     let answeredIndices: Set<Int>
+    var bookmarkedIndices: Set<Int> = []
     let nextLabel: String
     var prevLabel: String = "Trước"
     var prevIcon: String? = nil
@@ -48,7 +49,8 @@ struct ExamBottomBar: View {
             QuestionGridButton(
                 current: currentIndex + 1,
                 total: totalCount,
-                answeredIndices: answeredIndices
+                answeredIndices: answeredIndices,
+                bookmarkedIndices: bookmarkedIndices
             ) { index in
                 onSelectIndex(index)
             }

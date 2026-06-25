@@ -39,18 +39,24 @@ extension ProgressStore {
     }
 
     /// Average score percentage for situations in a specific chapter.
+    /// Uses the best score achieved per unique situation to avoid inflating
+    /// or deflating the average when the same situation appears in multiple
+    /// exam runs.
     func chapterAverageScore(chapterId: Int) -> Double {
         guard let chapter = HazardSituation.chapters.first(where: { $0.id == chapterId }) else { return 0 }
         let chapterIds = Set(chapter.range)
-        var totalScore = 0
-        var totalMax = 0
+        var bestScorePerSituation = [Int: Int]()
         for result in hazardHistory {
             for detail in result.details where chapterIds.contains(detail.situationId) {
-                totalScore += detail.score
-                totalMax += AppConstants.Hazard.maxScorePerSituation
+                bestScorePerSituation[detail.situationId] = max(
+                    bestScorePerSituation[detail.situationId, default: 0],
+                    detail.score
+                )
             }
         }
-        guard totalMax > 0 else { return 0 }
+        guard !bestScorePerSituation.isEmpty else { return 0 }
+        let totalScore = bestScorePerSituation.values.reduce(0, +)
+        let totalMax = bestScorePerSituation.count * AppConstants.Hazard.maxScorePerSituation
         return Double(totalScore) / Double(totalMax)
     }
 

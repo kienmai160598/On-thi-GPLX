@@ -1,4 +1,7 @@
 import Foundation
+import os
+
+private let logger = Logger(subsystem: "com.gplx2026", category: "ExamResult")
 
 // MARK: - ExamResult
 
@@ -59,7 +62,9 @@ struct ExamResult: Codable, Identifiable {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         id = (try? c.decode(UUID.self, forKey: .id)) ?? UUID()
         let dateString = try c.decode(String.self, forKey: .date)
-        date = DateFormatters.iso8601.date(from: dateString) ?? Date()
+        let parsedDate = DateFormatters.iso8601.date(from: dateString)
+        if parsedDate == nil { logger.warning("ExamResult: unparseable date '\(dateString)', using current date") }
+        date = parsedDate ?? Date()
         score = try c.decode(Int.self, forKey: .score)
         totalQuestions = try c.decode(Int.self, forKey: .totalQuestions)
         passed = try c.decode(Bool.self, forKey: .passed)
@@ -85,11 +90,17 @@ struct ExamResult: Codable, Identifiable {
     // MARK: - Factory
 
     /// Calculate an ExamResult from the user's answers.
+    ///
+    /// - Parameter passThreshold: Override the minimum correct-answer count
+    ///   required to pass. When `nil` (the default), the value from
+    ///   `LicenseType.current.passThreshold` is used. Pass an explicit value
+    ///   for daily challenges (10 questions, 80 % threshold → 8).
     static func calculate(
         questions: [Question],
         answers: [Int: Int],
         timeUsedSeconds: Int,
-        examSetId: Int? = nil
+        examSetId: Int? = nil,
+        passThreshold: Int? = nil
     ) -> ExamResult {
         var correctCount = 0
         var wrongDiemLietCount = 0
@@ -109,7 +120,8 @@ struct ExamResult: Codable, Identifiable {
                 correct: isCorrect
             ))
         }
-        let passed = correctCount >= LicenseType.current.passThreshold && wrongDiemLietCount == 0
+        let threshold = passThreshold ?? LicenseType.current.passThreshold
+        let passed = correctCount >= threshold && wrongDiemLietCount == 0
         return ExamResult(
             date: Date(),
             score: correctCount,

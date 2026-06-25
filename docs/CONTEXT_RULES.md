@@ -32,6 +32,7 @@ Read to decide the smallest safe approach and expected proof.
 | Document Or Source | Tiny | Normal | High-Risk |
 | --- | --- | --- | --- |
 | Current files to edit | Must | Must | Must |
+| `docs/CODING_STANDARDS.md` | Should for code changes | Must for code changes | Must for code changes |
 | `docs/templates/story.md` | Skip | Must when creating/updating a story | Should |
 | `docs/templates/high-risk-story/*` | Skip | Skip unless risk escalates | Must |
 | `docs/ARCHITECTURE.md` | Skip | Should for code or boundary changes | Must |
@@ -48,6 +49,7 @@ affect the selected story.
 | Document Or Source | Tiny | Normal | High-Risk |
 | --- | --- | --- | --- |
 | Files being changed | Must | Must | Must |
+| `docs/CODING_STANDARDS.md` | Should for code changes | Must for code changes | Must for code changes |
 | Adjacent files with same pattern | Should | Must | Must |
 | Relevant product docs | Skip if copy-only | Must if behavior changes | Must |
 | Relevant story packet | Skip if no story needed | Must | Must |

@@ -18,13 +18,10 @@ struct ExamTimerCapsule: View {
         .padding(.horizontal, 14)
         .padding(.vertical, 6)
 
-        if #available(iOS 26.0, *) {
-            content
-                .glassEffect(.regular.interactive(), in: .capsule)
-        } else {
-            content
-                .background(isUrgent ? Color.appError.opacity(0.1) : Color.appDivider.opacity(0.3))
-                .clipShape(Capsule())
-        }
+        content
+            .background(isUrgent ? Color.appError.opacity(0.1) : Color.cardBg)
+            .clipShape(Capsule())
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(isUrgent ? "Thời gian còn lại \(text), cảnh báo" : "Thời gian còn lại \(text)")
     }
 }

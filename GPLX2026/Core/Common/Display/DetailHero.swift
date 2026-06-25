@@ -12,7 +12,7 @@ struct DetailHero: View {
         VStack(spacing: 16) {
             ZStack {
                 Circle()
-                    .fill(iconColor.opacity(0.1))
+                    .fill(iconColor.opacity(0.15))
                     .frame(width: 96, height: 96)
                 Image(systemName: icon)
                     .font(.appSerif(size: 44))

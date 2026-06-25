@@ -2,6 +2,7 @@ import SwiftUI
 
 struct AnswerOptionCard: View {
     @Environment(LayoutMetrics.self) private var metrics
+    @Environment(ThemeStore.self) private var themeStore
 
     let letter: String
     let text: String
@@ -20,7 +21,7 @@ struct AnswerOptionCard: View {
                 .clipShape(RoundedRectangle(cornerRadius: 8))
 
             Text(text)
-                .font(.appSans(size: 15 * AppFontScale.current * metrics.fontScale, weight: .medium))
+                .font(.appSans(size: 15 * metrics.fontScale, weight: .medium))
                 .foregroundStyle(Color.appTextDark)
                 .multilineTextAlignment(.leading)
                 .lineSpacing(3)
@@ -32,16 +33,8 @@ struct AnswerOptionCard: View {
         .padding(.horizontal, metrics.isWide ? 16 : 12)
         .padding(.vertical, metrics.isWide ? 14 : 12)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(bgColor)
-        .overlay(alignment: .leading) {
-            if let borderColor = leftBorderColor {
-                RoundedRectangle(cornerRadius: 2)
-                    .fill(borderColor)
-                    .frame(width: metrics.isWide ? 5 : 4)
-                    .padding(.vertical, 8)
-            }
-        }
-        .contentShape(Rectangle())
+        .background(bgColor, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .glassCard()
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(letter). \(text)")
         .accessibilityValue(accessibilityStatus)
@@ -57,32 +50,25 @@ struct AnswerOptionCard: View {
     }
 
     private var letterColor: Color {
-        if isConfirmed && isCorrect { return .white }
-        if isConfirmed && isSelected && !isCorrect { return .white }
-        if isSelected { return .appPrimary }
+        if isConfirmed && isCorrect { return .appOnPrimary }
+        if isConfirmed && isSelected && !isCorrect { return .appOnPrimary }
+        if isSelected { return themeStore.primaryColor }
         return .appTextMedium
     }
 
     private var letterBgColor: Color {
         if isConfirmed && isCorrect { return .appSuccess }
         if isConfirmed && isSelected && !isCorrect { return .appError }
-        if isSelected { return .appPrimary.opacity(0.12) }
-        return .appDivider.opacity(0.5)
+        if isSelected { return themeStore.primaryColor.opacity(0.12) }
+        return .appDivider.opacity(0.4)
     }
 
     private var bgColor: Color {
-        if isSelected && !isConfirmed { return .appPrimary.opacity(0.06) }
+        if isSelected && !isConfirmed { return themeStore.primaryColor.opacity(0.10) }
         guard isConfirmed else { return .clear }
         if isCorrect { return .appSuccess.opacity(0.10) }
         if isSelected && !isCorrect { return .appError.opacity(0.10) }
         return .clear
-    }
-
-    private var leftBorderColor: Color? {
-        guard isConfirmed else { return nil }
-        if isCorrect { return .appSuccess }
-        if isSelected && !isCorrect { return .appError }
-        return nil
     }
 
     @ViewBuilder

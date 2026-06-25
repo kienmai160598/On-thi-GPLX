@@ -1,183 +1,109 @@
 import SwiftUI
 
+/// The 4-step onboarding flow (Welcome → Experience → Study plan → Ready),
+/// matching the design. Navigation is button-only (no swipe) so the study-plan
+/// step's persistence + notification request always run before the summary.
 struct OnboardingView: View {
-    @Environment(ThemeStore.self) private var themeStore
-    @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
-    @AppStorage(AppConstants.StorageKey.licenseType) private var licenseType = "b2"
-    @State private var currentPage = 0
+    @Environment(QuestionStore.self) private var questionStore
+    @Environment(ProgressStore.self) private var progressStore
 
-    private let pages = [
-        OnboardingPage(
-            id: 0,
-            icon: "car.fill",
-            title: "Chào mừng đến với\nGPLX 2026",
-            subtitle: "Ôn thi giấy phép lái xe\nTheo đề thi mới nhất 2026 của Bộ GTVT"
-        ),
-        OnboardingPage(
-            id: 1,
-            icon: "person.text.rectangle",
-            title: "Chọn hạng bằng lái",
-            subtitle: ""
-        ),
-        OnboardingPage(
-            id: 2,
-            icon: "list.clipboard.fill",
-            title: "Kỳ thi gồm 3 phần",
-            subtitle: "Bạn phải đạt cả 3 phần mới được cấp bằng"
-        ),
-        OnboardingPage(
-            id: 3,
-            icon: "book.fill",
-            title: "Mọi thứ bạn cần",
-            subtitle: "Từ lý thuyết đến thực hành, từ ôn luyện\nđến kiểm tra — tất cả trong một ứng dụng"
-        ),
-        OnboardingPage(
-            id: 4,
-            icon: "paintpalette.fill",
-            title: "Tuỳ chỉnh giao diện",
-            subtitle: "Chọn màu sắc, cỡ chữ và chế độ sáng/tối\ntrong phần Cài đặt theo sở thích của bạn"
-        ),
-        OnboardingPage(
-            id: 5,
-            icon: "flag.checkered",
-            title: "Sẵn sàng rồi!",
-            subtitle: "Bắt đầu hành trình chinh phục\nbằng lái xe của bạn"
-        ),
-    ]
+    @AppStorage(AppConstants.StorageKey.hasCompletedOnboarding) private var hasCompletedOnboarding = false
+    @AppStorage(AppConstants.StorageKey.licenseType) private var licenseType = "b2"
+    @AppStorage(AppConstants.StorageKey.experienceLevel) private var experienceLevelRaw = ExperienceLevel.partial.rawValue
+    @AppStorage(AppConstants.StorageKey.dailyReminderEnabled) private var dailyReminderEnabled = false
+    @AppStorage(AppConstants.StorageKey.dailyReminderHour) private var dailyReminderHour = 20
+    @AppStorage(AppConstants.StorageKey.examCountdownEnabled) private var examCountdownEnabled = false
+    @AppStorage(AppConstants.StorageKey.dailyGoalNudgeEnabled) private var dailyGoalNudgeEnabled = false
+
+    @State private var step = 1
+    @State private var examDate = Calendar.current.date(byAdding: .day, value: 30, to: Date()) ?? Date()
+    @State private var dailyGoal = 30
+    @State private var notificationsEnabled = true
+    @State private var didLoad = false
+
+    private var experienceBinding: Binding<ExperienceLevel> {
+        Binding(
+            get: { ExperienceLevel(rawValue: experienceLevelRaw) ?? .partial },
+            set: { experienceLevelRaw = $0.rawValue }
+        )
+    }
 
     var body: some View {
-        VStack(spacing: 0) {
-            // Skip button
-            HStack {
-                Spacer()
-                if currentPage < pages.count - 1 {
-                    Button("Bỏ qua") {
-                        completeOnboarding()
-                    }
-                    .font(.appSans(size: 15, weight: .semibold))
-                    .foregroundStyle(Color.appTextMedium)
-                    .padding(.trailing, 24)
-                    .padding(.top, 12)
-                }
-            }
-            .frame(height: 48)
+        ZStack {
+            ScaffoldBackground()
+            currentStep
+                .id(step)
+                .transition(.asymmetric(
+                    insertion: .move(edge: .trailing).combined(with: .opacity),
+                    removal: .move(edge: .leading).combined(with: .opacity)
+                ))
+        }
+        .animation(.spring(duration: 0.4), value: step)
+        .onAppear(perform: loadFromStore)
+    }
 
-            // Pages
-            TabView(selection: $currentPage) {
-                ForEach(pages) { page in
-                    if page.id == 1 {
-                        LicensePickerPage(selectedLicense: $licenseType)
-                            .tag(page.id)
-                    } else {
-                        OnboardingPageView(page: page)
-                            .tag(page.id)
-                    }
-                }
-            }
-            .tabViewStyle(.page(indexDisplayMode: .never))
-            .animation(.spring(duration: 0.3), value: currentPage)
+    @ViewBuilder
+    private var currentStep: some View {
+        switch step {
+        case 1:
+            OnboardingWelcomeStep(onSkip: complete, onContinue: advance)
+        case 2:
+            OnboardingExperienceStep(selected: experienceBinding, onSkip: complete, onContinue: advance)
+        case 3:
+            OnboardingStudyPlanStep(
+                license: $licenseType,
+                examDate: $examDate,
+                dailyGoal: $dailyGoal,
+                notificationsEnabled: $notificationsEnabled,
+                onSkip: complete,
+                onContinue: persistPlanThenAdvance
+            )
+        default:
+            OnboardingReadyStep(license: licenseType, examDate: examDate, dailyGoal: dailyGoal, onFinish: complete)
+        }
+    }
 
-            // Page dots
-            HStack(spacing: 8) {
-                ForEach(0..<pages.count, id: \.self) { index in
-                    Capsule()
-                        .fill(index == currentPage ? themeStore.primaryColor : Color.appTextLight.opacity(0.4))
-                        .frame(
-                            width: index == currentPage ? 28 : 8,
-                            height: 8
-                        )
-                        .animation(.spring(duration: 0.3), value: currentPage)
-                }
-            }
-            .padding(.bottom, 32)
+    // MARK: - Flow
 
-            // CTA button
-            Button {
-                if currentPage < pages.count - 1 {
-                    withAnimation(.spring(duration: 0.3)) {
-                        currentPage += 1
-                    }
-                } else {
-                    completeOnboarding()
-                }
-            } label: {
-                AppButton(
-                    icon: currentPage == pages.count - 1 ? "arrow.right" : nil,
-                    label: currentPage == pages.count - 1 ? "Bắt đầu ngay" : "Tiếp tục"
+    private func loadFromStore() {
+        guard !didLoad else { return }
+        didLoad = true
+        if let saved = progressStore.examDate { examDate = saved }
+        dailyGoal = progressStore.dailyGoal
+    }
+
+    private func advance() {
+        Haptics.impact(.light)
+        step = min(4, step + 1)
+    }
+
+    /// Step 3 CTA: persist the chosen plan, optionally request notification
+    /// permission, then advance to the summary.
+    private func persistPlanThenAdvance() {
+        progressStore.setExamDate(examDate)
+        progressStore.setDailyGoal(dailyGoal)
+        Task {
+            if notificationsEnabled, await NotificationManager.requestAuthorization() {
+                dailyReminderEnabled = true
+                examCountdownEnabled = true
+                await NotificationManager.syncReminders(
+                    dailyEnabled: true,
+                    hour: dailyReminderHour,
+                    examCountdownEnabled: true,
+                    dailyGoalNudgeEnabled: dailyGoalNudgeEnabled,
+                    progressStore: progressStore,
+                    questionStore: questionStore
                 )
             }
-            .padding(.horizontal, 24)
-            .padding(.bottom, 40)
+            advance()
         }
-        .glassBackground()
     }
 
-    private func completeOnboarding() {
+    private func complete() {
+        // Persist whatever the user configured on step 3 so nothing is lost on skip.
+        progressStore.setExamDate(examDate)
+        progressStore.setDailyGoal(dailyGoal)
         Haptics.impact(.medium)
         hasCompletedOnboarding = true
-    }
-}
-
-// MARK: - License Picker Page
-
-private struct LicensePickerPage: View {
-    @Environment(ThemeStore.self) private var themeStore
-    @Binding var selectedLicense: String
-
-    var body: some View {
-        VStack(spacing: 24) {
-            Spacer()
-
-            Image(systemName: "person.text.rectangle")
-                .font(.appSerif(size: 56))
-                .foregroundStyle(themeStore.primaryColor)
-                .padding(.bottom, 8)
-
-            Text("Chọn hạng bằng lái")
-                .font(.appSerif(size: 28, weight: .bold))
-                .multilineTextAlignment(.center)
-
-            VStack(spacing: 12) {
-                ForEach(LicenseType.allCases, id: \.self) { type in
-                    let isSelected = selectedLicense == type.rawValue
-                    Button {
-                        Haptics.impact(.light)
-                        selectedLicense = type.rawValue
-                    } label: {
-                        HStack(spacing: 14) {
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text("Hạng \(type.displayName)")
-                                    .font(.appSerif(size: 18, weight: .bold))
-                                Text(type.description)
-                                    .font(.appSans(size: 13))
-                                    .foregroundStyle(Color.appTextMedium)
-                            }
-                            Spacer()
-                            Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
-                                .font(.appSerif(size: 24))
-                                .foregroundStyle(isSelected ? themeStore.primaryColor : Color.appTextLight)
-                        }
-                        .padding(16)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .glassCard()
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 20)
-                                .stroke(isSelected ? themeStore.primaryColor : .clear, lineWidth: 2)
-                        )
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
-            .padding(.horizontal, 24)
-
-            if let current = LicenseType(rawValue: selectedLicense) {
-                Text("\(current.questionsPerExam) câu · \(current.totalTimeSeconds / 60) phút · Đạt \(current.passThreshold)")
-                    .font(.appSans(size: 13))
-                    .foregroundStyle(Color.appTextMedium)
-            }
-
-            Spacer()
-            Spacer()
-        }
     }
 }

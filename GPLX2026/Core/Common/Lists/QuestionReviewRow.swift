@@ -41,9 +41,9 @@ struct QuestionReviewRow: View {
                 HStack(alignment: .top, spacing: 12) {
                     if showStatusIcon {
                         Image(systemName: statusIcon)
-                            .font(.appSans(size: 12, weight: .medium))
+                            .font(.appSans(size: 14, weight: .medium))
                             .foregroundStyle(statusColor)
-                            .frame(width: 28, height: 28)
+                            .frame(width: 32, height: 32)
                             .background(statusColor.opacity(0.12))
                             .clipShape(Circle())
                     }
@@ -55,11 +55,11 @@ struct QuestionReviewRow: View {
                                 .foregroundStyle(Color.appTextMedium)
 
                             if question.isDiemLiet {
-                                StatusBadge(text: "Điểm liệt", color: .appError, fontSize: 9, hPadding: 5, vPadding: 2)
+                                StatusBadge(text: "Điểm liệt", color: .appError, fontSize: 11, hPadding: 5, vPadding: 2)
                             }
 
                             if let badge = timeUsedBadge {
-                                StatusBadge(text: badge, color: .appWarning, fontSize: 9, hPadding: 5, vPadding: 2)
+                                StatusBadge(text: badge, color: .appWarning, fontSize: 11, hPadding: 5, vPadding: 2)
                             }
                         }
 
@@ -74,7 +74,7 @@ struct QuestionReviewRow: View {
                             Text("Đáp án: \(correctAnswer.text)")
                                 .font(.appSans(size: 12, weight: .medium))
                                 .foregroundStyle(Color.appSuccess)
-                                .lineLimit(1)
+                                .lineLimit(2)
                         }
                     }
 
@@ -126,10 +126,12 @@ struct QuestionReviewRow: View {
                 }
             }
             .padding(.horizontal, 16)
-            .padding(.vertical, 14)
+            .padding(.vertical, 16)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .accessibilityValue(isExpanded ? "Đã mở rộng" : "Đã thu lại")
+        .accessibilityHint("Nhấn đôi để xem hoặc ẩn chi tiết")
     }
 
     // MARK: - Answer styling

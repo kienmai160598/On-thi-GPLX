@@ -2,6 +2,7 @@ import SwiftUI
 
 struct ListItemCard<Trailing: View>: View {
     @Environment(ThemeStore.self) private var themeStore
+    @Environment(LayoutMetrics.self) private var metrics
     let icon: String
     let title: String
     var subtitle: String? = nil
@@ -34,8 +35,7 @@ struct ListItemCard<Trailing: View>: View {
 
             trailing()
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 12)
+        .padding(metrics.cardPadding)
     }
 
     var body: some View {
