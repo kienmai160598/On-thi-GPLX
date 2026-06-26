@@ -43,8 +43,21 @@ struct HomeView: View {
     @State private var router = NotificationRouter.shared
     @State private var tabBarVisibility = TabBarVisibility()
     @AppStorage(AppConstants.StorageKey.themeMode) private var themeMode: String = "system"
+    @AppStorage(AppConstants.StorageKey.fontSize) private var fontSize: String = "medium"
 
     private var accentColor: Color { themeStore.primaryColor }
+
+    /// The in-app "Cỡ chữ" setting as a Dynamic Type size. Like
+    /// `preferredColorScheme`, full-screen covers don't inherit the root's
+    /// `\.dynamicTypeSize`, so the exam / question / Settings screens need it
+    /// re-applied — otherwise changing the font size appears to do nothing.
+    private var fontDynamicTypeSize: DynamicTypeSize {
+        switch fontSize {
+        case "small": return .small
+        case "large": return .xLarge
+        default:      return .large
+        }
+    }
 
     /// Color scheme from the in-app theme setting. Full-screen covers are a
     /// separate presentation context and do NOT inherit the root's
@@ -104,10 +117,17 @@ struct HomeView: View {
             }
             .tint(accentColor)
             .preferredColorScheme(preferredColorScheme)
+            .environment(\.dynamicTypeSize, fontDynamicTypeSize)
         }
     }
 
     // MARK: - iPhone: custom frosted tab bar
+
+    /// Outlined symbol by default, filled when the tab is active — the standard
+    /// iOS tab-bar affordance, driven from the current selection.
+    private func tabSymbol(_ tab: SidebarTab) -> String {
+        selectedTab == tab ? tab.filledIcon : tab.icon
+    }
 
     private var iPhoneLayout: some View {
         // Native Liquid Glass tab bar (iOS 26): it reserves the bottom safe area
@@ -115,17 +135,18 @@ struct HomeView: View {
         // on scroll-down (Reddit-style) and restores it on scroll-up.
         TabView(selection: $selectedTab) {
             // Icons/labels come from SidebarTab so iPhone and the iPad sidebar
-            // stay in sync; the system fills the selected tab's symbol.
-            Tab(SidebarTab.home.rawValue, systemImage: SidebarTab.home.icon, value: SidebarTab.home) {
+            // stay in sync. We drive the symbol from the current selection so the
+            // active tab shows the filled variant and the rest stay outlined.
+            Tab(SidebarTab.home.rawValue, systemImage: tabSymbol(.home), value: SidebarTab.home) {
                 NavigationStack { HomeTab() }.tint(accentColor)
             }
-            Tab(SidebarTab.practice.rawValue, systemImage: SidebarTab.practice.icon, value: SidebarTab.practice) {
+            Tab(SidebarTab.practice.rawValue, systemImage: tabSymbol(.practice), value: SidebarTab.practice) {
                 NavigationStack { PracticeTab() }.tint(accentColor)
             }
-            Tab(SidebarTab.exam.rawValue, systemImage: SidebarTab.exam.icon, value: SidebarTab.exam) {
+            Tab(SidebarTab.exam.rawValue, systemImage: tabSymbol(.exam), value: SidebarTab.exam) {
                 NavigationStack { ExamTab() }.tint(accentColor)
             }
-            Tab(SidebarTab.simulation.rawValue, systemImage: SidebarTab.simulation.icon, value: SidebarTab.simulation) {
+            Tab(SidebarTab.simulation.rawValue, systemImage: tabSymbol(.simulation), value: SidebarTab.simulation) {
                 NavigationStack { MoPhongTab() }.tint(accentColor)
             }
         }

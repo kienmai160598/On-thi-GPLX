@@ -36,6 +36,6 @@ struct PrimaryColorPicker: View {
         }
         .padding(.vertical, 6)
         .padding(.horizontal, 8)
-        .background(Color(hex: 0x0F0F12, opacity: 0.06), in: Capsule())
+        .glassCapsuleTrack()
     }
 }

@@ -129,12 +129,16 @@ struct DailyChallengeResultView: View {
         .screenHeader("Kết quả thử thách", hideBackButton: true)
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
-                Button { popToRoot() } label: {
-                    Image(systemName: "checkmark")
-                        .font(.appSans(size: 15, weight: .semibold))
-                }
-                .accessibilityLabel("Hoàn thành")
+                ShareResultButton(text: shareText)
             }
         }
+    }
+
+    private var shareText: String {
+        """
+        Thử thách hàng ngày GPLX 2026
+        Đúng \(correctCount)/\(questions.count) câu · chuỗi \(progressStore.dailyChallengeStreak) ngày 🔥
+        — Ôn Thi Lái Xe 2026
+        """
     }
 }

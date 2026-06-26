@@ -83,7 +83,8 @@ struct HazardHistoryView: View {
             meta: "\(HistoryDate.string(from: result.date)) · \(result.situationCount) TH",
             value: "\(result.totalScore)/\(result.maxScore)",
             valueColor: quality.color,
-            status: quality.label
+            status: quality.label,
+            showsIcon: false
         )
     }
 

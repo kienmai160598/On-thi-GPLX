@@ -83,7 +83,8 @@ struct ExamHistoryView: View {
             meta: HistoryDate.string(from: result.date),
             value: "\(result.score)/\(result.totalQuestions)",
             valueColor: color,
-            status: result.passed ? "Đạt" : "Trượt"
+            status: result.passed ? "Đạt" : "Trượt",
+            showsIcon: false
         )
     }
 }

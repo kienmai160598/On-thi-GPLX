@@ -14,10 +14,16 @@ struct HistoryItemRow: View {
     let value: String
     let valueColor: Color
     let status: String
+    /// Trailing chevron — hide it on rows that don't navigate anywhere.
+    var showsChevron: Bool = true
+    /// Leading icon box — hide it for plain, text-only list rows.
+    var showsIcon: Bool = true
 
     var body: some View {
         HStack(spacing: 12) {
-            IconBox(icon: icon, color: iconColor, size: 40, cornerRadius: 10, iconFontSize: 18, iconWeight: .semibold)
+            if showsIcon {
+                IconBox(icon: icon, color: iconColor, size: 40, cornerRadius: 10, iconFontSize: 18, iconWeight: .semibold)
+            }
 
             VStack(alignment: .leading, spacing: 3) {
                 Text(title)
@@ -40,9 +46,11 @@ struct HistoryItemRow: View {
                     .foregroundStyle(valueColor)
             }
 
-            Image(systemName: "chevron.right")
-                .font(.appSans(size: 14, weight: .semibold))
-                .foregroundStyle(Color.appTextLight)
+            if showsChevron {
+                Image(systemName: "chevron.right")
+                    .font(.appSans(size: 14, weight: .semibold))
+                    .foregroundStyle(Color.appTextLight)
+            }
         }
         .padding(12)
         .contentShape(Rectangle())

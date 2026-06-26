@@ -77,7 +77,7 @@ struct HazardResultView: View {
         return VStack(spacing: 14) {
             HStack(spacing: 10) {
                 IconBox(
-                    icon: result.passed ? "hand.thumbsup.fill" : "arrow.clockwise",
+                    icon: result.passed ? "party.popper.fill" : "arrow.clockwise",
                     color: quality.color,
                     size: 36, cornerRadius: 10, iconFontSize: 16, iconWeight: .semibold
                 )
@@ -211,6 +211,21 @@ struct HazardResultView: View {
                 ReviewHelper.requestIfFirstPass(passed: result.passed)
             }
         }
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                ShareResultButton(text: shareText)
+            }
+        }
+    }
+
+    private var shareText: String {
+        let status = result.passed ? "ĐẠT ✅" : "CHƯA ĐẠT"
+        let detected = result.details.filter { $0.score > 0 }.count
+        return """
+        Kết quả tình huống (mô phỏng) GPLX 2026: \(status)
+        \(result.totalScore)/\(result.maxScore) điểm · \(detected)/\(result.situationCount) tình huống
+        — Ôn Thi Lái Xe 2026
+        """
     }
 }
 

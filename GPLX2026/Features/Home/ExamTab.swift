@@ -28,9 +28,6 @@ struct ExamTab: View {
 
                 // ── Fixed exam list (filter lives inside) ────────────────
                 examListSection
-
-                // ── History section ──────────────────────────────────────
-                questionHistory
             }
             .padding(.horizontal, metrics.contentPadding)
             .padding(.top, 8)
@@ -40,6 +37,12 @@ struct ExamTab: View {
         .screenHeader("Thi thử", titleDisplayMode: .large)
         .tracksTabBarCollapse()
         .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                SearchToolbarButton()
+            }
+            ToolbarItem(placement: .topBarTrailing) {
+                HistoryToolbarButton { ExamHistoryView() }
+            }
             ToolbarItem(placement: .topBarTrailing) {
                 NavPlayButton(label: "Thi thử ngay") {
                     openExam(.mockExam())
@@ -179,32 +182,4 @@ struct ExamTab: View {
         }
     }
 
-    // MARK: - History Sections
-
-    @ViewBuilder
-    private var questionHistory: some View {
-        if !progressStore.examHistory.isEmpty {
-            VStack(alignment: .leading, spacing: 12) {
-                HStack(spacing: 8) {
-                    SectionTitle(title: "Lịch sử câu hỏi")
-                    NavigationLink { ExamHistoryView() } label: {
-                        HStack(spacing: 2) {
-                            Text("Xem tất cả").font(.appSans(size: 12, weight: .semibold))
-                            Image(systemName: "chevron.right").font(.appSans(size: 10, weight: .semibold))
-                        }
-                        .foregroundStyle(themeStore.primaryColor)
-                        .fixedSize()
-                    }
-                    .buttonStyle(.plain)
-                }
-                HistoryList(
-                    results: Array(progressStore.examHistory.prefix(5)),
-                    scoreText: { "\($0.score)/\($0.totalQuestions) đúng" },
-                    passed: \.passed,
-                    date: \.date,
-                    destination: { ExamHistoryDetailView(result: $0) }
-                )
-            }
-        }
-    }
 }

@@ -110,7 +110,10 @@ struct ExamQuestionGridSheet: View {
         if index == currentIndex { return themeStore.primaryColor }
         if bookmarkedIndices.contains(index) { return bookmarkColor.opacity(0.15) }
         if answeredIndices.contains(index) { return Color.appSuccess.opacity(0.12) }
-        return Color.appDisabled
+        // Unanswered: a soft neutral wash, not the solid `appDisabled` gray — that
+        // gray is the same value as the `appTextMedium` number on top of it, so the
+        // digit was invisible in light mode. `neutralWash` is built to pair with text.
+        return Color.neutralWash
     }
 
     // MARK: - Accessibility

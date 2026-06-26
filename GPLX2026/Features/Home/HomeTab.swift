@@ -65,15 +65,11 @@ struct HomeTab: View {
         .screenHeader(greetingText, titleDisplayMode: .large)
         .tracksTabBarCollapse()
         .toolbar {
-            // Plain native toolbar buttons — the system supplies the tap target
+            // Plain native toolbar button — the system supplies the tap target
             // and (on iOS 26) the Liquid Glass background; the accent tint comes
             // from the enclosing NavigationStack. No custom frame/padding.
-            ToolbarItem(placement: .topBarTrailing) {
-                Button { openExam(.search) } label: {
-                    Image(systemName: "magnifyingglass")
-                }
-                .accessibilityLabel("Tìm kiếm")
-            }
+            // Search lives on the practice tabs (Luyện tập / Thi thử / Mô phỏng),
+            // next to the question bank — not here.
             ToolbarItem(placement: .topBarTrailing) {
                 Button { openExam(.settings) } label: {
                     Image(systemName: "gearshape")

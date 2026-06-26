@@ -273,7 +273,7 @@ struct OfflineDownloadView: View {
             .foregroundStyle(Color.white)
             .frame(maxWidth: .infinity)
             .frame(height: 50)
-            .background(themeStore.primaryColor, in: RoundedRectangle(cornerRadius: 25, style: .continuous))
+            .glassFill(themeStore.primaryColor, cornerRadius: 25)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -298,25 +298,40 @@ struct OfflineDownloadView: View {
 
     private var clearAllButton: some View {
         Button { showClearConfirm = true } label: {
-            HStack(spacing: 8) {
-                Image(systemName: "trash")
-                    .font(.appSans(size: 16))
-                Text("Xoá tất cả video")
-                    .font(.appSans(size: 14.5, weight: .bold))
-            }
-            .foregroundStyle(Color(hex: 0x8A2A1F))
-            .frame(maxWidth: .infinity)
-            .frame(height: 50)
-            .background(Color(hex: 0x8A2A1F, opacity: 0.06), in: RoundedRectangle(cornerRadius: 25, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 25, style: .continuous)
-                    .strokeBorder(Color(hex: 0x8A2A1F, opacity: 0.15), lineWidth: 1)
-            )
-            .contentShape(Rectangle())
+            clearAllLabel
         }
         .buttonStyle(.plain)
         .disabled(videoCache.cacheSizeMB <= 0)
         .opacity(videoCache.cacheSizeMB <= 0 ? 0.5 : 1)
+    }
+
+    @ViewBuilder
+    private var clearAllLabel: some View {
+        let inner = HStack(spacing: 8) {
+            Image(systemName: "trash")
+                .font(.appSans(size: 16))
+            Text("Xoá tất cả video")
+                .font(.appSans(size: 14.5, weight: .bold))
+        }
+        .foregroundStyle(Color(hex: 0x8A2A1F))
+        .frame(maxWidth: .infinity)
+        .frame(height: 50)
+
+        // Liquid Glass on iOS 26+ (red text reads through the clear glass);
+        // earlier systems keep the tinted fill + hairline border.
+        if #available(iOS 26.0, *) {
+            inner
+                .glassEffect(.regular.interactive(), in: .rect(cornerRadius: 25))
+                .contentShape(Rectangle())
+        } else {
+            inner
+                .background(Color(hex: 0x8A2A1F, opacity: 0.06), in: RoundedRectangle(cornerRadius: 25, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 25, style: .continuous)
+                        .strokeBorder(Color(hex: 0x8A2A1F, opacity: 0.15), lineWidth: 1)
+                )
+                .contentShape(Rectangle())
+        }
     }
 
     // MARK: - Chapter icon (uniform neutral box + accent glyph, design oRlc7)

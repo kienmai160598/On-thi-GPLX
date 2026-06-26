@@ -330,14 +330,16 @@ struct SettingsView: View {
 
     @ViewBuilder
     private func aboutRow(label: String, value: String) -> some View {
+        // Reversed emphasis to match the other settings rows: the label is the
+        // prominent dark text, the value is muted.
         HStack(spacing: 12) {
             Text(label)
-                .font(.appSans(size: 14))
-                .foregroundStyle(Color.appTextMedium)
+                .font(.appSans(size: 14, weight: .semibold))
+                .foregroundStyle(Color.appTextDark)
             Spacer()
             Text(value)
                 .font(.appSans(size: 14, weight: .medium))
-                .foregroundStyle(Color.appTextDark)
+                .foregroundStyle(Color(hex: 0x7A7166))
         }
         .padding(.vertical, 12)
     }
@@ -346,6 +348,8 @@ struct SettingsView: View {
 // MARK: - SettingsSegmentedControl (compact inline pill, design SVK1N)
 
 private struct SettingsSegmentedControl: View {
+    @Environment(ThemeStore.self) private var themeStore
+
     struct Segment {
         let key: String
         let label: String
@@ -365,12 +369,12 @@ private struct SettingsSegmentedControl: View {
                 } label: {
                     Text(seg.label)
                         .font(.appSans(size: seg.fontSize, weight: .bold))
-                        .foregroundStyle(isSelected ? Color.white : Color(hex: 0x7A7166))
+                        .foregroundStyle(isSelected ? themeStore.onPrimaryColor : Color(hex: 0x7A7166))
                         .padding(.horizontal, 12)
                         .frame(height: 30)
                         .background {
                             if isSelected {
-                                Capsule().fill(Color(hex: 0x0F0F12))
+                                Capsule().fill(themeStore.primaryColor)
                             }
                         }
                         .contentShape(Capsule())
@@ -382,7 +386,7 @@ private struct SettingsSegmentedControl: View {
             }
         }
         .padding(3)
-        .background(Color(hex: 0x0F0F12, opacity: 0.06), in: Capsule())
+        .glassCapsuleTrack()
         // Keep the pills at their natural width so the greedy leading label can't
         // squeeze them into truncation ("Sá…", "Tự…").
         .fixedSize(horizontal: true, vertical: false)

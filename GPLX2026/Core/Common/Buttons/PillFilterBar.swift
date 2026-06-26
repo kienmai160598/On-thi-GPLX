@@ -48,11 +48,28 @@ struct PillFilterBar<Item: Hashable>: View {
             withAnimation(.easeOut(duration: 0.2)) { selection = item }
             onSelect?(item)
         } label: {
-            Text(label(item))
-                .font(.appSans(size: fontSize, weight: isSelected ? .bold : unselectedWeight))
-                .foregroundStyle(isSelected ? Color.white : unselectedText)
-                .padding(.horizontal, hPad)
-                .padding(.vertical, vPad)
+            pillLabel(item, isSelected: isSelected)
+        }
+        .buttonStyle(.plain)
+    }
+
+    @ViewBuilder
+    private func pillLabel(_ item: Item, isSelected: Bool) -> some View {
+        let labelText = Text(label(item))
+            .font(.appSans(size: fontSize, weight: isSelected ? .bold : unselectedWeight))
+            .foregroundStyle(isSelected ? Color.white : unselectedText)
+            .padding(.horizontal, hPad)
+            .padding(.vertical, vPad)
+        // Liquid Glass pills on iOS 26+; the selected pill tints the glass near-
+        // black. Earlier systems keep the original solid fills.
+        if #available(iOS 26.0, *) {
+            if isSelected {
+                labelText.glassEffect(.regular.interactive().tint(Color(hex: 0x0F0F12)), in: shape)
+            } else {
+                labelText.glassEffect(.regular.interactive(), in: shape)
+            }
+        } else {
+            labelText
                 .background(isSelected ? Color(hex: 0x0F0F12) : Color.cardBg, in: shape)
                 .overlay(
                     shape.stroke(
@@ -61,7 +78,6 @@ struct PillFilterBar<Item: Hashable>: View {
                     )
                 )
         }
-        .buttonStyle(.plain)
     }
 
     // MARK: - Style tokens

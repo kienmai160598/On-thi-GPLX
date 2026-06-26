@@ -60,27 +60,14 @@ struct NavPlayButton: View {
                 Haptics.impact(.medium)
                 action()
             } label: {
+                // Plain native toolbar glyph — matches the search / history
+                // buttons exactly. The system supplies the tap target and (on
+                // iOS 26) the Liquid Glass background; the accent tint comes from
+                // the enclosing NavigationStack. A custom 44pt frame here made
+                // the play button look over-padded next to the other icons.
                 Image(systemName: "play.fill")
-                    .navIconStyle()
             }
             .accessibilityLabel(label)
         }
     }
-}
-
-/// Tinted glyph styling for nav-bar toolbar icon buttons (search, settings,
-/// play): the user's accent color and a 44pt HIG-minimum tap target.
-private struct NavIconStyle: ViewModifier {
-    @Environment(ThemeStore.self) private var themeStore
-    func body(content: Content) -> some View {
-        content
-            .font(.appSans(size: 15, weight: .semibold))
-            .foregroundStyle(themeStore.primaryColor)
-            .frame(width: 44, height: 44)
-            .contentShape(Rectangle())
-    }
-}
-
-extension View {
-    func navIconStyle() -> some View { modifier(NavIconStyle()) }
 }

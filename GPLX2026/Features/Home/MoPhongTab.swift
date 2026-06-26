@@ -21,7 +21,6 @@ struct MoPhongTab: View {
                 heroCard
                 PillFilterBar(items: ChapterFilter.allCases, label: \.label, selection: $selectedFilter)
                 chapterSection
-                tinhHuongHistory
             }
             .padding(.horizontal, metrics.contentPadding)
             .padding(.top, 8)
@@ -32,6 +31,12 @@ struct MoPhongTab: View {
         .onAppear { videoCache.ensureStatsLoaded() }
         .tracksTabBarCollapse()
         .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                SearchToolbarButton()
+            }
+            ToolbarItem(placement: .topBarTrailing) {
+                HistoryToolbarButton { HazardHistoryView() }
+            }
             ToolbarItem(placement: .topBarTrailing) {
                 NavPlayButton(label: "Thi thử mô phỏng") {
                     openExam(.hazardTest(mode: .exam))
@@ -146,35 +151,6 @@ struct MoPhongTab: View {
         }
     }
 
-    // MARK: - Tình huống History
-
-    @ViewBuilder
-    private var tinhHuongHistory: some View {
-        if !progressStore.hazardHistory.isEmpty {
-            VStack(alignment: .leading, spacing: 12) {
-                HStack(spacing: 8) {
-                    SectionTitle(title: "Lịch sử tình huống")
-                    NavigationLink { HazardHistoryView() } label: {
-                        HStack(spacing: 2) {
-                            Text("Xem tất cả").font(.appSans(size: 12, weight: .semibold))
-                            Image(systemName: "chevron.right").font(.appSans(size: 10, weight: .semibold))
-                        }
-                        .foregroundStyle(themeStore.primaryColor)
-                        .fixedSize()
-                    }
-                    .buttonStyle(.plain)
-                }
-                HistoryList(
-                    results: Array(progressStore.hazardHistory.prefix(5)),
-                    scoreText: { "\($0.totalScore)/\($0.maxScore) điểm" },
-                    passed: \.passed,
-                    date: \.date,
-                    destination: { HazardHistoryDetailView(result: $0) }
-                )
-            }
-        }
-    }
-
     // MARK: - Chapter Card (colored badge + gold play, design YPqmZ)
 
     private func chapterCard(_ chapter: HazardSituation.Chapter) -> some View {
@@ -187,8 +163,6 @@ struct MoPhongTab: View {
             openExam(.hazardTest(mode: .chapter(chapter.id)))
         } label: {
             HStack(spacing: 12) {
-                chapterBadge(for: chapter.id)
-
                 VStack(alignment: .leading, spacing: 6) {
                     Text("CHƯƠNG \(chapter.id)")
                         .font(.appSans(size: 10, weight: .heavy))
@@ -233,28 +207,6 @@ struct MoPhongTab: View {
             .foregroundStyle(themeStore.primaryColor)
             .frame(width: 44, height: 44)
             .background(Color.neutralWash, in: Circle())
-    }
-
-    // MARK: - Chapter Badge
-
-    private func chapterBadge(for chapterId: Int) -> some View {
-        let (bg, fg, icon) = chapterBadgeStyle(chapterId)
-        return Image(systemName: icon)
-            .font(.appSans(size: 20, weight: .semibold))
-            .foregroundStyle(fg)
-            .frame(width: 44, height: 44)
-            .background(bg, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-    }
-
-    private func chapterBadgeStyle(_ id: Int) -> (Color, Color, String) {
-        switch id {
-        case 1: return (Color(hex: 0xFFE9B0), Color(hex: 0x7A4A00), "building.2.fill")
-        case 2: return (Color(hex: 0xD9F0DA), Color(hex: 0x1F5A2A), "road.lanes")
-        case 3: return (Color(hex: 0xCFE3FF), Color(hex: 0x143A75), "car.fill")
-        case 4: return (Color(hex: 0xFFD7CF), Color(hex: 0x8A2A1F), "mountain.2.fill")
-        case 5: return (Color(hex: 0xEDE8FF), Color(hex: 0x4B2A8A), "map.fill")
-        default: return (Color(hex: 0xE8F5E9), Color(hex: 0x2E7D32), "exclamationmark.triangle.fill")
-        }
     }
 
     // MARK: - Filter Logic

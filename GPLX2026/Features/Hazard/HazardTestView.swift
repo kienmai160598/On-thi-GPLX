@@ -187,24 +187,15 @@ struct HazardTestView: View {
                     .accessibilityLabel("Thoát bài thi")
                 }
 
-                // Situation chip with gold number badge
+                // Situation chip: gold id badge + progress (no repeated "TH id"
+                // text or the identical-for-every-situation title).
                 HStack(spacing: 8) {
-                    // Gold number badge
                     Text("\(situation.id)")
                         .font(.appSans(size: 11, weight: .black))
                         .foregroundStyle(Color(hex: 0x3A2400))
                         .frame(width: 22, height: 22)
                         .background(Color(hex: 0xFFC233))
                         .clipShape(Circle())
-
-                    Text(situation.title.count > 24 ? "TH \(situation.id)" : situation.title)
-                        .font(.appSans(size: 13, weight: .bold))
-                        .foregroundStyle(.white)
-                        .lineLimit(1)
-
-                    Text("·")
-                        .font(.appSans(size: 13, weight: .bold))
-                        .foregroundStyle(Color.white.opacity(0.40))
 
                     Text("\(currentIndex + 1)/\(situations.count)")
                         .font(.appSans(size: 12, weight: .semibold))
@@ -224,35 +215,6 @@ struct HazardTestView: View {
             .padding(.trailing, trailingInset)
             .padding(.top, topInset)
             .frame(maxHeight: .infinity, alignment: .top)
-
-            // ── Hint card (top-left of video, below status bar) ─────────
-            if !playerState.isFinished && !hasTapped {
-                VStack(alignment: .leading, spacing: 6) {
-                    HStack(spacing: 8) {
-                        Image(systemName: "lightbulb.fill")
-                            .font(.appSans(size: 11))
-                            .foregroundStyle(Color(hex: 0xFFC233))
-                        Text("NHIỆM VỤ")
-                            .font(.appSans(size: 9, weight: .black))
-                            .foregroundStyle(Color(hex: 0xFFC233))
-                            .kerning(1.5)
-                    }
-                    Text("Nhấn NGAY khi thấy nguy hiểm tiềm tàng.")
-                        .font(.appSans(size: 12, weight: .semibold))
-                        .foregroundStyle(.white)
-                        .lineSpacing(3)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-                .padding(8)
-                .frame(width: 230, alignment: .leading)
-                .background(Color.white.opacity(0.08))
-                .clipShape(RoundedRectangle(cornerRadius: 14))
-                .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(Color.white.opacity(0.12), lineWidth: 1))
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-                .padding(.leading, leadingInset)
-                .padding(.top, topInset + 56)
-                .transition(.opacity.combined(with: .scale(scale: 0.97, anchor: .topLeading)))
-            }
 
             // ── Play/Pause centred overlay (shown when video is paused or loading) ──
             // (Auto-start is unchanged; this button is purely visual chrome)
@@ -326,38 +288,19 @@ struct HazardTestView: View {
 
         VStack(spacing: 0) {
             // Score summary row
-            HStack(spacing: 14) {
-                // Score number
+            // Score headline. The 5-segment bar and a separate tap-time line were
+            // redundant — the score and tap time both appear in the timeline below.
+            HStack(spacing: 12) {
                 Text("\(score)")
                     .font(.appSans(size: isRegular ? 32 : 26, weight: .heavy))
                     .foregroundStyle(scoreColor)
+                    .contentTransition(.numericText())
 
-                VStack(alignment: .leading, spacing: isRegular ? 4 : 2) {
-                    Text(scoreLabelFor(score))
-                        .font(.appSans(size: isRegular ? 14 : 12, weight: .bold))
-                        .foregroundStyle(scoreColor)
-
-                    HStack(spacing: isRegular ? 4 : 3) {
-                        ForEach(0..<5, id: \.self) { i in
-                            RoundedRectangle(cornerRadius: 2)
-                                .fill(i < score ? scoreColor : Color.white.opacity(0.20))
-                                .frame(height: isRegular ? 5 : 4)
-                        }
-                    }
-                }
+                Text(scoreLabelFor(score))
+                    .font(.appSans(size: isRegular ? 15 : 13, weight: .bold))
+                    .foregroundStyle(scoreColor)
 
                 Spacer(minLength: 0)
-
-                // Tap info
-                if let tapTime = tapTimes[currentIndex] ?? nil {
-                    Text(String(format: "Nhấn tại %.1fs", tapTime))
-                        .font(.appSans(size: 11))
-                        .foregroundStyle(Color.white.opacity(0.60))
-                } else {
-                    Text("Không nhấn")
-                        .font(.appSans(size: 11))
-                        .foregroundStyle(Color.appError.opacity(0.80))
-                }
             }
             .padding(.horizontal, isRegular ? 16 : 12)
             .padding(.vertical, isRegular ? 10 : 8)
@@ -639,30 +582,16 @@ private struct HazardBottomPanel: View {
     @ViewBuilder
     private var metaRow: some View {
         HStack(spacing: 0) {
-            // Left group
-            HStack(spacing: 10) {
-                // Timestamp capsule
-                Text(timeText)
-                    .font(.appSans(size: 11, weight: .bold))
-                    .foregroundStyle(.white)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 4)
-                    .background(Color.white.opacity(0.08))
-                    .clipShape(Capsule())
-
-                Text(situation.title)
-                    .font(.appSans(size: 14, weight: .black))
-                    .foregroundStyle(.white)
-                    .lineLimit(1)
-
-                Text("·")
-                    .font(.appSans(size: 14, weight: .bold))
-                    .foregroundStyle(Color.white.opacity(0.40))
-
-                Text("TH \(situation.id)")
-                    .font(.appSans(size: 12, weight: .semibold))
-                    .foregroundStyle(Color.white.opacity(0.70))
-            }
+            // Left group — just the running timestamp. The situation number and
+            // progress already live in the top bar, and every situation's title
+            // is identical, so neither is repeated here.
+            Text(timeText)
+                .font(.appSans(size: 11, weight: .bold))
+                .foregroundStyle(.white)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 4)
+                .background(Color.white.opacity(0.08))
+                .clipShape(Capsule())
 
             Spacer(minLength: 8)
 
@@ -893,6 +822,8 @@ private struct HazardDangerButton: View {
             .opacity(countdown ? 0.5 : 1.0)
             .frame(maxWidth: .infinity)
             .frame(height: compact ? 48 : 56)
+            // Make the whole container tappable, not just the icon + label.
+            .contentShape(Rectangle())
 
             if #available(iOS 26.0, *) {
                 content

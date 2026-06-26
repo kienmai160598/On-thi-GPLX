@@ -298,27 +298,27 @@ extension View {
 
 // MARK: - Scaffold Background (app-wide gradient)
 
-/// The app's full-screen background: a subtle warm-neutral diagonal gradient.
-/// Single source of truth so every screen shares the same backdrop.
+/// The app's full-screen background: a light, vertical gradient that rises from
+/// a soft wash of the user's accent at the bottom to a clean neutral at the top.
+/// Single source of truth so every screen shares the same backdrop, and it
+/// follows the configured accent colour automatically.
 struct ScaffoldBackground: View {
-    /// Corner-glow tint. Defaults to the brand color; pass `themeStore.primaryColor`
-    /// to make the glow follow the user's chosen accent.
-    var glow: Color = .appPrimary
+    @Environment(ThemeStore.self) private var themeStore
+    /// Optional override for the accent tint. Defaults to the user's configured
+    /// accent so the whole app's backdrop follows the chosen colour.
+    var glow: Color? = nil
 
     var body: some View {
+        let accent = glow ?? themeStore.primaryColor
         ZStack {
+            // Light neutral base keeps every screen bright and matches the cards.
+            Color.scaffoldBg
+
+            // Accent wash: strongest at the bottom, fading out toward the top.
             LinearGradient(
-                colors: [.scaffoldGradientTop, .scaffoldBg, .scaffoldGradientBottom],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-            // Soft branded glow in the top-trailing corner so the gradient
-            // reads clearly (and warmly) even behind dense content.
-            RadialGradient(
-                colors: [glow.opacity(0.16), .clear],
-                center: .topTrailing,
-                startRadius: 0,
-                endRadius: 480
+                colors: [accent.opacity(0.18), accent.opacity(0.05), .clear],
+                startPoint: .bottom,
+                endPoint: .top
             )
         }
         .ignoresSafeArea()

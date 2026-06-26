@@ -155,15 +155,18 @@ struct SimulationResultView: View {
             }
         }
         .toolbar {
-            if !isFromHistory {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button { popToRoot() } label: {
-                        Image(systemName: "checkmark")
-                            .font(.appSans(size: 15, weight: .semibold))
-                    }
-                    .accessibilityLabel("Hoàn thành")
-                }
+            ToolbarItem(placement: .navigationBarTrailing) {
+                ShareResultButton(text: shareText)
             }
         }
+    }
+
+    private var shareText: String {
+        let status = isPassed ? "ĐẠT ✅" : "CHƯA ĐẠT"
+        return """
+        Kết quả mô phỏng sa hình GPLX 2026: \(status)
+        Đúng \(correctCount)/\(questions.count) câu
+        — Ôn Thi Lái Xe 2026
+        """
     }
 }

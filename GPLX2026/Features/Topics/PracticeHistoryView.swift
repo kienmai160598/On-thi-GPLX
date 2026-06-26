@@ -22,25 +22,41 @@ struct PracticeHistoryView: View {
         let stats = progressStore.weakTopics(topics: questionStore.topics)
             .filter { $0.attempted > 0 }
             .sorted { $0.attempted > $1.attempted }
+        let simHistory = progressStore.simulationHistory
 
         ScrollView {
-            if stats.isEmpty {
+            if stats.isEmpty && simHistory.isEmpty {
                 EmptyState(icon: "book", message: "Chưa có hoạt động luyện tập nào.")
             } else {
                 VStack(alignment: .leading, spacing: 14) {
-                    summary(stats)
+                    if !stats.isEmpty {
+                        summary(stats)
 
-                    SectionTitle(title: "Hoạt động gần đây")
+                        SectionTitle(title: "Hoạt động gần đây")
 
-                    VStack(spacing: 10) {
-                        ForEach(stats, id: \.topic.key) { item in
-                            Button {
-                                openExam(.questionView(topicKey: item.topic.key, startIndex: 0))
-                            } label: {
-                                row(item)
+                        VStack(spacing: 10) {
+                            ForEach(stats, id: \.topic.key) { item in
+                                Button {
+                                    openExam(.questionView(topicKey: item.topic.key, startIndex: 0))
+                                } label: {
+                                    row(item)
+                                }
+                                .buttonStyle(.plain)
                             }
-                            .buttonStyle(.plain)
                         }
+                    }
+
+                    // Sa hình runs live here too (the Practice tab no longer shows
+                    // them inline — history is reached from the nav-bar icon).
+                    if !simHistory.isEmpty {
+                        SectionTitle(title: "Lịch sử sa hình")
+                        HistoryList(
+                            results: simHistory,
+                            scoreText: { "\($0.score)/\($0.totalScenarios) đúng" },
+                            passed: \.passed,
+                            date: \.date,
+                            destination: { SimulationHistoryDetailView(result: $0) }
+                        )
                     }
                 }
                 .padding(.horizontal, metrics.contentPadding)
@@ -76,7 +92,8 @@ struct PracticeHistoryView: View {
             meta: "\(item.attempted) câu · \(item.correct) đúng",
             value: "\(percent)%",
             valueColor: quality.color,
-            status: quality.label
+            status: quality.label,
+            showsIcon: false
         )
     }
 

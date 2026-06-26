@@ -372,7 +372,10 @@ struct BaseExamView: View {
     private func sidebarCellBackground(for index: Int) -> Color {
         if index == currentIndex { return themeStore.primaryColor }
         if answers[index] != nil { return Color.appSuccess.opacity(0.12) }
-        return Color.appDisabled
+        // Soft neutral wash — `appDisabled` matches the `appTextMedium` number on
+        // top, which hid the digit in light mode. (Legend dot keeps the solid gray
+        // as the state's identity, like the green dot over the light-green cell.)
+        return Color.neutralWash
     }
 
     private var nextLabel: String {
